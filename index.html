@@ -42,11 +42,12 @@
     <!-- ÉCRAN DE VERIFICATION (SÉCURITÉ ACCÈS) -->
     <div id="gatekeeper-screen" class="fixed inset-0 bg-blue-950 z-50 flex flex-col items-center justify-center p-4 hidden">
         <div class="bg-white p-8 rounded-2xl shadow-2xl max-w-md w-full text-center space-y-4">
-            <h2 class="text-2xl font-bold text-blue-900">Accès Sécurisé</h2>
+            <h2 class="text-2xl font-bold text-blue-900">Accès Securisé</h2>
             <p class="text-gray-600 text-sm">Veuillez saisir le code d'activation qui vous a été communiqué pour accéder à l'outil.</p>
             <input type="password" id="gatekeeper-code" placeholder="Code d'accès" class="w-full p-3 border rounded-xl text-center font-mono text-lg outline-none focus:border-blue-500">
             <button onclick="verifierCode()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl transition cursor-pointer">Valider l'accès</button>
             <p id="gatekeeper-error" class="text-red-500 text-xs font-semibold hidden">❌ Code incorrect. Veuillez réessayer.</p>
+            <p class="text-gray-500 text-xs pt-2 border-t border-gray-100">Problème de connexion ? Contactez-nous à <a href="mailto:faly.contact@gmail.com" class="text-blue-600 hover:underline font-medium">faly.contact@gmail.com</a></p>
         </div>
     </div>
 
@@ -143,8 +144,8 @@
             </section>
 
             <!-- ACTION BOUTON -->
-            <button onclick="telecharger()" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-xl shadow-lg transition transform active:scale-95 cursor-pointer text-center block">
-                📥 Imprimer / Télécharger mon CV au Propre (A4 PDF)
+            <button onclick="telecharger()" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-xl shadow-lg transition transform active:scale-95 cursor-pointer text-center block text-sm">
+                📥 Imprimer / Télécharger mon CV au propre en PDF (format A4)
             </button>
         </div>
 
@@ -246,7 +247,6 @@
             }
         }
 
-        // LE RESTE DU SCRIPT EST ENTIÈREMENT IDENTIQUE...
         async function recupererStatsSupabase() {
             try {
                 const response = await fetch(`${SUPABASE_URL}/rest/v1/statistiques?id=eq.1`, {
