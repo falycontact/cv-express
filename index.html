@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Générateur de CV Professionnel Solidaire</title>
+    <!-- Tailwind CSS pour un design moderne et soigné -->
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <!-- Librairie de génération PDF officielle -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <style>
+        /* Rendu strict au format A4 pour l'aperçu et l'impression */
+        #cv-preview {
+            width: 210mm;
+            min-height: 297mm;
+            padding: 20mm;
+            box-sizing: border-box;
+            background: white;
+        }
+        /* Masquage propre des éléments vides */
+        .hidden-cv { display: none !important; }
+        /* Style des listes à puces automatiques dans le CV */
+        .cv-bullet-list {
+            list-style-type: disc;
+            padding-left: 18px;
+            margin-top: 4px;
+        }
+        .cv-bullet-list li {
+            margin-bottom: 2px;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 font-sans min-h-screen flex flex-col items-center p-4 md:p-8">
+
+    <!-- ÉCRAN DE VERIFICATION (SÉCURITÉ ACCÈS) -->
+    <div id="gatekeeper-screen" class="fixed inset-0 bg-blue-950 z-50 flex flex-col items-center justify-center p-4 hidden">
+        <div class="bg-white p-8 rounded-2xl shadow-2xl max-w-md w-full text-center space-y-4">
+            <h2 class="text-2xl font-bold text-blue-900">Accès Sécurisé</h2>
+            <p class="text-gray-600 text-sm">Veuillez saisir le code d'activation fourni par votre conseiller de la Mission Locale pour accéder à l'outil.</p>
+            <input type="password" id="gatekeeper-code" placeholder="Code d'accès" class="w-full p-3 border rounded-xl text-center font-mono text-lg outline-none focus:border-blue-500">
+            <button onclick="verifierCode()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl transition cursor-pointer">Valider l'accès</button>
+            <p id="gatekeeper-error" class="text-red-500 text-xs font-semibold hidden">❌ Code incorrect. Veuillez réessayer.</p>
+        </div>
+    </div>
+
+    <!-- PANNEAU STATISTIQUES CACHÉ (POUR LE CONSEILLER) -->
+    <div id="admin-panel" class="fixed bottom-4 left-4 bg-gray-900 text-white text-xs p-4 rounded-xl shadow-2xl border border-gray-700 z-40 hidden space-y-2 max-w-xs">
+        <div class="flex justify-between items-center border-b border-gray-700 pb-1">
+            <span class="font-bold text-blue-400">📊 Stats Superviseur</span>
+            <button onclick="toggleAdmin()" class="text-gray-400 hover:text-white font-bold">✕</button>
+        </div>
+        <p>Page ouverte / travaillée : <span id="stat-ouvertures" class="font-bold text-green-400">0</span> fois</p>
+        <p>CV générés (PDF téléchargés) : <span id="stat-telechargements" class="font-bold text-green-400">0</span> fois</p>
+        <button onclick="reinitialiserStats()" class="w-full bg-red-900 hover:bg-red-800 text-[10px] py-1 rounded mt-1 font-medium transition cursor-pointer">Réinitialiser les données</button>
+    </div>
+
+    <!-- EN-TÊTE DE LA PAGE -->
+    <header class="text-center my-4 max-w-2xl">
+        <h1 class="text-3xl font-bold text-blue-600">Mon CV Officiel</h1>
+        <p class="text-gray-600 text-sm mt-2">Ajoute tes expériences et compétences grâce aux boutons Dédiés. Tape sur "Entrée" dans les missions ou détails pour créer des puces automatiques.</p>
+    </header>
+
+    <!-- ZONE PRINCIPALE -->
+    <main class="w-full max-w-7xl grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
+        
+        <!-- COLONNE 1 : LE FORMULAIRE COMPLET -->
+        <div class="bg-white p-6 rounded-2xl shadow-md space-y-6 max-h-[85vh] overflow-y-auto">
+            
+            <!-- SECTION 1 : IDENTITÉ & PROJET -->
+            <section class="space-y-3 bg-gray-50 p-4 rounded-xl border border-gray-100">
+                <h2 class="text-xs font-bold text-blue-700 uppercase tracking-wider">1. Identité & Projet</h2>
+                <div class="grid grid-cols-2 gap-2">
+                    <input type="text" id="in-nom" placeholder="Prénom Nom" class="p-2 border rounded-lg bg-white text-sm outline-none w-full" oninput="maj()">
+                    <input type="text" id="in-metier" placeholder="Métier / Projet visé" class="p-2 border rounded-lg bg-white text-sm outline-none w-full" oninput="maj()">
+                </div>
+                <div class="grid grid-cols-2 gap-2">
+                    <input type="tel" id="in-tel" placeholder="Téléphone (ex: 06 00...)" class="p-2 border rounded-lg bg-white text-sm outline-none w-full" oninput="maj()">
+                    <input type="email" id="in-email" placeholder="Adresse Email" class="p-2 border rounded-lg bg-white text-sm outline-none w-full" oninput="maj()">
+                </div>
+                <textarea id="in-accroche" placeholder="Phrase d'accroche ou présentation courte..." rows="2" class="w-full p-2 border rounded-lg bg-white text-sm outline-none" oninput="maj()"></textarea>
+            </section>
+
+            <!-- SECTION 2 : EXPÉRIENCES PROFESSIONNELLES -->
+            <section class="space-y-3 bg-gray-50 p-4 rounded-xl border border-gray-100">
+                <div class="flex justify-between items-center border-b pb-2 mb-2">
+                    <h2 class="text-xs font-bold text-blue-700 uppercase tracking-wider">2. Expériences Professionnelles</h2>
+                    <button onclick="ajouterExp()" class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold py-1 px-3 rounded-lg cursor-pointer transition">+ Ajouter une expérience</button>
+                </div>
+                <div id="container-exp" class="space-y-4">
+                    <!-- Généré dynamiquement -->
+                </div>
+            </section>
+
+            <!-- SECTION 3 : FORMATIONS -->
+            <section class="space-y-3 bg-gray-50 p-4 rounded-xl border border-gray-100">
+                <div class="flex justify-between items-center border-b pb-2 mb-2">
+                    <h2 class="text-xs font-bold text-blue-700 uppercase tracking-wider">3. Formations & Diplômes</h2>
+                    <button onclick="ajouterForm()" class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold py-1 px-3 rounded-lg cursor-pointer transition">+ Ajouter une formation</button>
+                </div>
+                <div id="container-form" class="space-y-3">
+                    <!-- Généré dynamiquement -->
+                </div>
+            </section>
+
+            <!-- SECTION 4 : COMPÉTENCES TECHNIQUES -->
+            <section class="space-y-3 bg-gray-50 p-4 rounded-xl border border-gray-100">
+                <div class="flex justify-between items-center border-b pb-2 mb-2">
+                    <h2 class="text-xs font-bold text-blue-700 uppercase tracking-wider">4. Compétences Techniques</h2>
+                    <button onclick="ajouterTech()" class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold py-1 px-3 rounded-lg cursor-pointer transition">+ Ajouter une compétence</button>
+                </div>
+                <div id="container-tech" class="space-y-2">
+                    <!-- Généré dynamiquement -->
+                </div>
+            </section>
+
+            <!-- SECTION 5 : COMPÉTENCES LINGUISTIQUES -->
+            <section class="space-y-3 bg-gray-50 p-4 rounded-xl border border-gray-100">
+                <div class="flex justify-between items-center border-b pb-2 mb-2">
+                    <h2 class="text-xs font-bold text-blue-700 uppercase tracking-wider">5. Compétences Linguistiques</h2>
+                    <button onclick="ajouterLang()" class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold py-1 px-3 rounded-lg cursor-pointer transition">+ Ajouter une langue</button>
+                </div>
+                <div id="container-lang" class="space-y-2">
+                    <!-- Généré dynamiquement -->
+                </div>
+            </section>
+
+            <!-- SECTION 6 : CENTRES D'INTÉRÊT -->
+            <section class="space-y-3 bg-gray-50 p-4 rounded-xl border border-gray-100">
+                <div class="flex justify-between items-center border-b pb-2 mb-2">
+                    <h2 class="text-xs font-bold text-blue-700 uppercase tracking-wider">6. Centres d'intérêt</h2>
+                    <button onclick="ajouterLoisir()" class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold py-1 px-3 rounded-lg cursor-pointer transition">+ Ajouter un centre d'intérêt</button>
+                </div>
+                <div id="container-loisir" class="space-y-3">
+                    <!-- Généré dynamiquement -->
+                </div>
+            </section>
+
+            <!-- ACTION BOUTON -->
+            <button onclick="telecharger()" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-xl shadow-lg transition transform active:scale-95 cursor-pointer text-center block">
+                📥 Imprimer / Télécharger mon CV au Propre (A4 PDF)
+            </button>
+        </div>
+
+        <!-- COLONNE 2 : L'APERÇU GRAPHIQUE DU CV HAUTE QUALITÉ -->
+        <div class="overflow-x-auto bg-gray-800 p-4 rounded-2xl shadow-inner flex justify-center w-full">
+            <div class="origin-top scale-45 sm:scale-55 md:scale-70 lg:scale-55 xl:scale-75 bg-white shadow-2xl" style="margin-bottom: -150px;">
+                
+                <!-- ZONE DU RENDU CV (EXPORTABLE EN PDF SANS PERTE) -->
+                <div id="cv-preview" class="text-gray-800 flex flex-col justify-between">
+                    
+                    <div>
+                        <!-- EN-TÊTE DU CV PRÉCISION PRO -->
+                        <div class="border-b-4 border-blue-600 pb-4 flex justify-between items-end">
+                            <div>
+                                <h1 id="out-nom" class="text-3xl font-extrabold tracking-tight uppercase text-gray-900">Prénom Nom</h1>
+                                <p id="out-metier" class="text-lg font-bold text-blue-600 tracking-wide uppercase mt-1">PROJET / MÉTIER VISÉ</p>
+                            </div>
+                            <div class="text-right text-xs font-medium space-y-0.5 text-gray-600">
+                                <p id="out-tel">📞 Téléphone</p>
+                                <p id="out-email">✉️ Adresse Email</p>
+                            </div>
+                        </div>
+
+                        <!-- ACCROCHE PRO -->
+                        <div id="sec-accroche" class="my-6">
+                            <p id="out-accroche" class="text-sm italic text-gray-600 bg-gray-50 p-3 rounded-lg border-l-4 border-blue-400">
+                                Présentation courte...
+                            </p>
+                        </div>
+
+                        <!-- EXPÉRIENCES DU CV -->
+                        <div id="sec-exp" class="mb-6 hidden-cv">
+                            <h3 class="text-sm font-bold text-blue-700 uppercase tracking-wider border-b pb-1 mb-3">Expériences Professionnelles</h3>
+                            <div id="out-liste-exp" class="space-y-4"></div>
+                        </div>
+
+                        <!-- FORMATIONS DU CV -->
+                        <div id="sec-form" class="mb-6 hidden-cv">
+                            <h3 class="text-sm font-bold text-blue-700 uppercase tracking-wider border-b pb-1 mb-3">Formations & Diplômes</h3>
+                            <div id="out-liste-form" class="space-y-3"></div>
+                        </div>
+
+                        <!-- BLOC COMPLÉMENTS DOUBLE COLONNE DU CV -->
+                        <div class="grid grid-cols-2 gap-6 mb-6">
+                            <!-- Compétences (Techniques + Langues) -->
+                            <div id="sec-competences" class="hidden-cv">
+                                <h3 class="text-sm font-bold text-blue-700 uppercase tracking-wider border-b pb-1 mb-2">Compétences</h3>
+                                <ul id="out-liste-tech" class="space-y-1.5 text-xs mb-3"></ul>
+                                <ul id="out-liste-lang" class="space-y-1.5 text-xs"></ul>
+                            </div>
+                            <!-- Centres d'intérêt -->
+                            <div id="sec-loisirs" class="hidden-cv">
+                                <h3 class="text-sm font-bold text-blue-700 uppercase tracking-wider border-b pb-1 mb-2">Centres d'intérêt</h3>
+                                <div id="out-liste-loisirs" class="space-y-3"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- PIED DE PAGE EXIGÉ MODIFIÉ (Cliquez dessus pour faire apparaître le panneau de contrôle secret) -->
+                    <div onclick="toggleAdmin()" class="border-t pt-2 text-center text-[10px] text-gray-400 font-semibold tracking-wide cursor-pointer select-none">
+                        Développement du modèle sur une idée de Faly R.®
+                    </div>
+
+                </div>
+
+            </div>
+        </div>
+
+    </main>
+
+    <!-- ENSEMBLE DE LA LOGIQUE JAVASCRIPT LOCAL -->
+    <script>
+        // CONFIGURATION DU CODE DE VALIDATION EXIGÉ (Changez-le librement ici)
+        const CODE_VALIDATION = "ML2026";
+
+        // GESTION STATS & SÉCURITÉ AU CHARGEMENT
+        window.addEventListener('DOMContentLoaded', () => {
+            // Vérifier si l'accès est déjà débloqué sur cette machine
+            if (localStorage.getItem('ml_cv_authorized') !== 'true') {
+                document.getElementById('gatekeeper-screen').classList.remove('hidden');
+            } else {
+                enregistrerOuverture();
+            }
+            actualiserStatsAffichage();
+        });
+
+        function verifierCode() {
+            const saisie = document.getElementById('gatekeeper-code').value;
+            if (saisie === CODE_VALIDATION) {
+                localStorage.setItem('ml_cv_authorized', 'true');
+                document.getElementById('gatekeeper-screen').classList.add('hidden');
+                enregistrerOuverture();
+            } else {
+                const err = document.getElementById('gatekeeper-error');
+                err.classList.remove('hidden');
+                setTimeout(() => { err.classList.add('hidden'); }, 3000);
+            }
+        }
+
+        function enregistrerOuverture() {
+            let n = parseInt(localStorage.getItem('stat_ouvertures') || "0");
+            localStorage.setItem('stat_ouvertures', (n + 1).toString());
+            actualiserStatsAffichage();
+        }
+
+        function enregistrerTelechargement() {
+            let n = parseInt(localStorage.getItem('stat_telechargements') || "0");
+            localStorage.setItem('stat_telechargements', (n + 1).toString());
+            actualiserStatsAffichage();
+        }
+
+        function actualiserStatsAffichage() {
+            document.getElementById('stat-ouvertures').innerText = localStorage.getItem('stat_ouvertures') || "0";
+            document.getElementById('stat-telechargements').innerText = localStorage.getItem('stat_telechargements') || "0";
+        }
+
+        function toggleAdmin() {
+            const panel = document.getElementById('admin-panel');
+            panel.classList.toggle('hidden');
+        }
+
+        function reinitialiserStats() {
+            if (confirm("Réinitialiser les compteurs statistiques de cet ordinateur ?")) {
+                localStorage.setItem('stat_ouvertures', "0");
+                localStorage.setItem('stat_telechargements', "0");
+                actualiserStatsAffichage();
+            }
+        }
+
+        // Listes de correspondance de niveaux fixes
+        const listNivTech = ["Initiation", "Compétences limitées", "Compétences complètes", "Bilingue / Expert", "Langue maternelle"];
+        const listNivLang = ["Initiation", "Niveau scolaire", "Compétences limitées", "Compétences complètes", "Bilingue", "Langue maternelle"];
+
+        // Fonctions d'ajouts de lignes dans le formulaire de saisie
+        function ajouterExp() {
+            const container = document.getElementById('container-exp');
+            const id = Date.now();
+            const div = document.createElement('div');
+            div.className = "p-3 border border-gray-200 rounded-lg bg-white relative space-y-2 text-xs shadow-sm";
+            div.id = `exp-${id}`;
+            div.innerHTML = `
+                <button onclick="supprimer('${div.id}')" class="absolute top-1 right-2 text-red-500 font-bold hover:text-red-700 text-sm cursor-pointer">✕</button>
+                <div class="grid grid-cols-3 gap-2">
+                    <input type="text" placeholder="Années (ex: 2024-2025)" class="p-2 border rounded exp-dates outline-none" oninput="maj()">
+                    <input type="text" placeholder="Poste occupé" class="col-span-2 p-2 border rounded exp-poste outline-none" oninput="maj()">
+                </div>
+                <input type="text" placeholder="Nom de l'entreprise (Secteur d'activité), Ville (Département, Pays)" class="w-full p-2 border rounded exp-lieu outline-none" oninput="maj()">
+                <textarea placeholder="Descriptif des missions (Appuyez sur Entrée pour chaque nouvelle ligne de mission)" rows="2" class="w-full p-2 border rounded exp-missions outline-none" oninput="maj()"></textarea>
+            `;
+            container.appendChild(div);
+            maj();
+        }
+
+        function ajouterForm() {
+            const container = document.getElementById('container-form');
+            const id = Date.now();
+            const div = document.createElement('div');
+            div.className = "grid grid-cols-3 gap-2 p-3 border border-gray-200 rounded-lg bg-white relative text-xs shadow-sm pr-7";
+            div.id = `form-${id}`;
+            div.innerHTML = `
+                <input type="text" placeholder="Année-Année" class="p-2 border rounded form-dates outline-none" oninput="maj()">
+                <input type="text" placeholder="Nom complet de l'établissement, ville (département, pays)" class="col-span-2 p-2 border rounded form-ecole outline-none" oninput="maj()">
+                <button onclick="supprimer('${div.id}')" class="absolute right-2 top-4 text-red-500 font-bold hover:text-red-700 text-sm cursor-pointer">✕</button>
+            `;
+            container.appendChild(div);
+            maj();
+        }
+
+        function ajouterTech() {
+            const container = document.getElementById('container-tech');
+            const id = Date.now();
+            const div = document.createElement('div');
+            div.className = "grid grid-cols-2 gap-2 relative pr-7";
+            div.id = `tech-${id}`;
+            let options = listNivTech.map(n => `<option value="${n}">${n}</option>`).join('');
+            div.innerHTML = `
+                <input type="text" placeholder="Ex: Bureautique, Montage vidéo..." class="p-2 border rounded text-xs tech-nom outline-none" oninput="maj()">
+                <select class="p-2 border rounded text-xs bg-white tech-niv outline-none" onchange="maj()"><option value="">Sélectionner le niveau...</option>${options}</select>
+                <button onclick="supprimer('${div.id}')" class="absolute right-1 top-2 text-red-500 font-bold hover:text-red-700 text-sm cursor-pointer">✕</button>
+            `;
+            container.appendChild(div);
+            maj();
+        }
+
+        function ajouterLang() {
+            const container = document.getElementById('container-lang');
+            const id = Date.now();
+            const div = document.createElement('div');
+            div.className = "grid grid-cols-2 gap-2 relative pr-7";
+            div.id = `lang-${id}`;
+            let options = listNivLang.map(n => `<option value="${n}">${n}</option>`).join('');
+            div.innerHTML = `
+                <input type="text" placeholder="Ex: Anglais, Espagnol..." class="p-2 border rounded text-xs lang-nom outline-none" oninput="maj()">
+                <select class="p-2 border rounded text-xs bg-white lang-niv outline-none" onchange="maj()"><option value="">Sélectionner le niveau...</option>${options}</select>
+                <button onclick="supprimer('${div.id}')" class="absolute right-1 top-2 text-red-500 font-bold hover:text-red-700 text-sm cursor-pointer">✕</button>
+            `;
+            container.appendChild(div);
+            maj();
+        }
+
+        function ajouterLoisir() {
+            const container = document.getElementById('container-loisir');
+            const id = Date.now();
+            const div = document.createElement('div');
+            div.className = "p-3 border border-gray-200 rounded-lg bg-white relative space-y-2 text-xs shadow-sm";
+            div.id = `loisir-${id}`;
+            div.innerHTML = `
+                <button onclick="supprimer('${div.id}')" class="absolute top-1 right-2 text-red-500 font-bold hover:text-red-700 text-sm cursor-pointer">✕</button>
+                <input type="text" placeholder="Loisir / Centre d'intérêt (Ex: Football)" class="w-full p-2 border rounded loisir-nom outline-none" oninput="maj()">
+                <textarea placeholder="Explications / Détails (Appuyez sur Entrée pour chaque nouvelle ligne d'explication)" rows="1" class="w-full p-2 border rounded loisir-details outline-none" oninput="maj()"></textarea>
+            `;
+            container.appendChild(div);
+            maj();
+        }
+
+        function supprimer(id) {
+            document.getElementById(id).remove();
+            maj();
+        }
+
+        // Fonction de génération automatique de liste à puces HTML basée sur les retours à la ligne (Entrée)
+        function formaterEnPuces(texte) {
+            if (!texte.trim()) return "";
+            const fragments = texte.split('\n').filter(f => f.trim() !== "");
+            if (fragments.length === 0) return "";
+            let resultatHtml = `<ul class="cv-bullet-list text-gray-600">`;
+            fragments.forEach(f => { resultatHtml += `<li>${f}</li>`; });
+            resultatHtml += `</ul>`;
+            return resultatHtml;
+        }
+
+        // MISE À ZONE GLOBALE DE L'APERÇU A4 DU CV
+        function maj() {
+            // Bloc Identité
+            document.getElementById('out-nom').innerText = document.getElementById('in-nom').value || "Prénom Nom";
+            document.getElementById('out-metier').innerText = document.getElementById('in-metier').value || "PROJET / MÉTIER VISÉ";
+            document.getElementById('out-tel').innerText = document.getElementById('in-tel').value ? "📞 " + document.getElementById('in-tel').value : "📞 Téléphone";
+            document.getElementById('out-email').innerText = document.getElementById('in-email').value ? "✉️ " + document.getElementById('in-email').value : "✉️ Adresse Email";
+            
+            const accrocheVal = document.getElementById('in-accroche').value;
+            document.getElementById('out-accroche').innerText = accrocheVal || "Présentation courte...";
+            document.getElementById('sec-accroche').className = accrocheVal ? "my-6" : "my-6 opacity-30";
+
+            // Bloc Expériences Dynamiques
+            const listeExpInputs = document.getElementById('container-exp').children;
+            const outListeExp = document.getElementById('out-liste-exp');
+            outListeExp.innerHTML = "";
+            
+            if (listeExpInputs.length > 0) {
+                document.getElementById('sec-exp').classList.remove('hidden-cv');
+                Array.from(listeExpInputs).forEach(item => {
+                    const dates = item.querySelector('.exp-dates').value;
+                    const poste = item.querySelector('.exp-poste').value;
+                    const lieu = item.querySelector('.exp-lieu').value;
+                    const missions = item.querySelector('.exp-missions').value;
+
+                    if (dates || poste || lieu || missions) {
+                        const divNode = document.createElement('div');
+                        divNode.className = "text-xs";
+                        divNode.innerHTML = `
+                            <div class="flex justify-between font-bold text-gray-900">
+                                <span>${poste || "Poste occupé"}</span>
+                                <span class="text-blue-600">${dates || "Années"}</span>
+                            </div>
+                            <p class="text-gray-500 font-medium italic">${lieu || "Nom de l'entreprise, ville"}</p>
+                            <div class="mt-1 pl-2 border-l border-gray-100">${formaterEnPuces(missions)}</div>
+                        `;
+                        outListeExp.appendChild(divNode);
+                    }
+                });
+            } else {
+                document.getElementById('sec-exp').classList.add('hidden-cv');
+            }
+
+            // Bloc Formations Dynamiques
+            const listeFormInputs = document.getElementById('container-form').children;
+            const outListeForm = document.getElementById('out-liste-form');
+            outListeForm.innerHTML = "";
+
+            if (listeFormInputs.length > 0) {
+                document.getElementById('sec-form').classList.remove('hidden-cv');
+                Array.from(listeFormInputs).forEach(item => {
+                    const dates = item.querySelector('.form-dates').value;
+                    const ecole = item.querySelector('.form-ecole').value;
+
+                    if (dates || ecole) {
+                        const divNode = document.createElement('div');
+                        divNode.className = "text-xs flex justify-between items-start";
+                        divNode.innerHTML = `
+                            <span class="font-bold text-gray-900 max-w-[85%]">${ecole || "Nom complet de l'établissement, ville"}</span>
+                            <span class="text-blue-600 font-bold whitespace-nowrap ml-2">${dates || "Années"}</span>
+                        `;
+                        outListeForm.appendChild(divNode);
+                    }
+                });
+            } else {
+                document.getElementById('sec-form').classList.add('hidden-cv');
+            }
+
+            // Bloc Compétences Techniques & Linguistiques
+            const listeTechInputs = document.getElementById('container-tech').children;
+            const outListeTech = document.getElementById('out-liste-tech');
+            outListeTech.innerHTML = "";
+            let hasTech = false;
+            Array.from(listeTechInputs).forEach(item => {
+                const nom = item.querySelector('.tech-nom').value;
+                const niv = item.querySelector('.tech-niv').value;
+                if (nom) {
+                    hasTech = true;
+                    outListeTech.innerHTML += `<li>🛠️ <strong>${nom}</strong> : <span class="text-gray-600">${niv || "Non renseigné"}</span></li>`;
+                }
+            });
+
+            const listeLangInputs = document.getElementById('container-lang').children;
+            const outListeLang = document.getElementById('out-liste-lang');
+            outListeLang.innerHTML = "";
+            let hasLang = false;
+            Array.from(listeLangInputs).forEach(item => {
+                const nom = item.querySelector('.lang-nom').value;
+                const niv = item.querySelector('.lang-niv').value;
+                if (nom) {
+                    hasLang = true;
+                    outListeLang.innerHTML += `<li>🗣️ <strong>${nom}</strong> : <span class="text-gray-600">${niv || "Non renseigné"}</span></li>`;
+                }
+            });
+
+            if (hasTech || hasLang) {
+                document.getElementById('sec-competences').classList.remove('hidden-cv');
+            } else {
+                document.getElementById('sec-competences').classList.add('hidden-cv');
+            }
+
+            // Bloc Centres d'intérêt Dynamiques
+            const listeLoisirInputs = document.getElementById('container-loisir').children;
+            const outListeLoisirs = document.getElementById('out-liste-loisirs');
+            outListeLoisirs.innerHTML = "";
+
+            if (listeLoisirInputs.length > 0) {
+                document.getElementById('sec-loisirs').classList.remove('hidden-cv');
+                Array.from(listeLoisirInputs).forEach(item => {
+                    const nom = item.querySelector('.loisir-nom').value;
+                    const details = item.querySelector('.loisir-details').value;
+
+                    if (nom || details) {
+                        const divNode = document.createElement('div');
+                        divNode.className = "text-xs";
+                        divNode.innerHTML = `
+                            <strong class="text-gray-900">🔹 ${nom || "Activité"}</strong>
+                            <div class="mt-0.5 pl-2">${formaterEnPuces(details)}</div>
+                        `;
+                        outListeLoisirs.appendChild(divNode);
+                    }
+                });
+            } else {
+                document.getElementById('sec-loisirs').classList.add('hidden-cv');
+            }
+        }
+
+        // FONCTION DE CONVERSION ET TELECHARGEMENT PDF SANS DISTORSION
+        function telecharger() {
+            // Incrémentation statistique immédiate
+            enregistrerTelechargement();
+
+            const element = document.getElementById('cv-preview');
+            const nomJeune = document.getElementById('in-nom').value || "Mon-CV";
+            const opt = {
+                margin:       0,
+                filename:     `CV_${nomJeune.replace(/\s+/g, '_')}.pdf`,
+                image:        { type: 'jpeg', quality: 0.98 },
+                html2canvas:  { scale: 2, useCORS: true },
+                jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+            };
+            html2pdf().set(opt).from(element).save();
+        }
+
+        // Affichage initial de base d'une ligne pour guider le jeune
+        ajouterExp();
+        ajouterForm();
+    </script>
+</body>
+</html>
