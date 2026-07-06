@@ -78,11 +78,14 @@
             <section class="space-y-3 bg-gray-50 p-4 rounded-xl border border-gray-100">
                 <h2 class="text-xs font-bold text-blue-700 uppercase tracking-wider">1. Identité & Projet</h2>
                 <div class="grid grid-cols-2 gap-2">
-                    <input type="text" id="in-nom" placeholder="Prénom Nom" class="p-2 border rounded-lg bg-white text-sm outline-none w-full" oninput="maj()">
-                    <input type="text" id="in-metier" placeholder="Métier / Projet visé" class="p-2 border rounded-lg bg-white text-sm outline-none w-full" oninput="maj()">
+                    <input type="text" id="in-prenom" placeholder="Prénom" class="p-2 border rounded-lg bg-white text-sm outline-none w-full" oninput="maj()">
+                    <input type="text" id="in-nom" placeholder="Nom" class="p-2 border rounded-lg bg-white text-sm outline-none w-full" oninput="maj()">
                 </div>
                 <div class="grid grid-cols-2 gap-2">
+                    <input type="text" id="in-metier" placeholder="Métier / Projet visé" class="p-2 border rounded-lg bg-white text-sm outline-none w-full" oninput="maj()">
                     <input type="tel" id="in-tel" placeholder="Téléphone (ex: 06 00...)" class="p-2 border rounded-lg bg-white text-sm outline-none w-full" oninput="maj()">
+                </div>
+                <div class="grid grid-cols-1">
                     <input type="email" id="in-email" placeholder="Adresse Email" class="p-2 border rounded-lg bg-white text-sm outline-none w-full" oninput="maj()">
                 </div>
                 <textarea id="in-accroche" placeholder="Phrase d'accroche ou présentation courte..." rows="2" class="w-full p-2 border rounded-lg bg-white text-sm outline-none" oninput="maj()"></textarea>
@@ -172,7 +175,7 @@
                         <!-- EN-TÊTE DU CV -->
                         <div class="border-b-4 border-blue-600 pb-4 flex justify-between items-end">
                             <div>
-                                <h1 id="out-nom" class="text-3xl font-extrabold tracking-tight uppercase text-gray-900">Prénom Nom</h1>
+                                <h1 id="out-identity" class="text-3xl font-extrabold tracking-tight text-gray-900">Prénom NOM</h1>
                                 <p id="out-metier" class="text-lg font-bold text-blue-600 tracking-wide uppercase mt-1">PROJET / MÉTIER VISÉ</p>
                             </div>
                             <div class="text-right text-xs font-medium space-y-0.5 text-gray-600">
@@ -253,13 +256,11 @@
             const cvExp = document.getElementById('sec-exp');
 
             if (ordreInverse) {
-                // Si inversé : Expériences passent en 1er (ordre flex CSS)
                 formForm.style.order = "2";
                 formExp.style.order = "1";
                 cvForm.style.order = "2";
                 cvExp.style.order = "1";
             } else {
-                // Par défaut : Formations repassent en 1er
                 formForm.style.order = "1";
                 formExp.style.order = "2";
                 cvForm.style.order = "1";
@@ -267,7 +268,6 @@
             }
         }
 
-        // Gestion de la session d'accès
         window.addEventListener('DOMContentLoaded', () => {
             if (sessionStorage.getItem('session_active_cv') !== 'true') {
                 document.getElementById('gatekeeper-screen').classList.remove('hidden');
@@ -450,7 +450,21 @@
         }
 
         function maj() {
-            document.getElementById('out-nom').innerText = document.getElementById('in-nom').value || "Prénom Nom";
+            // Traitement du Prénom (Première lettre en MAJ, le reste en minuscules)
+            const brutePrenom = document.getElementById('in-prenom').value.trim();
+            const prenomFormate = brutePrenom ? brutePrenom.charAt(0).toUpperCase() + brutePrenom.slice(1).toLowerCase() : "";
+
+            // Traitement du Nom (Tout en MAJUSCULES)
+            const bruteNom = document.getElementById('in-nom').value.trim();
+            const nomFormate = bruteNom ? bruteNom.toUpperCase() : "";
+
+            // Affichage combiné
+            if (prenomFormate || nomFormate) {
+                document.getElementById('out-identity').innerText = `${prenomFormate} ${nomFormate}`.trim();
+            } else {
+                document.getElementById('out-identity').innerText = "Prénom NOM";
+            }
+            
             document.getElementById('out-metier').innerText = document.getElementById('in-metier').value || "PROJET / MÉTIER VISÉ";
             document.getElementById('out-tel').innerText = document.getElementById('in-tel').value ? "📞 " + document.getElementById('in-tel').value : "📞 Téléphone";
             document.getElementById('out-email').innerText = document.getElementById('in-email').value ? "✉️ " + document.getElementById('in-email').value : "✉️ Adresse Email";
@@ -547,10 +561,11 @@
         function telecharger() {
             sauvegarderEvenementSupabase("telechargements");
             const element = document.getElementById('cv-preview');
-            const nomJeune = document.getElementById('in-nom').value || "Mon-CV";
+            const prenomJeune = document.getElementById('in-prenom').value || "Mon";
+            const nomJeune = document.getElementById('in-nom').value || "CV";
             const opt = {
                 margin:       0,
-                filename:     `CV_${nomJeune.replace(/\s+/g, '_')}.pdf`,
+                filename:     `CV_${prenomJeune.replace(/\s+/g, '_')}_${nomJeune.replace(/\s+/g, '_')}.pdf`,
                 image:        { type: 'jpeg', quality: 0.98 },
                 html2canvas:  { scale: 2, useCORS: true },
                 jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
