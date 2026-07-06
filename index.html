@@ -14,6 +14,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <!-- Librairie de génération PDF officielle -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    
     <style>
         /* Rendu strict au format A4 pour l'aperçu et l'impression */
         #cv-preview {
@@ -49,15 +50,15 @@
         </div>
     </div>
 
-    <!-- PANNEAU STATISTIQUES CACHÉ (POUR LE CONSEILLER) -->
+    <!-- PANNEAU STATISTIQUES GLOBAL SUPABASE -->
     <div id="admin-panel" class="fixed bottom-4 left-4 bg-gray-900 text-white text-xs p-4 rounded-xl shadow-2xl border border-gray-700 z-40 hidden space-y-2 max-w-xs">
         <div class="flex justify-between items-center border-b border-gray-700 pb-1">
-            <span class="font-bold text-blue-400">📊 Stats Superviseur</span>
+            <span class="font-bold text-blue-400">📊 Stats Globales (Supabase)</span>
             <button onclick="toggleAdmin()" class="text-gray-400 hover:text-white font-bold">✕</button>
         </div>
-        <p>Page ouverte / travaillée : <span id="stat-ouvertures" class="font-bold text-green-400">0</span> fois</p>
-        <p>CV générés (PDF téléchargés) : <span id="stat-telechargements" class="font-bold text-green-400">0</span> fois</p>
-        <button onclick="reinitialiserStats()" class="w-full bg-red-900 hover:bg-red-800 text-[10px] py-1 rounded mt-1 font-medium transition cursor-pointer">Réinitialiser les données</button>
+        <p>Total ouvertures : <span id="stat-ouvertures" class="font-bold text-green-400">Chargement...</span></p>
+        <p>Total CV téléchargés : <span id="stat-telechargements" class="font-bold text-green-400">Chargement...</span></p>
+        <button onclick="reinitialiserStatsSupabase()" class="w-full bg-red-900 hover:bg-red-800 text-[10px] py-1 rounded mt-1 font-medium transition cursor-pointer">Remettre à zéro sur le Cloud</button>
     </div>
 
     <!-- EN-TÊTE DE LA PAGE -->
@@ -214,27 +215,31 @@
 
     </main>
 
-    <!-- LOGIQUE LOGICIELLE GLOBALE -->
+    <!-- LOGIQUE LOGICIELLE & SYNCHRONISATION SUPABASE -->
     <script>
-        const CODE_VALIDATION = "ML2026";
+        const CODE_VALIDATION = "FR072026";
+        
+        // CONFIGURATION PARAMÈTRES INTERNET DE VOTRE COMPTE SUPABASE
+        const SUPABASE_URL = "https://mlbjvzadwjbdaaenfeae.supabase.co";
+        const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1sYmp2emFkd2piZGFhZW5mZWFlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODMzNDk2MzgsImV4cCI6MjA5ODkyNTYzOH0.EC3kal19wHH35OnTll2rYnxmQyqzlOghxPdjkPdas5w";
 
         // Détection et Enregistrement du Service Worker PWA
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
                 navigator.serviceWorker.register('sw.js')
-                    .then(reg => console.log('Service Worker installé avec succès !'))
+                    .then(reg => console.log('Service Worker installé !'))
                     .catch(err => console.log('Erreur Service Worker', err));
             });
         }
 
-        // GESTION STATS & SÉCURITÉ AU CHARGEMENT
+        // CHARGEMENT INITIAL & SÉCURITÉ
         window.addEventListener('DOMContentLoaded', () => {
             if (localStorage.getItem('ml_cv_authorized') !== 'true') {
                 document.getElementById('gatekeeper-screen').classList.remove('hidden');
             } else {
-                enregistrerOuverture();
+                sauvegarderEvenementSupabase("ouvertures");
             }
-            actualiserStatsAffichage();
+            recupererStatsSupabase();
         });
 
         function verifierCode() {
@@ -242,7 +247,7 @@
             if (saisie === CODE_VALIDATION) {
                 localStorage.setItem('ml_cv_authorized', 'true');
                 document.getElementById('gatekeeper-screen').classList.add('hidden');
-                enregistrerOuverture();
+                sauvegarderEvenementSupabase("ouvertures");
             } else {
                 const err = document.getElementById('gatekeeper-error');
                 err.classList.remove('hidden');
@@ -250,36 +255,90 @@
             }
         }
 
-        function enregistrerOuverture() {
-            let n = parseInt(localStorage.getItem('stat_ouvertures') || "0");
-            localStorage.setItem('stat_ouvertures', (n + 1).toString());
-            actualiserStatsAffichage();
+        // FONCTIONS D'INTERACTION AVEC SUPABASE EN LIGNE (SANS BIBLIOTHÈQUE LOURDE)
+        async function recupererStatsSupabase() {
+            try {
+                const response = await fetch(`${SUPABASE_URL}/rest/v1/statistiques?id=eq.1`, {
+                    method: "GET",
+                    headers: {
+                        "apikey": SUPABASE_KEY,
+                        "Authorization": `Bearer ${SUPABASE_KEY}`
+                    }
+                });
+                const data = await response.json();
+                if (data && data.length > 0) {
+                    document.getElementById('stat-ouvertures').innerText = data[0].ouvertures ?? 0;
+                    document.getElementById('stat-telechargements').innerText = data[0].telechargements ?? 0;
+                }
+            } catch (error) {
+                console.error("Erreur lecture Supabase", error);
+            }
         }
 
-        function enregistrerTelechargement() {
-            let n = parseInt(localStorage.getItem('stat_telechargements') || "0");
-            localStorage.setItem('stat_telechargements', (n + 1).toString());
-            actualiserStatsAffichage();
+        async function sauvegarderEvenementSupabase(typeColonne) {
+            try {
+                // Étape 1 : Obtenir la valeur actuelle du serveur
+                const responseGet = await fetch(`${SUPABASE_URL}/rest/v1/statistiques?id=eq.1`, {
+                    method: "GET",
+                    headers: { "apikey": SUPABASE_KEY, "Authorization": `Bearer ${SUPABASE_KEY}` }
+                });
+                const data = await responseGet.json();
+                if (data && data.length > 0) {
+                    const valeurActuelle = parseInt(data[0][typeColonne] || 0);
+                    const nouvelleValeur = valeurActuelle + 1;
+
+                    // Étape 2 : Envoyer la mise à jour +1
+                    const corpsRequete = {};
+                    corpsRequete[typeColonne] = nouvelleValeur;
+
+                    await fetch(`${SUPABASE_URL}/rest/v1/statistiques?id=eq.1`, {
+                        method: "PATCH",
+                        headers: {
+                            "apikey": SUPABASE_KEY,
+                            "Authorization": `Bearer ${SUPABASE_KEY}`,
+                            "Content-Type": "application/json",
+                            "Prefer": "return=minimal"
+                        },
+                        body: JSON.stringify(corpsRequete)
+                    });
+                    
+                    // Actualiser l'affichage sur le panneau
+                    recupererStatsSupabase();
+                }
+            } catch (error) {
+                console.error("Erreur enregistrement Supabase", error);
+            }
         }
 
-        function actualiserStatsAffichage() {
-            document.getElementById('stat-ouvertures').innerText = localStorage.getItem('stat_ouvertures') || "0";
-            document.getElementById('stat-telechargements').innerText = localStorage.getItem('stat_telechargements') || "0";
+        async function reinitialiserStatsSupabase() {
+            if (confirm("⚠️ ATTENTION : Souhaitez-vous vraiment remettre à zéro les compteurs généraux de TOUS les utilisateurs sur le serveur ?")) {
+                try {
+                    await fetch(`${SUPABASE_URL}/rest/v1/statistiques?id=eq.1`, {
+                        method: "PATCH",
+                        headers: {
+                            "apikey": SUPABASE_KEY,
+                            "Authorization": `Bearer ${SUPABASE_KEY}`,
+                            "Content-Type": "application/json",
+                            "Prefer": "return=minimal"
+                        },
+                        body: JSON.stringify({ ouvertures: 0, telechargements: 0 })
+                    });
+                    recupererStatsSupabase();
+                } catch (error) {
+                    console.error("Erreur reset Supabase", error);
+                }
+            }
         }
 
         function toggleAdmin() {
             const panel = document.getElementById('admin-panel');
             panel.classList.toggle('hidden');
-        }
-
-        function reinitialiserStats() {
-            if (confirm("Réinitialiser les compteurs statistiques de cet ordinateur ?")) {
-                localStorage.setItem('stat_ouvertures', "0");
-                localStorage.setItem('stat_telechargements', "0");
-                actualiserStatsAffichage();
+            if (!panel.classList.contains('hidden')) {
+                recupererStatsSupabase();
             }
         }
 
+        // DYNAMISME DES ENTRÉES DU FORMULAIRE (Inchangé)
         const listNivTech = ["Initiation", "Compétences limitées", "Compétences complètes", "Bilingue / Expert", "Langue maternelle"];
         const listNivLang = ["Initiation", "Niveau scolaire", "Compétences limitées", "Compétences complètes", "Bilingue", "Langue maternelle"];
 
@@ -471,7 +530,7 @@
         }
 
         function telecharger() {
-            enregistrerTelechargement();
+            sauvegarderEvenementSupabase("telechargements");
             const element = document.getElementById('cv-preview');
             const nomJeune = document.getElementById('in-nom').value || "Mon-CV";
             const opt = {
