@@ -65,7 +65,7 @@
     <!-- EN-TÊTE DE LA PAGE -->
     <header class="text-center my-4 max-w-2xl">
         <h1 class="text-3xl font-bold text-blue-600">Je crée mon CV express</h1>
-        <p class="text-gray-600 text-sm mt-2">Ajoute tes expériences et compétences grâce aux boutons dédiés. Tape sur "Entrée" dans les missions ou détails pour créer des puces automatiques.</p>
+        <p class="text-gray-600 text-sm mt-2">Ajoute tes formations et expériences grâce aux boutons dédiés. Tape sur "Entrée" dans les missions ou détails pour créer des puces automatiques.</p>
     </header>
 
     <!-- ZONE PRINCIPALE -->
@@ -88,34 +88,34 @@
                 <textarea id="in-accroche" placeholder="Phrase d'accroche ou présentation courte..." rows="2" class="w-full p-2 border rounded-lg bg-white text-sm outline-none" oninput="maj()"></textarea>
             </section>
 
-            <!-- BOUTON D'INVERSION DES BLOCS DU FORMULAIRE -->
+            <!-- BOUTON D'INVERSION DE L'ORDRE DES BLOCS -->
             <div class="flex justify-center">
-                <button onclick="inverserOrdreBlocs()" class="flex items-center gap-2 bg-amber-50 hover:bg-amber-100 text-amber-800 text-xs font-semibold px-4 py-2 rounded-xl border border-amber-200 transition shadow-sm cursor-pointer">
-                    🔄 Inverser l'ordre (Expériences ⇄ Formations)
+                <button onclick="inverserOrdreBlocs()" class="flex items-center gap-2 bg-amber-50 hover:bg-amber-100 text-amber-800 text-xs font-semibold px-4 py-2.5 rounded-xl border border-amber-200 transition shadow-sm cursor-pointer">
+                    🔄 Intervertir les blocs (Formations ⇄ Expériences)
                 </button>
             </div>
 
-            <!-- CONTENEUR AMOVIBLE FORMULAIRE (Géré par script pour l'ordre) -->
+            <!-- CONTENEUR DYNAMIQUE POUR L'ORDRE DES BLOCS (Formulaire) -->
             <div id="form-dynamic-order" class="flex flex-col space-y-6">
                 
-                <!-- SECTION 2 : EXPÉRIENCES PROFESSIONNELLES -->
-                <section id="form-sec-exp" class="space-y-3 bg-gray-50 p-4 rounded-xl border border-gray-100 order-1">
+                <!-- SECTION 2 : FORMATIONS (En 1er par défaut) -->
+                <section id="form-sec-form" class="space-y-3 bg-gray-50 p-4 rounded-xl border border-gray-100 order-1">
                     <div class="flex justify-between items-center border-b pb-2 mb-2">
-                        <h2 class="text-xs font-bold text-blue-700 uppercase tracking-wider">2. Expériences Professionnelles</h2>
-                        <button onclick="ajouterExp()" class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold py-1 px-3 rounded-lg cursor-pointer transition">+ Ajouter une expérience</button>
+                        <h2 class="text-xs font-bold text-blue-700 uppercase tracking-wider">2. Formations & Diplômes</h2>
+                        <button onclick="ajouterForm()" class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold py-1 px-3 rounded-lg cursor-pointer transition">+ Ajouter une formation</button>
                     </div>
-                    <div id="container-exp" class="space-y-4">
+                    <div id="container-form" class="space-y-3">
                         <!-- Généré dynamiquement -->
                     </div>
                 </section>
 
-                <!-- SECTION 3 : FORMATIONS -->
-                <section id="form-sec-form" class="space-y-3 bg-gray-50 p-4 rounded-xl border border-gray-100 order-2">
+                <!-- SECTION 3 : EXPÉRIENCES PROFESSIONNELLES (En 2e par défaut) -->
+                <section id="form-sec-exp" class="space-y-3 bg-gray-50 p-4 rounded-xl border border-gray-100 order-2">
                     <div class="flex justify-between items-center border-b pb-2 mb-2">
-                        <h2 class="text-xs font-bold text-blue-700 uppercase tracking-wider">3. Formations & Diplômes</h2>
-                        <button onclick="ajouterForm()" class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold py-1 px-3 rounded-lg cursor-pointer transition">+ Ajouter une formation</button>
+                        <h2 class="text-xs font-bold text-blue-700 uppercase tracking-wider">3. Expériences Professionnelles</h2>
+                        <button onclick="ajouterExp()" class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold py-1 px-3 rounded-lg cursor-pointer transition">+ Ajouter une expérience</button>
                     </div>
-                    <div id="container-form" class="space-y-3">
+                    <div id="container-exp" class="space-y-4">
                         <!-- Généré dynamiquement -->
                     </div>
                 </section>
@@ -191,16 +191,16 @@
                         <!-- CONTENEUR DU RENDU CV À ORDRE INVERSIBLE -->
                         <div id="cv-render-dynamic-order" class="flex flex-col">
                             
-                            <!-- EXPÉRIENCES DU CV -->
-                            <div id="sec-exp" class="mb-6 hidden-cv order-1">
-                                <h3 class="text-sm font-bold text-blue-700 uppercase tracking-wider border-b pb-1 mb-3">Expériences Professionnelles</h3>
-                                <div id="out-liste-exp" class="space-y-4"></div>
-                            </div>
-
-                            <!-- FORMATIONS DU CV -->
-                            <div id="sec-form" class="mb-6 hidden-cv order-2">
+                            <!-- FORMATIONS DU CV (En 1er par défaut) -->
+                            <div id="sec-form" class="mb-6 hidden-cv order-1">
                                 <h3 class="text-sm font-bold text-blue-700 uppercase tracking-wider border-b pb-1 mb-3">Formations & Diplômes</h3>
                                 <div id="out-liste-form" class="space-y-3"></div>
+                            </div>
+
+                            <!-- EXPÉRIENCES DU CV (En 2e par défaut) -->
+                            <div id="sec-exp" class="mb-6 hidden-cv order-2">
+                                <h3 class="text-sm font-bold text-blue-700 uppercase tracking-wider border-b pb-1 mb-3">Expériences Professionnelles</h3>
+                                <div id="out-liste-exp" class="space-y-4"></div>
                             </div>
 
                         </div>
@@ -235,38 +235,39 @@
 
     <!-- LOGIQUE LOGICIELLE & SYNCHRONISATION SUPABASE -->
     <script>
-        // ICI : Modifiez ce code à chaque fois que vous voulez changer de mot de passe mensuel
+        // Code d'activation mensuel modifiable
         const CODE_VALIDATION = "ML2026";
         
         const SUPABASE_URL = "https://mlbjvzadwjbdaaenfeae.supabase.co";
         const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1sYmp2emFkd2piZGFhZW5mZWFlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODMzNDk2MzgsImV4cCI6MjA5ODkyNTYzOH0.EC3kal19wHH35OnTll2rYnxmQyqzlOghxPdjkPdas5w";
 
+        // Par défaut, false = Formations en 1er (pour les jeunes). True = Expériences en 1er.
         let ordreInverse = false;
 
         function inverserOrdreBlocs() {
             ordreInverse = !ordreInverse;
             
-            const formExp = document.getElementById('form-sec-exp');
             const formForm = document.getElementById('form-sec-form');
-            const cvExp = document.getElementById('sec-exp');
+            const formExp = document.getElementById('form-sec-exp');
             const cvForm = document.getElementById('sec-form');
+            const cvExp = document.getElementById('sec-exp');
 
             if (ordreInverse) {
-                // Formations en premier
-                formExp.style.order = "2";
-                formForm.style.order = "1";
-                cvExp.style.order = "2";
-                cvForm.style.order = "1";
-            } else {
-                // Expériences en premier
-                formExp.style.order = "1";
+                // Si inversé : Expériences passent en 1er (ordre flex CSS)
                 formForm.style.order = "2";
-                cvExp.style.order = "1";
+                formExp.style.order = "1";
                 cvForm.style.order = "2";
+                cvExp.style.order = "1";
+            } else {
+                // Par défaut : Formations repassent en 1er
+                formForm.style.order = "1";
+                formExp.style.order = "2";
+                cvForm.style.order = "1";
+                cvExp.style.order = "2";
             }
         }
 
-        // Utilisation de sessionStorage (la mémoire s'efface dès que l'onglet/app est fermé)
+        // Gestion de la session d'accès
         window.addEventListener('DOMContentLoaded', () => {
             if (sessionStorage.getItem('session_active_cv') !== 'true') {
                 document.getElementById('gatekeeper-screen').classList.remove('hidden');
@@ -439,6 +440,7 @@
         }
 
         function supprimer(id) { document.getElementById(id).remove(); maj(); }
+        
         function formaterEnPuces(texte) {
             if (!texte.trim()) return "";
             const fragments = texte.split('\n').filter(f => f.trim() !== "");
@@ -457,6 +459,25 @@
             document.getElementById('out-accroche').innerText = accrocheVal || "Présentation courte...";
             document.getElementById('sec-accroche').className = accrocheVal ? "my-6" : "my-6 opacity-30";
 
+            // Mise à jour des Formations
+            const listeFormInputs = document.getElementById('container-form').children;
+            const outListeForm = document.getElementById('out-liste-form');
+            outListeForm.innerHTML = "";
+            if (listeFormInputs.length > 0) {
+                document.getElementById('sec-form').classList.remove('hidden-cv');
+                Array.from(listeFormInputs).forEach(item => {
+                    const dates = item.querySelector('.form-dates').value;
+                    const ecole = item.querySelector('.form-ecole').value;
+                    if (dates || ecole) {
+                        const divNode = document.createElement('div');
+                        divNode.className = "text-xs flex justify-between items-start";
+                        divNode.innerHTML = `<span class="font-bold text-gray-900 max-w-[85%]">${ecole || "Établissement"}</span><span class="text-blue-600 font-bold whitespace-nowrap ml-2">${dates || "Années"}</span>`;
+                        outListeForm.appendChild(divNode);
+                    }
+                });
+            } else { document.getElementById('sec-form').classList.add('hidden-cv'); }
+
+            // Mise à jour des Expériences
             const listeExpInputs = document.getElementById('container-exp').children;
             const outListeExp = document.getElementById('out-liste-exp');
             outListeExp.innerHTML = "";
@@ -480,23 +501,7 @@
                 });
             } else { document.getElementById('sec-exp').classList.add('hidden-cv'); }
 
-            const listeFormInputs = document.getElementById('container-form').children;
-            const outListeForm = document.getElementById('out-liste-form');
-            outListeForm.innerHTML = "";
-            if (listeFormInputs.length > 0) {
-                document.getElementById('sec-form').classList.remove('hidden-cv');
-                Array.from(listeFormInputs).forEach(item => {
-                    const dates = item.querySelector('.form-dates').value;
-                    const ecole = item.querySelector('.form-ecole').value;
-                    if (dates || ecole) {
-                        const divNode = document.createElement('div');
-                        divNode.className = "text-xs flex justify-between items-start";
-                        divNode.innerHTML = `<span class="font-bold text-gray-900 max-w-[85%]">${ecole || "Établissement"}</span><span class="text-blue-600 font-bold whitespace-nowrap ml-2">${dates || "Années"}</span>`;
-                        outListeForm.appendChild(divNode);
-                    }
-                });
-            } else { document.getElementById('sec-form').classList.add('hidden-cv'); }
-
+            // Compétences Techniques & Langues
             const listeTechInputs = document.getElementById('container-tech').children;
             const outListeTech = document.getElementById('out-liste-tech');
             outListeTech.innerHTML = "";
@@ -520,6 +525,7 @@
             if (hasTech || hasLang) { document.getElementById('sec-competences').classList.remove('hidden-cv'); }
             else { document.getElementById('sec-competences').classList.add('hidden-cv'); }
 
+            // Loisirs
             const listeLoisirInputs = document.getElementById('container-loisir').children;
             const outListeLoisirs = document.getElementById('out-liste-loisirs');
             outListeLoisirs.innerHTML = "";
@@ -552,8 +558,9 @@
             html2pdf().set(opt).from(element).save();
         }
 
-        ajouterExp();
+        // Initialisation par défaut avec un champ de chaque disponible immédiatement
         ajouterForm();
+        ajouterExp();
     </script>
 </body>
 </html>
