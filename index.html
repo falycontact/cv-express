@@ -100,7 +100,7 @@
 
     <header class="text-center my-4 max-w-2xl">
         <h1 class="text-3xl font-bold text-blue-600">Je crée mon CV express</h1>
-        <p class="text-gray-600 text-sm mt-2">Personnalise les titres des rubriques directement. Utilise les flèches 🔼 et 🔽 pour réouvrir ou réorganisez tes expériences, formations ou blocs à tout moment.</p>
+        <p class="text-gray-600 text-sm mt-2">Personnalise les titres des rubriques directement. Utilise les flèches 🔼 et 🔽 pour réouvrir ou réorganiser tes expériences, formations ou blocs à tout moment.</p>
     </header>
 
     <main class="w-full max-w-7xl grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
@@ -289,300 +289,402 @@
         let ordreInverse = false;
         let ordreSecondaire = ['form-sec-tech', 'form-sec-lang', 'form-sec-loisir'];
 
-        // --- GESTION ET SYNCHRONISATION DU FORMULAIRE ---
+        // --- GESTION ET SYNCHRONISATION EN TEMPS RÉEL (maj) ---
         function maj() {
-            const prenom = document.getElementById('in-prenom').value || "";
-            const nom = document.getElementById('in-nom').value || "";
-            document.getElementById('out-identity').innerText = (prenom || nom) ? `${prenom} ${nom}` : "Prénom NOM";
+            const prenom = document.getElementById('in-prenom').value.trim();
+            const nom = document.getElementById('in-nom').value.trim();
+            document.getElementById('out-identity').innerText = (prenom || nom) ? `${prenom} ${nom.toUpperCase()}` : "Prénom NOM";
 
-            const metier = document.getElementById('in-metier').value || "";
+            const metier = document.getElementById('in-metier').value.trim();
             document.getElementById('out-metier').innerText = metier ? metier.toUpperCase() : "PROJET / MÉTIER VISÉ";
 
-            const tel = document.getElementById('in-tel').value || "";
+            const tel = document.getElementById('in-tel').value.trim();
             document.getElementById('out-tel').innerText = tel ? `📞 ${tel}` : "📞 Téléphone";
+            document.getElementById('out-tel').classList.toggle('hidden-cv', !tel);
 
-            const email = document.getElementById('in-email').value || "";
+            const email = document.getElementById('in-email').value.trim();
             document.getElementById('out-email').innerText = email ? `✉️ ${email}` : "✉️ Adresse Email";
+            document.getElementById('out-email').classList.toggle('hidden-cv', !email);
 
-            const accroche = document.getElementById('in-accroche').value || "";
+            const accroche = document.getElementById('in-accroche').value.trim();
             document.getElementById('out-accroche').innerText = accroche || "Présentation courte...";
+            document.getElementById('sec-accroche').classList.toggle('hidden-cv', !accroche);
 
-            // Synchronisation des titres
-            document.getElementById('out-title-form').innerText = document.getElementById('title-form').value || "Formations & Diplômes";
-            document.getElementById('out-title-exp').innerText = document.getElementById('title-exp').value || "Expériences Professionnelles";
-            document.getElementById('out-title-tech').innerText = document.getElementById('title-tech').value || "Compétences Techniques";
-            document.getElementById('out-title-lang').innerText = document.getElementById('title-lang').value || "Compétences Linguistiques";
-            document.getElementById('out-title-loisir').innerText = document.getElementById('title-loisir').value || "Centres d'intérêt";
+            // Synchronisation dynamique des titres de rubriques
+            document.getElementById('out-title-form').innerText = document.getElementById('title-form').value;
+            document.getElementById('out-title-exp').innerText = document.getElementById('title-exp').value;
+            document.getElementById('out-title-tech').innerText = document.getElementById('title-tech').value;
+            document.getElementById('out-title-lang').innerText = document.getElementById('title-lang').value;
+            document.getElementById('out-title-loisir').innerText = document.getElementById('title-loisir').value;
 
-            // Rendu Formations
-            const listForm = document.getElementById('out-liste-form');
-            listForm.innerHTML = "";
-            const formItems = document.querySelectorAll('#container-form .sub-block-item');
-            if(formItems.length === 0) { document.getElementById('sec-form').classList.add('hidden-cv'); }
-            else { document.getElementById('sec-form').classList.remove('hidden-cv'); }
-            formItems.forEach(item => {
-                const diplome = item.querySelector('.f-diplome').value;
-                const ecole = item.querySelector('.f-ecole').value;
-                const date = item.querySelector('.f-date').value;
-                if(diplome || ecole || date) {
-                    listForm.innerHTML += `
-                        <div class="text-sm">
-                            <div class="flex justify-between font-bold text-gray-900">
-                                <span>${diplome || 'Diplôme / Intitulé'}</span>
-                                <span class="text-xs text-gray-500 whitespace-nowrap">${date}</span>
+            // Rendu de la liste des Formations
+            const outForm = document.getElementById('out-liste-form');
+            outForm.innerHTML = "";
+            let countForm = 0;
+            document.querySelectorAll('#container-form .sub-block-item').forEach(item => {
+                const date = item.querySelector('.form-dates').value.trim();
+                const diplome = item.querySelector('.form-diplome').value.trim();
+                const ecole = item.querySelector('.form-ecole').value.trim();
+                if (date || diplome || ecole) {
+                    countForm++;
+                    outForm.innerHTML += `
+                        <div class="flex items-start gap-4 text-xs">
+                            <span class="font-bold text-gray-700 min-w-[70px] pt-0.5">${date}</span>
+                            <div>
+                                <h4 class="font-bold text-gray-900">${diplome || 'Intitulé'}</h4>
+                                <p class="text-gray-600 italic">${ecole || 'Établissement'}</p>
                             </div>
-                            <div class="text-xs text-blue-600 font-medium">${ecole || 'Établissement / Organisme'}</div>
                         </div>`;
                 }
             });
+            document.getElementById('sec-form').classList.toggle('hidden-cv', countForm === 0);
 
-            // Rendu Expériences
-            const listExp = document.getElementById('out-liste-exp');
-            listExp.innerHTML = "";
-            const expItems = document.querySelectorAll('#container-exp .sub-block-item');
-            if(expItems.length === 0) { document.getElementById('sec-exp').classList.add('hidden-cv'); }
-            else { document.getElementById('sec-exp').classList.remove('hidden-cv'); }
-            expItems.forEach(item => {
-                const poste = item.querySelector('.e-poste').value;
-                const entreprise = item.querySelector('.e-entreprise').value;
-                const date = item.querySelector('.e-date').value;
-                const desc = item.querySelector('.e-desc').value;
-                
-                let descHtml = "";
-                if(desc) {
-                    const lignes = desc.split('\n').filter(l => l.trim() !== "");
-                    descHtml = `<ul class="cv-bullet-list">` + lignes.map(l => `<li>${l}</li>`).join('') + `</ul>`;
-                }
-
-                if(poste || entreprise || date || desc) {
-                    listExp.innerHTML += `
-                        <div class="text-sm">
-                            <div class="flex justify-between font-bold text-gray-900">
-                                <span>${poste || 'Poste occupé'}</span>
-                                <span class="text-xs text-gray-500 whitespace-nowrap">${date}</span>
+            // Rendu de la liste des Expériences
+            const outExp = document.getElementById('out-liste-exp');
+            outExp.innerHTML = "";
+            let countExp = 0;
+            document.querySelectorAll('#container-exp .sub-block-item').forEach(item => {
+                const date = item.querySelector('.exp-dates').value.trim();
+                const poste = item.querySelector('.exp-poste').value.trim();
+                const lieu = item.querySelector('.exp-lieu').value.trim();
+                const missions = item.querySelector('.exp-missions').value.trim();
+                if (date || poste || lieu || missions) {
+                    countExp++;
+                    let htmlMissions = "";
+                    if (missions) {
+                        htmlMissions = `<ul class="cv-bullet-list">`;
+                        missions.split('\n').forEach(line => {
+                            if (line.trim()) htmlMissions += `<li>${line.trim()}</li>`;
+                        });
+                        htmlMissions += `</ul>`;
+                    }
+                    outExp.innerHTML += `
+                        <div class="flex items-start gap-4 text-xs">
+                            <span class="font-bold text-gray-700 min-w-[70px] pt-0.5">${date}</span>
+                            <div class="w-full">
+                                <h4 class="font-bold text-gray-900 uppercase tracking-tight">${poste || 'Poste occupé'}</h4>
+                                <p class="text-blue-600 font-medium italic">${lieu || 'Structure / Ville'}</p>
+                                ${htmlMissions}
                             </div>
-                            <div class="text-xs text-blue-600 font-medium mb-1">${entreprise || 'Entreprise / Structure'}</div>
-                            <div class="text-xs text-gray-600 font-normal leading-relaxed">${descHtml}</div>
                         </div>`;
                 }
             });
+            document.getElementById('sec-exp').classList.toggle('hidden-cv', countExp === 0);
 
-            // Rendu Compétences Techniques
-            const listTech = document.getElementById('out-liste-tech');
-            listTech.innerHTML = "";
-            const techItems = document.querySelectorAll('#container-tech input');
-            let hasTech = false;
-            techItems.forEach(input => {
-                if(input.value) {
-                    hasTech = true;
-                    listTech.innerHTML += `<li>• ${input.value}</li>`;
+            // Rendu des Compétences Techniques
+            const outTech = document.getElementById('out-liste-tech');
+            outTech.innerHTML = "";
+            let countTech = 0;
+            document.querySelectorAll('#container-tech .sub-block-item').forEach(item => {
+                const nom = item.querySelector('.tech-nom').value.trim();
+                if (nom) {
+                    countTech++;
+                    outTech.innerHTML += `<li>• <strong>${nom}</strong></li>`;
                 }
             });
-            if(!hasTech) document.getElementById('sec-tech').classList.add('hidden-cv');
-            else document.getElementById('sec-tech').classList.remove('hidden-cv');
+            document.getElementById('sec-tech').classList.toggle('hidden-cv', countTech === 0);
 
-            // Rendu Langues
-            const listLang = document.getElementById('out-liste-lang');
-            listLang.innerHTML = "";
-            const langItems = document.querySelectorAll('#container-lang input');
-            let hasLang = false;
-            langItems.forEach(input => {
-                if(input.value) {
-                    hasLang = true;
-                    listLang.innerHTML += `<li>• ${input.value}</li>`;
+            // Rendu des Compétences Linguistiques
+            const outLang = document.getElementById('out-liste-lang');
+            outLang.innerHTML = "";
+            let countLang = 0;
+            document.querySelectorAll('#container-lang .sub-block-item').forEach(item => {
+                const nom = item.querySelector('.lang-nom').value.trim();
+                if (nom) {
+                    countLang++;
+                    outLang.innerHTML += `<li>• <strong>${nom}</strong></li>`;
                 }
             });
-            if(!hasLang) document.getElementById('sec-lang').classList.add('hidden-cv');
-            else document.getElementById('sec-lang').classList.remove('hidden-cv');
+            document.getElementById('sec-lang').classList.toggle('hidden-cv', countLang === 0);
 
-            // Rendu Centres d'intérêt
-            const listLoisir = document.getElementById('out-liste-loisirs');
-            listLoisir.innerHTML = "";
-            const loisirItems = document.querySelectorAll('#container-loisir input');
-            let hasLoisir = false;
-            loisirItems.forEach(input => {
-                if(input.value) {
-                    hasLoisir = true;
-                    listLoisir.innerHTML += `<p class="text-xs">• ${input.value}</p>`;
+            // Rendu des Centres d'intérêt
+            const outLoisir = document.getElementById('out-liste-loisirs');
+            outLoisir.innerHTML = "";
+            let countLoisir = 0;
+            document.querySelectorAll('#container-loisir .sub-block-item').forEach(item => {
+                const titre = item.querySelector('.loisir-titre').value.trim();
+                if (titre) {
+                    countLoisir++;
+                    outLoisir.innerHTML += `<div class="text-xs"><p class="text-gray-700 font-medium">• ${titre}</p></div>`;
                 }
             });
-            if(!hasLoisir) document.getElementById('sec-loisirs').classList.add('hidden-cv');
-            else document.getElementById('sec-loisirs').classList.remove('hidden-cv');
+            document.getElementById('sec-loisirs').classList.toggle('hidden-cv', countLoisir === 0);
 
             sauvegarderEtatFormulaire();
         }
 
-        // --- STOCKAGE AUTOMATIQUE RGPD ---
+        // --- EXPORTATION DU DOCUMENT FINAL EN PDF (télécharger) ---
+        function telecharger() {
+            if (typeof html2pdf === "undefined") {
+                alert("Le moteur PDF n'est pas encore prêt. Veuillez patienter une seconde.");
+                return;
+            }
+
+            const element = document.getElementById('cv-preview');
+            const prenom = document.getElementById('in-prenom').value.trim();
+            const nom = document.getElementById('in-nom').value.trim();
+            const nomFichier = (prenom || nom) ? `CV_${prenom}_${nom.toUpperCase()}.pdf` : 'Mon_CV_Professionnel.pdf';
+
+            const opt = {
+                margin:       0,
+                filename:     nomFichier,
+                image:        { type: 'jpeg', quality: 0.98 },
+                html2canvas:  { scale: 2, useCORS: true, letterRendering: true, logging: false },
+                jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+            };
+
+            // Notification d'évènement à Supabase
+            if (typeof sauvegarderEvenementSupabase === "function") {
+                sauvegarderEvenementSupabase("telechargements");
+            }
+
+            // Lancement natif du téléchargement
+            html2pdf().set(opt).from(element).save();
+        }
+
+        // --- SYSTÈME DE SAUVEGARDE RGPD AUTOMATIQUE (localStorage) ---
         function sauvegarderEtatFormulaire() {
             const data = {
-                prenom: document.getElementById('in-prenom').value,
-                nom: document.getElementById('in-nom').value,
-                metier: document.getElementById('in-metier').value,
-                tel: document.getElementById('in-tel').value,
-                email: document.getElementById('in-email').value,
-                accroche: document.getElementById('in-accroche').value,
-                titleForm: document.getElementById('title-form').value,
-                titleExp: document.getElementById('title-exp').value,
-                titleTech: document.getElementById('title-tech').value,
-                titleLang: document.getElementById('title-lang').value,
-                titleLoisir: document.getElementById('title-loisir').value,
                 ordreInverse: ordreInverse,
                 ordreSecondaire: ordreSecondaire,
+                champsSimples: {
+                    'in-prenom': document.getElementById('in-prenom').value,
+                    'in-nom': document.getElementById('in-nom').value,
+                    'in-metier': document.getElementById('in-metier').value,
+                    'in-tel': document.getElementById('in-tel').value,
+                    'in-email': document.getElementById('in-email').value,
+                    'in-accroche': document.getElementById('in-accroche').value,
+                    'title-form': document.getElementById('title-form').value,
+                    'title-exp': document.getElementById('title-exp').value,
+                    'title-tech': document.getElementById('title-tech').value,
+                    'title-lang': document.getElementById('title-lang').value,
+                    'title-loisir': document.getElementById('title-loisir').value
+                },
                 formations: [],
                 experiences: [],
                 techniques: [],
-                langues: [],
+                linguistiques: [],
                 loisirs: []
             };
 
             document.querySelectorAll('#container-form .sub-block-item').forEach(item => {
                 data.formations.push({
-                    diplome: item.querySelector('.f-diplome').value,
-                    ecole: item.querySelector('.f-ecole').value,
-                    date: item.querySelector('.f-date').value
+                    date: item.querySelector('.form-dates').value,
+                    diplome: item.querySelector('.form-diplome').value,
+                    ecole: item.querySelector('.form-ecole').value
                 });
             });
 
             document.querySelectorAll('#container-exp .sub-block-item').forEach(item => {
                 data.experiences.push({
-                    poste: item.querySelector('.e-poste').value,
-                    entreprise: item.querySelector('.e-entreprise').value,
-                    date: item.querySelector('.e-date').value,
-                    desc: item.querySelector('.e-desc').value
+                    date: item.querySelector('.exp-dates').value,
+                    poste: item.querySelector('.exp-poste').value,
+                    lieu: item.querySelector('.exp-lieu').value,
+                    missions: item.querySelector('.exp-missions').value
                 });
             });
 
-            document.querySelectorAll('#container-tech input').forEach(i => data.techniques.push(i.value));
-            document.querySelectorAll('#container-lang input').forEach(i => data.langues.push(i.value));
-            document.querySelectorAll('#container-loisir input').forEach(i => data.loisirs.push(i.value));
+            document.querySelectorAll('#container-tech .sub-block-item').forEach(item => {
+                data.techniques.push({ nom: item.querySelector('.tech-nom').value });
+            });
 
-            localStorage.setItem('cv_express_data', JSON.stringify(data));
+            document.querySelectorAll('#container-lang .sub-block-item').forEach(item => {
+                data.linguistiques.push({ nom: item.querySelector('.lang-nom').value });
+            });
+
+            document.querySelectorAll('#container-loisir .sub-block-item').forEach(item => {
+                data.loisirs.push({ titre: item.querySelector('.loisir-titre').value });
+            });
+
+            localStorage.setItem('cv_express_solidaire_backup', JSON.stringify(data));
         }
 
         function chargerEtatFormulaire() {
-            const saved = localStorage.getItem('cv_express_data');
-            if(!saved) return false;
+            const rawData = localStorage.getItem('cv_express_solidaire_backup');
+            if (!rawData) return false;
+
             try {
-                const data = JSON.parse(saved);
-                document.getElementById('in-prenom').value = data.prenom || "";
-                document.getElementById('in-nom').value = data.nom || "";
-                document.getElementById('in-metier').value = data.metier || "";
-                document.getElementById('in-tel').value = data.tel || "";
-                document.getElementById('in-email').value = data.email || "";
-                document.getElementById('in-accroche').value = data.accroche || "";
-                document.getElementById('title-form').value = data.titleForm || "Formations & Diplômes";
-                document.getElementById('title-exp').value = data.titleExp || "Expériences Professionnelles";
-                document.getElementById('title-tech').value = data.titleTech || "Compétences Techniques";
-                document.getElementById('title-lang').value = data.titleLang || "Compétences Linguistiques";
-                document.getElementById('title-loisir').value = data.titleLoisir || "Centres d'intérêt";
-                
-                if(data.ordreInverse) { inverserOrdreBlocs(); }
-                if(data.ordreSecondaire) { ordreSecondaire = data.ordreSecondaire; }
+                const data = JSON.parse(rawData);
+                ordreInverse = !!data.ordreInverse;
+                if (data.ordreSecondaire) ordreSecondaire = data.ordreSecondaire;
+
+                if (data.champsSimples) {
+                    for (const key in data.champsSimples) {
+                        const el = document.getElementById(key);
+                        if (el) el.value = data.champsSimples[key] || "";
+                    }
+                }
 
                 document.getElementById('container-form').innerHTML = "";
-                if(data.formations && data.formations.length > 0) {
-                    data.formations.forEach(f => ajouterForm(f.diplome, f.ecole, f.date));
+                if (data.formations && data.formations.length > 0) {
+                    data.formations.forEach(f => {
+                        ajouterForm();
+                        const last = document.querySelector('#container-form .sub-block-item:last-child');
+                        if (last) {
+                            last.querySelector('.form-dates').value = f.date || "";
+                            last.querySelector('.form-diplome').value = f.diplome || "";
+                            last.querySelector('.form-ecole').value = f.ecole || "";
+                        }
+                    });
                 }
 
                 document.getElementById('container-exp').innerHTML = "";
-                if(data.experiences && data.experiences.length > 0) {
-                    data.experiences.forEach(e => ajouterExp(e.poste, e.entreprise, e.date, e.desc));
+                if (data.experiences && data.experiences.length > 0) {
+                    data.experiences.forEach(e => {
+                        ajouterExp();
+                        const last = document.querySelector('#container-exp .sub-block-item:last-child');
+                        if (last) {
+                            last.querySelector('.exp-dates').value = e.date || "";
+                            last.querySelector('.exp-poste').value = e.poste || "";
+                            last.querySelector('.exp-lieu').value = e.lieu || "";
+                            last.querySelector('.exp-missions').value = e.missions || "";
+                        }
+                    });
                 }
 
                 document.getElementById('container-tech').innerHTML = "";
-                if(data.techniques) data.techniques.forEach(t => ajouterTech(t));
+                if (data.techniques) {
+                    data.techniques.forEach(t => {
+                        ajouterTech();
+                        const last = document.querySelector('#container-tech .sub-block-item:last-child');
+                        if (last) last.querySelector('.tech-nom').value = t.nom || "";
+                    });
+                }
 
                 document.getElementById('container-lang').innerHTML = "";
-                if(data.langues) data.langues.forEach(l => ajouterLang(l));
+                if (data.linguistiques) {
+                    data.linguistiques.forEach(l => {
+                        ajouterLang();
+                        const last = document.querySelector('#container-lang .sub-block-item:last-child');
+                        if (last) last.querySelector('.lang-nom').value = l.nom || "";
+                    });
+                }
 
                 document.getElementById('container-loisir').innerHTML = "";
-                if(data.loisirs) data.loisirs.forEach(lo => ajouterLoisir(lo));
+                if (data.loisirs) {
+                    data.loisirs.forEach(lo => {
+                        ajouterLoisir();
+                        const last = document.querySelector('#container-loisir .sub-block-item:last-child');
+                        if (last) last.querySelector('.loisir-titre').value = lo.titre || "";
+                    });
+                }
 
                 appliquerOrdreSecondaire();
                 return true;
-            } catch(e) { return false; }
+            } catch (e) {
+                console.error(e);
+                return false;
+            }
         }
 
+        // --- REINITIALISATION SECURISEE DES DONNEES ---
         function reinitialiserFormulaire() {
-            if(confirm("⚠️ Confirmez-vous la suppression définitive de toutes vos saisies mémorisées ?")) {
-                localStorage.removeItem('cv_express_data');
+            if (confirm("🚨 ATTENTION : Voulez-vous vraiment effacer tout le formulaire ? Toutes vos modifications sauvegardées sur ce navigateur seront perdues définitivement.")) {
+                localStorage.removeItem('cv_express_solidaire_backup');
                 window.location.reload();
             }
         }
 
-        // --- CONSTRUCTEURS DE COMPOSANTS FORMULAIRES ---
-        function genererBoutonsOrdre() {
-            return `
-                <div class="flex items-center gap-1 text-[10px] text-gray-400">
-                    <button onclick="monterSousBloc(this)" class="hover:text-gray-700 p-0.5 cursor-pointer" type="button">▲</button>
-                    <button onclick="descendreSousBloc(this)" class="hover:text-gray-700 p-0.5 cursor-pointer" type="button">▼</button>
-                </div>`;
-        }
-
-        function ajouterForm(diplome="", ecole="", date="") {
+        // --- GENERATION DES CONSTRUCTEURS DYNAMIQUES DE COMPOSANTS ---
+        function ajouterExp() {
+            const container = document.getElementById('container-exp');
+            if (!container) return;
+            const id = Date.now() + Math.random().toString(36).substr(2, 5);
             const div = document.createElement('div');
-            div.className = "sub-block-item flex gap-2 items-start bg-white p-3 rounded-xl border border-gray-200 relative shadow-xs animate-fade-in";
+            div.className = "p-3 border border-gray-200 rounded-lg bg-white relative space-y-2 text-xs shadow-sm sub-block-item pt-7";
+            div.id = `exp-${id}`;
             div.innerHTML = `
-                ${genererBoutonsOrdre()}
-                <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 w-full">
-                    <input type="text" placeholder="Diplôme ou certification" value="${diplome}" class="f-diplome p-2 border rounded-lg text-xs outline-none bg-gray-50/50" oninput="maj()">
-                    <input type="text" placeholder="Établissement" value="${ecole}" class="f-ecole p-2 border rounded-lg text-xs outline-none bg-gray-50/50" oninput="maj()">
-                    <input type="text" placeholder="Dates (ex: 2022 - 2024)" value="${date}" class="f-date p-2 border rounded-lg text-xs outline-none bg-gray-50/50" oninput="maj()">
+                <div class="absolute top-1 left-2 flex items-center gap-1.5 text-[10px] text-gray-400 select-none">
+                    <button onclick="monterSousBloc(this)" class="hover:text-gray-700 font-bold cursor-pointer" type="button">🔼</button>
+                    <button onclick="descendreSousBloc(this)" class="hover:text-gray-700 font-bold cursor-pointer" type="button">🔽</button>
                 </div>
-                <button onclick="this.closest('.sub-block-item').remove(); maj();" class="text-red-500 hover:text-red-700 font-bold text-xs p-1 cursor-pointer" type="button">✕</button>`;
-            document.getElementById('container-form').appendChild(div);
-            maj();
-        }
-
-        function ajouterExp(poste="", entreprise="", date="", desc="") {
-            const div = document.createElement('div');
-            div.className = "sub-block-item flex gap-2 items-start bg-white p-3 rounded-xl border border-gray-200 relative shadow-xs";
-            div.innerHTML = `
-                ${genererBoutonsOrdre()}
-                <div class="grid grid-cols-1 gap-2 w-full">
-                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                        <input type="text" placeholder="Poste occupé" value="${poste}" class="e-poste p-2 border rounded-lg text-xs outline-none bg-gray-50/50" oninput="maj()">
-                        <input type="text" placeholder="Entreprise / Ville" value="${entreprise}" class="e-entreprise p-2 border rounded-lg text-xs outline-none bg-gray-50/50" oninput="maj()">
-                        <input type="text" placeholder="Dates (ex: Janv. 2023 - Présent)" value="${date}" class="e-date p-2 border rounded-lg text-xs outline-none bg-gray-50/50" oninput="maj()">
-                    </div>
-                    <textarea placeholder="Missions (Une mission par ligne pour générer des puces propres automatiques)..." class="e-desc p-2 border rounded-lg text-xs outline-none bg-gray-50/50 w-full" rows="2" oninput="maj()">${desc}</textarea>
+                <button onclick="this.closest('.sub-block-item').remove(); maj();" class="absolute top-1 right-2 text-red-500 font-bold hover:text-red-700 text-sm cursor-pointer" type="button">✕</button>
+                <div class="grid grid-cols-3 gap-2">
+                    <input type="text" placeholder="Années (ex: 2024-2025)" class="p-2 border rounded exp-dates outline-none" oninput="maj()">
+                    <input type="text" placeholder="Poste occupé" class="col-span-2 p-2 border rounded exp-poste outline-none" oninput="maj()">
                 </div>
-                <button onclick="this.closest('.sub-block-item').remove(); maj();" class="text-red-500 hover:text-red-700 font-bold text-xs p-1 cursor-pointer" type="button">✕</button>`;
-            document.getElementById('container-exp').appendChild(div);
+                <input type="text" placeholder="Nom de l'entreprise, Ville" class="w-full p-2 border rounded exp-lieu outline-none" oninput="maj()">
+                <textarea placeholder="Descriptif des missions" rows="2" class="w-full p-2 border rounded exp-missions outline-none" oninput="maj()"></textarea>`;
+            container.appendChild(div);
             maj();
         }
 
-        function ajouterTech(val="") {
+        function ajouterForm() {
+            const container = document.getElementById('container-form');
+            if (!container) return;
+            const id = Date.now() + Math.random().toString(36).substr(2, 5);
             const div = document.createElement('div');
-            div.className = "flex gap-2 items-center bg-white p-1.5 rounded-lg border border-gray-200 shadow-2xs";
+            div.className = "p-3 border border-gray-200 rounded-lg bg-white relative space-y-2 text-xs shadow-sm sub-block-item pt-7 pr-7 pl-12";
+            div.id = `form-${id}`;
             div.innerHTML = `
-                <input type="text" placeholder="Ex: Excel, Gestion de projet..." value="${val}" class="w-full p-1.5 text-xs bg-transparent outline-none" oninput="maj()">
-                <button onclick="this.parentNode.remove(); maj();" class="text-red-400 hover:text-red-600 text-xs px-1 cursor-pointer" type="button">✕</button>`;
-            document.getElementById('container-tech').appendChild(div);
+                <div class="absolute top-1.5 left-2 flex items-center gap-1 text-[10px] text-gray-400 select-none">
+                    <button onclick="monterSousBloc(this)" class="hover:text-gray-700 font-bold cursor-pointer" type="button">🔼</button>
+                    <button onclick="descendreSousBloc(this)" class="hover:text-gray-700 font-bold cursor-pointer" type="button">🔽</button>
+                </div>
+                <button onclick="this.closest('.sub-block-item').remove(); maj();" class="absolute right-2 top-1.5 text-red-500 font-bold hover:text-red-700 text-sm cursor-pointer" type="button">✕</button>
+                <div class="grid grid-cols-3 gap-2">
+                    <input type="text" placeholder="Année" class="p-2 border rounded form-dates outline-none" oninput="maj()">
+                    <input type="text" placeholder="Intitulé du diplôme / niveau" class="col-span-2 p-2 border rounded form-diplome outline-none" oninput="maj()">
+                </div>
+                <input type="text" placeholder="Nom établissement, ville (département, pays)" class="w-full p-2 border rounded form-ecole outline-none" oninput="maj()"/>`;
+            container.appendChild(div);
             maj();
         }
 
-        function ajouterLang(val="") {
+        function ajouterTech() {
+            const container = document.getElementById('container-tech');
+            if (!container) return;
+            const id = Date.now() + Math.random().toString(36).substr(2, 5);
             const div = document.createElement('div');
-            div.className = "flex gap-2 items-center bg-white p-1.5 rounded-lg border border-gray-200 shadow-2xs";
+            div.className = "flex items-center gap-2 relative pr-7 pl-12 sub-block-item";
+            div.id = `tech-${id}`;
             div.innerHTML = `
-                <input type="text" placeholder="Ex: Anglais (B2)..." value="${val}" class="w-full p-1.5 text-xs bg-transparent outline-none" oninput="maj()">
-                <button onclick="this.parentNode.remove(); maj();" class="text-red-400 hover:text-red-600 text-xs px-1 cursor-pointer" type="button">✕</button>`;
-            document.getElementById('container-lang').appendChild(div);
+                <div class="absolute top-2 left-1 flex items-center gap-0.5 text-[9px] text-gray-400 select-none">
+                    <button onclick="monterSousBloc(this)" class="hover:text-gray-700 cursor-pointer" type="button">🔼</button>
+                    <button onclick="descendreSousBloc(this)" class="hover:text-gray-700 cursor-pointer" type="button">🔽</button>
+                </div>
+                <input type="text" placeholder="Outil / Compétence" class="w-full p-2 border rounded text-xs tech-nom outline-none" oninput="maj()">
+                <button onclick="this.closest('.sub-block-item').remove(); maj();" class="absolute right-1 top-2 text-red-500 font-bold hover:text-red-700 text-sm cursor-pointer" type="button">✕</button>`;
+            container.appendChild(div);
             maj();
         }
 
-        function ajouterLoisir(val="") {
+        function ajouterLang() {
+            const container = document.getElementById('container-lang');
+            if (!container) return;
+            const id = Date.now() + Math.random().toString(36).substr(2, 5);
             const div = document.createElement('div');
-            div.className = "flex gap-2 items-center bg-white p-1.5 rounded-lg border border-gray-200 shadow-2xs";
+            div.className = "flex items-center gap-2 relative pr-7 pl-12 sub-block-item";
+            div.id = `lang-${id}`;
             div.innerHTML = `
-                <input type="text" placeholder="Ex: Bénévolat, Sport..." value="${val}" class="w-full p-1.5 text-xs bg-transparent outline-none" oninput="maj()">
-                <button onclick="this.parentNode.remove(); maj();" class="text-red-400 hover:text-red-600 text-xs px-1 cursor-pointer" type="button">✕</button>`;
-            document.getElementById('container-loisir').appendChild(div);
+                <div class="absolute top-2 left-1 flex items-center gap-0.5 text-[9px] text-gray-400 select-none">
+                    <button onclick="monterSousBloc(this)" class="hover:text-gray-700 cursor-pointer" type="button">🔼</button>
+                    <button onclick="descendreSousBloc(this)" class="hover:text-gray-700 cursor-pointer" type="button">🔽</button>
+                </div>
+                <input type="text" placeholder="Langue (ex: Anglais - B2)" class="w-full p-2 border rounded text-xs lang-nom outline-none" oninput="maj()">
+                <button onclick="this.closest('.sub-block-item').remove(); maj();" class="absolute right-1 top-2 text-red-500 font-bold hover:text-red-700 text-sm cursor-pointer" type="button">✕</button>`;
+            container.appendChild(div);
             maj();
         }
 
-        // --- REORGANISATION ET FILTRES ---
+        function ajouterLoisir() {
+            const container = document.getElementById('container-loisir');
+            if (!container) return;
+            const id = Date.now() + Math.random().toString(36).substr(2, 5);
+            const div = document.createElement('div');
+            div.className = "flex items-center gap-2 relative pr-7 pl-12 sub-block-item";
+            div.id = `loisir-${id}`;
+            div.innerHTML = `
+                <div class="absolute top-2 left-1 flex items-center gap-0.5 text-[9px] text-gray-400 select-none">
+                    <button onclick="monterSousBloc(this)" class="hover:text-gray-700 cursor-pointer" type="button">🔼</button>
+                    <button onclick="descendreSousBloc(this)" class="hover:text-gray-700 cursor-pointer" type="button">🔽</button>
+                </div>
+                <input type="text" placeholder="Centre d'intérêt (ex: Football en club)" class="w-full p-2 border rounded text-xs loisir-titre outline-none" oninput="maj()">
+                <button onclick="this.closest('.sub-block-item').remove(); maj();" class="absolute right-1 top-2 text-red-500 font-bold hover:text-red-700 text-sm cursor-pointer" type="button">✕</button>`;
+            container.appendChild(div);
+            maj();
+        }
+
         function inverserOrdreBlocs() {
             ordreInverse = !ordreInverse;
             const formForm = document.getElementById('form-sec-form');
@@ -591,15 +693,15 @@
             const cvExp = document.getElementById('sec-exp');
 
             if (ordreInverse) {
-                if(formForm) formForm.style.order = "2";
-                if(formExp) formExp.style.order = "1";
-                if(cvForm) cvForm.style.order = "2";
-                if(cvExp) cvExp.style.order = "1";
+                formForm.style.order = "2";
+                formExp.style.order = "1";
+                cvForm.style.order = "2";
+                cvExp.style.order = "1";
             } else {
-                if(formForm) formForm.style.order = "1";
-                if(formExp) formExp.style.order = "2";
-                if(cvForm) cvForm.style.order = "1";
-                if(cvExp) cvExp.style.order = "2";
+                formForm.style.order = "1";
+                formExp.style.order = "2";
+                cvForm.style.order = "1";
+                cvExp.style.order = "2";
             }
             sauvegarderEtatFormulaire();
         }
@@ -646,8 +748,11 @@
                 ordreSecondaire.forEach((idForm, index) => {
                     const domNode = mappingCV[idForm];
                     if (domNode) {
-                        if (index < 2) { colLeft.appendChild(domNode); } 
-                        else { colRight.appendChild(domNode); }
+                        if (index < 2) {
+                            colLeft.appendChild(domNode);
+                        } else {
+                            colRight.appendChild(domNode);
+                        }
                     }
                 });
             }
@@ -657,7 +762,7 @@
         function monterSousBloc(btn) {
             const item = btn.closest('.sub-block-item');
             const parent = item.parentNode;
-            if (item && item.previousElementSibling) {
+            if (item.previousElementSibling) {
                 parent.insertBefore(item, item.previousElementSibling);
                 maj();
             }
@@ -666,40 +771,13 @@
         function descendreSousBloc(btn) {
             const item = btn.closest('.sub-block-item');
             const parent = item.parentNode;
-            if (item && item.nextElementSibling) {
+            if (item.nextElementSibling) {
                 parent.insertBefore(item.nextElementSibling, item);
                 maj();
             }
         }
 
-        // --- DISPATCHER & GENERATEUR DE TELECHARGEMENT ---
-        function telecharger() {
-            if (typeof html2pdf === "undefined") {
-                alert("La bibliothèque de téléchargement PDF n'est pas encore prête. Veuillez patienter une seconde.");
-                return;
-            }
-            
-            const element = document.getElementById('cv-preview');
-            const nom = (document.getElementById('in-nom').value || "").trim();
-            const prenom = (document.getElementById('in-prenom').value || "").trim();
-            const nomFichier = (nom || prenom) ? `CV_${nom}_${prenom}.pdf` : "Mon_CV_Professionnel.pdf";
-            
-            const options = {
-                margin:       0,
-                filename:     nomFichier,
-                image:        { type: 'jpeg', quality: 0.98 },
-                html2canvas:  { scale: 2, useCORS: true, logging: false },
-                jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
-            };
-
-            if (typeof sauvegarderEvenementSupabase === "function") {
-                sauvegarderEvenementSupabase("telechargements");
-            }
-
-            html2pdf().set(options).from(element).save();
-        }
-
-        // --- CHARGEMENT INITIAL ---
+        // --- CHARGEMENT INITIALISATION PAGE ---
         window.addEventListener('DOMContentLoaded', () => {
             if (sessionStorage.getItem('session_active_cv') !== 'true') {
                 document.getElementById('gatekeeper-screen').classList.remove('hidden');
@@ -708,7 +786,7 @@
             }
             recupererStatsSupabase();
 
-            // S'il n'y a pas de sauvegarde précédente, on génère une ligne vide par défaut partout
+            // S'il n'y a pas de sauvegarde précédente, on génère une ligne par défaut partout
             if (!chargerEtatFormulaire()) {
                 ajouterForm();
                 ajouterExp();
