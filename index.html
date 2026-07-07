@@ -2,60 +2,65 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <title>Je crée mon CV express</title>
+    <title>Je créé mon CV express</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 </head>
 <body class="bg-gray-100 p-8">
 
-    <div id="login-screen" class="max-w-md mx-auto bg-white p-6 rounded shadow">
-        <h2 class="text-xl font-bold mb-4">Connexion</h2>
+    <div id="login-page" class="max-w-md mx-auto bg-white p-6 rounded shadow">
+        <h1 class="text-xl font-bold mb-4">Accès CV Express</h1>
         <p class="mb-4">Connectez-vous à l'aide du code qui vous a été communiqué.</p>
-        <input type="password" id="secret-code" class="border p-2 w-full mb-4" placeholder="Code secret">
-        <button onclick="checkCode()" class="bg-blue-600 text-white px-4 py-2 w-full">Valider</button>
+        <input type="password" id="password" class="border p-2 w-full mb-4" placeholder="Code secret">
+        <button onclick="checkLogin()" class="bg-blue-600 text-white w-full py-2 rounded">Valider</button>
         <p class="mt-4 text-sm text-gray-500">Un problème de connexion ? Contactez-nous à faly.contact@gmail.com</p>
     </div>
 
-    <div id="app-screen" class="hidden">
-        <h1 class="text-3xl font-bold">Je créé mon CV express</h1>
-        <p class="mb-6">Remplissez les informations à gauche, l'aperçu se met à jour en temps réel à droite.</p>
-        
-        <div class="flex gap-8">
-            <div class="w-1/2 bg-white p-6 rounded shadow">
-                <input type="text" id="nom" oninput="updateCV()" class="border p-2 w-full mb-2 uppercase" placeholder="NOM (Majuscules auto)">
+    <div id="app" class="hidden flex gap-8">
+        <div class="w-1/2 bg-white p-6 rounded shadow overflow-y-auto h-[90vh]">
+            <h1 class="text-2xl font-bold mb-1">Je créé mon CV express</h1>
+            <p class="text-sm text-gray-600 mb-6">Remplissez les informations à gauche, l'aperçu se met à jour en temps réel.</p>
+            
+            <div class="space-y-4">
+                <input type="text" placeholder="Prénom" oninput="this.value = this.value.charAt(0).toUpperCase() + this.value.slice(1).toLowerCase(); updateCV()" class="border p-2 w-full">
+                <input type="text" placeholder="NOM" oninput="this.value = this.value.toUpperCase(); updateCV()" class="border p-2 w-full">
+                <input type="text" id="job" placeholder="Métier/Projet visé" oninput="updateCV()" class="border p-2 w-full">
                 </div>
 
-            <div id="cv-preview" class="w-1/2 bg-white p-10 shadow-lg min-h-[800px]">
-                <footer class="mt-auto text-xs text-center text-gray-400">Modèle de CV sur une idée de Faly R.®</footer>
-            </div>
+            <button onclick="downloadPDF()" class="mt-6 bg-green-600 text-white w-full py-2 rounded">Télécharger en PDF (A4)</button>
+            <button onclick="resetForm()" class="mt-2 text-red-500 w-full text-sm">Réinitialiser (Données non enregistrées)</button>
         </div>
-        
-        <button onclick="downloadPDF()" class="mt-6 bg-green-600 text-white p-3">Téléchargement de votre CV (PDF)</button>
+
+        <div id="cv-preview" class="w-1/2 bg-white p-8 shadow-lg min-h-[1122px] border">
+            <h2 id="display-name" class="text-3xl font-bold"></h2>
+            <p id="display-job" class="text-xl text-gray-700"></p>
+        </div>
     </div>
 
     <script>
-        function checkCode() {
-            const code = document.getElementById('secret-code').value;
-            if(code === 'ML2026') {
-                document.getElementById('login-screen').style.display = 'none';
-                document.getElementById('app-screen').style.display = 'block';
+        function checkLogin() {
+            if(document.getElementById('password').value === 'ML2026') {
+                document.getElementById('login-page').classList.add('hidden');
+                document.getElementById('app').classList.remove('hidden');
             } else {
                 alert('Code incorrect');
             }
         }
 
-        // Logique de mise à jour en temps réel et stockage local (LocalStorage)
         function updateCV() {
-            const nom = document.getElementById('nom').value.toUpperCase();
-            // Logique pour mettre à jour l'aperçu...
-            localStorage.setItem('cvData', JSON.stringify({/* vos données */}));
+            document.getElementById('display-name').innerText = document.querySelector('input[placeholder="Prénom"]').value + ' ' + document.querySelector('input[placeholder="NOM"]').value;
+            document.getElementById('display-job').innerText = document.getElementById('job').value;
         }
 
         function downloadPDF() {
-            const { jsPDF } = window.jspdf;
-            const doc = new jsPDF();
-            doc.text("Mon CV", 10, 10);
-            doc.save("mon_cv.pdf");
+            const element = document.getElementById('cv-preview');
+            html2pdf().from(element).save('Mon_CV.pdf');
+        }
+
+        function resetForm() {
+            if(confirm('Tout effacer ?')) {
+                location.reload();
+            }
         }
     </script>
 </body>
