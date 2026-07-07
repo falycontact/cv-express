@@ -1,13 +1,3 @@
-Voici le code complet mis à jour.
-
-Ce qui a été corrigé et amélioré :
-La réinitialisation complète des données (reinitialiserFormulaire) : La fonction était manquante à la fin de votre script coupé. Elle efface désormais proprement le localStorage, vide les conteneurs dynamiques, réinitialise les champs de texte simples à leur valeur par défaut et relance la mise à jour visuelle (maj()).
-
-Le téléchargement du PDF (telecharger) : Intégration complète et sécurisée avec html2pdf.js. J'ai également corrigé un comportement bloquant : si les fonctions de statistiques distantes (sauvegarderEvenementSupabase) échouaient ou n'étaient pas encore déclarées, cela coupait le téléchargement. Un bloc de sécurité (try...catch) protège désormais l'export.
-
-Restaurations des fonctions structurelles manquantes : Réécriture propre des fonctions d'ajouts dynamiques (ajouterExp, ajouterForm, etc.), des fonctions de déplacement (monter/descendre) ainsi que du chargement automatique pour que l'application soit 100 % autonome et fonctionnelle.
-
-HTML
 <!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -110,7 +100,7 @@ HTML
 
     <header class="text-center my-4 max-w-2xl">
         <h1 class="text-3xl font-bold text-blue-600">Je crée mon CV express</h1>
-        <p class="text-gray-600 text-sm mt-2">Personnalise les titres des rubriques directement. Utilise les flèches 🔼 et 🔽 pour réouvrir ou réorganisez tes expériences, formations ou blocs à tout moment.</p>
+        <p class="text-gray-600 text-sm mt-2">Personnalise les titres des rubriques directement. Utilise les flèches 🔼 et 🔽 pour réouvrir ou réorganiser tes expériences, formations ou blocs à tout moment.</p>
     </header>
 
     <main class="w-full max-w-7xl grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
@@ -423,54 +413,33 @@ HTML
             sauvegarderEtatFormulaire();
         }
 
-        // --- EXPORTATION DU DOCUMENT FINAL EN PDF ---
+        // --- EXPORTATION DU DOCUMENT FINAL EN PDF (télécharger) ---
         function telecharger() {
             if (typeof html2pdf === "undefined") {
                 alert("Le moteur PDF n'est pas encore prêt. Veuillez patienter une seconde.");
                 return;
             }
 
-            const originElement = document.getElementById('cv-preview');
+            const element = document.getElementById('cv-preview');
             const prenom = document.getElementById('in-prenom').value.trim();
             const nom = document.getElementById('in-nom').value.trim();
             const nomFichier = (prenom || nom) ? `CV_${prenom}_${nom.toUpperCase()}.pdf` : 'Mon_CV_Professionnel.pdf';
-
-            // CONTOURNEMENT DE SÉCURITÉ : On clone le CV et on nettoie ses styles de mise à l'échelle
-            const clone = originElement.cloneNode(true);
-            clone.style.transform = "none";
-            clone.style.margin = "0";
-            clone.style.position = "fixed";
-            clone.style.top = "-9999px"; 
-            clone.style.left = "-9999px";
-            document.body.appendChild(clone);
 
             const opt = {
                 margin:       0,
                 filename:     nomFichier,
                 image:        { type: 'jpeg', quality: 0.98 },
-                html2canvas:  { 
-                    scale: 2, 
-                    useCORS: true, 
-                    letterRendering: true, 
-                    logging: false
-                },
+                html2canvas:  { scale: 2, useCORS: true, letterRendering: true, logging: false },
                 jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
             };
 
-            // Notification d'évènement sécurisée à Supabase
-            try {
-                if (typeof sauvegarderEvenementSupabase === "function") {
-                    sauvegarderEvenementSupabase("telechargements");
-                }
-            } catch(e) { console.log(e); }
+            // Notification d'évènement à Supabase
+            if (typeof sauvegarderEvenementSupabase === "function") {
+                sauvegarderEvenementSupabase("telechargements");
+            }
 
-            // Génération fluide depuis l'élément cloné propre, puis destruction
-            html2pdf().set(opt).from(clone).save().then(() => {
-                clone.remove();
-            }).catch((err) => {
-                console.error("Erreur durant la génération du PDF", err);
-                clone.remove();
-            });
+            // Lancement natif du téléchargement
+            html2pdf().set(opt).from(element).save();
         }
 
         // --- SYSTÈME DE SAUVEGARDE RGPD AUTOMATIQUE (localStorage) ---
@@ -539,266 +508,371 @@ HTML
                 ordreInverse = !!data.ordreInverse;
                 if (data.ordreSecondaire) ordreSecondaire = data.ordreSecondaire;
 
-                // Application de l'ordre structurel principal
-                const dynamicOrderContainer = document.getElementById('form-dynamic-order');
-                const cvDynamicOrderContainer = document.getElementById('cv-render-dynamic-order');
-                if (ordreInverse) {
-                    dynamicOrderContainer.appendChild(document.getElementById('form-sec-exp'));
-                    dynamicOrderContainer.appendChild(document.getElementById('form-sec-form'));
-                    cvDynamicOrderContainer.appendChild(document.getElementById('sec-exp'));
-                    cvDynamicOrderContainer.appendChild(document.getElementById('sec-form'));
+                if (data.champsSimples) {
+                    for (const key in data.champsSimples) {
+                        const el = document.getElementById(key);
+                        if (el) el.value = data.champsSimples[key] || "";
+                    }
                 }
 
-                // Application de l'ordre structurel secondaire
-                remonterBlocsSecondairesParTableau();
-
-                // Assignation des valeurs textuelles simples
-                if (data.champsSimples) {
-                    Object.keys(data.champsSimples).forEach(id => {
-                        const elem = document.getElementById(id);
-                        if (elem) elem.value = data.champsSimples[id];
+                document.getElementById('container-form').innerHTML = "";
+                if (data.formations && data.formations.length > 0) {
+                    data.formations.forEach(f => {
+                        ajouterForm();
+                        const last = document.querySelector('#container-form .sub-block-item:last-child');
+                        if (last) {
+                            last.querySelector('.form-dates').value = f.date || "";
+                            last.querySelector('.form-diplome').value = f.diplome || "";
+                            last.querySelector('.form-ecole').value = f.ecole || "";
+                        }
                     });
                 }
 
-                // Reconstruction des blocs dynamiques récurrents
-                if (data.formations) data.formations.forEach(f => ajouterForm(f.date, f.diplome, f.ecole));
-                if (data.experiences) data.experiences.forEach(e => ajouterExp(e.date, e.poste, e.lieu, e.missions));
-                if (data.techniques) data.techniques.forEach(t => ajouterTech(t.nom));
-                if (data.linguistiques) data.linguistiques.forEach(l => ajouterLang(l.nom));
-                if (data.loisirs) data.loisirs.forEach(lo => ajouterLoisir(lo.titre));
+                document.getElementById('container-exp').innerHTML = "";
+                if (data.experiences && data.experiences.length > 0) {
+                    data.experiences.forEach(e => {
+                        ajouterExp();
+                        const last = document.querySelector('#container-exp .sub-block-item:last-child');
+                        if (last) {
+                            last.querySelector('.exp-dates').value = e.date || "";
+                            last.querySelector('.exp-poste').value = e.poste || "";
+                            last.querySelector('.exp-lieu').value = e.lieu || "";
+                            last.querySelector('.exp-missions').value = e.missions || "";
+                        }
+                    });
+                }
 
-                maj();
+                document.getElementById('container-tech').innerHTML = "";
+                if (data.techniques) {
+                    data.techniques.forEach(t => {
+                        ajouterTech();
+                        const last = document.querySelector('#container-tech .sub-block-item:last-child');
+                        if (last) last.querySelector('.tech-nom').value = t.nom || "";
+                    });
+                }
+
+                document.getElementById('container-lang').innerHTML = "";
+                if (data.linguistiques) {
+                    data.linguistiques.forEach(l => {
+                        ajouterLang();
+                        const last = document.querySelector('#container-lang .sub-block-item:last-child');
+                        if (last) last.querySelector('.lang-nom').value = l.nom || "";
+                    });
+                }
+
+                document.getElementById('container-loisir').innerHTML = "";
+                if (data.loisirs) {
+                    data.loisirs.forEach(lo => {
+                        ajouterLoisir();
+                        const last = document.querySelector('#container-loisir .sub-block-item:last-child');
+                        if (last) last.querySelector('.loisir-titre').value = lo.titre || "";
+                    });
+                }
+
+                appliquerOrdreSecondaire();
                 return true;
-            } catch(e) {
-                console.error("Erreur lors de la restauration", e);
+            } catch (e) {
+                console.error(e);
                 return false;
             }
         }
 
-        // --- FONCTION DE RÉINITIALISATION COMPLÈTE (DEMANDE USER) ---
+        // --- REINITIALISATION SECURISEE DES DONNEES ---
         function reinitialiserFormulaire() {
-            if (confirm("Êtes-vous certain de vouloir supprimer définitivement toutes vos données saisies sur ce CV ?")) {
+            if (confirm("🚨 ATTENTION : Voulez-vous vraiment effacer tout le formulaire ? Toutes vos modifications sauvegardées sur ce navigateur seront perdues définitivement.")) {
                 localStorage.removeItem('cv_express_solidaire_backup');
-                
-                // Réinitialisation des variables d'ordre structurels
-                ordreInverse = false;
-                ordreSecondaire = ['form-sec-tech', 'form-sec-lang', 'form-sec-loisir'];
-                
-                // Vider tous les conteneurs d'ajouts dynamiques
-                document.getElementById('container-form').innerHTML = "";
-                document.getElementById('container-exp').innerHTML = "";
-                document.getElementById('container-tech').innerHTML = "";
-                document.getElementById('container-lang').innerHTML = "";
-                document.getElementById('container-loisir').innerHTML = "";
-
-                // Reset des inputs d'identité simples
-                document.getElementById('in-prenom').value = "";
-                document.getElementById('in-nom').value = "";
-                document.getElementById('in-metier').value = "";
-                document.getElementById('in-tel').value = "";
-                document.getElementById('in-email').value = "";
-                document.getElementById('in-accroche').value = "";
-
-                // Restauration des titres de blocs par défaut
-                document.getElementById('title-form').value = "Formations & Diplômes";
-                document.getElementById('title-exp').value = "Expériences Professionnelles";
-                document.getElementById('title-tech').value = "Compétences Techniques";
-                document.getElementById('title-lang').value = "Compétences Linguistiques";
-                document.getElementById('title-loisir').value = "Centres d'intérêt";
-
-                // Remise en ordre visuelle initiale par défaut
-                const dynamicOrderContainer = document.getElementById('form-dynamic-order');
-                dynamicOrderContainer.appendChild(document.getElementById('form-sec-form'));
-                dynamicOrderContainer.appendChild(document.getElementById('form-sec-exp'));
-
-                const cvDynamicOrderContainer = document.getElementById('cv-render-dynamic-order');
-                cvDynamicOrderContainer.appendChild(document.getElementById('sec-form'));
-                cvDynamicOrderContainer.appendChild(document.getElementById('sec-exp'));
-
-                remonterBlocsSecondairesParTableau();
-
-                // Rafraîchir l'affichage global
-                maj();
+                window.location.reload();
             }
         }
 
-        // --- FONCTIONS AJOUTS DYNAMIQUES DE BLOCS ---
-        function ajouterForm(date="", diplome="", ecole="") {
+        // --- GENERATION DES CONSTRUCTEURS DYNAMIQUES DE COMPOSANTS ---
+        function ajouterExp() {
+            const container = document.getElementById('container-exp');
+            if (!container) return;
+            const id = Date.now() + Math.random().toString(36).substr(2, 5);
             const div = document.createElement('div');
-            div.className = "sub-block-item bg-white p-3 rounded-lg border border-gray-200 relative space-y-2 text-xs";
+            div.className = "p-3 border border-gray-200 rounded-lg bg-white relative space-y-2 text-xs shadow-sm sub-block-item pt-7";
+            div.id = `exp-${id}`;
             div.innerHTML = `
-                <button onclick="this.parentElement.remove(); maj();" class="absolute top-1 right-2 text-red-500 font-bold hover:text-red-700 cursor-pointer">✕</button>
-                <div class="grid grid-cols-3 gap-2 pt-2">
-                    <input type="text" placeholder="Dates (ex: 2022-2024)" class="form-dates p-1.5 border rounded bg-white outline-none" value="${date}" oninput="maj()">
-                    <input type="text" placeholder="Diplôme ou Intitulé" class="form-diplome col-span-2 p-1.5 border rounded bg-white outline-none" value="${diplome}" oninput="maj()">
+                <div class="absolute top-1 left-2 flex items-center gap-1.5 text-[10px] text-gray-400 select-none">
+                    <button onclick="monterSousBloc(this)" class="hover:text-gray-700 font-bold cursor-pointer" type="button">🔼</button>
+                    <button onclick="descendreSousBloc(this)" class="hover:text-gray-700 font-bold cursor-pointer" type="button">🔽</button>
                 </div>
-                <input type="text" placeholder="Établissement, École ou Organisme" class="form-ecole w-full p-1.5 border rounded bg-white outline-none" value="${ecole}" oninput="maj()">`;
-            document.getElementById('container-form').appendChild(div);
-            maj();
-        }
-
-        function ajouterExp(date="", poste="", lieu="", missions="") {
-            const div = document.createElement('div');
-            div.className = "sub-block-item bg-white p-3 rounded-lg border border-gray-200 relative space-y-2 text-xs";
-            div.innerHTML = `
-                <button onclick="this.parentElement.remove(); maj();" class="absolute top-1 right-2 text-red-500 font-bold hover:text-red-700 cursor-pointer">✕</button>
-                <div class="grid grid-cols-3 gap-2 pt-2">
-                    <input type="text" placeholder="Dates (ex: Depuis 2023)" class="exp-dates p-1.5 border rounded bg-white outline-none" value="${date}" oninput="maj()">
-                    <input type="text" placeholder="Poste occupé" class="exp-poste col-span-2 p-1.5 border rounded bg-white outline-none" value="${poste}" oninput="maj()">
+                <button onclick="this.closest('.sub-block-item').remove(); maj();" class="absolute top-1 right-2 text-red-500 font-bold hover:text-red-700 text-sm cursor-pointer" type="button">✕</button>
+                <div class="grid grid-cols-3 gap-2">
+                    <input type="text" placeholder="Années (ex: 2024-2025)" class="p-2 border rounded exp-dates outline-none" oninput="maj()">
+                    <input type="text" placeholder="Poste occupé" class="col-span-2 p-2 border rounded exp-poste outline-none" oninput="maj()">
                 </div>
-                <input type="text" placeholder="Structure / Entreprise et Ville" class="exp-lieu w-full p-1.5 border rounded bg-white outline-none" value="${lieu}" oninput="maj()">
-                <textarea placeholder="Missions principales (Une par ligne pour créer des puces automatiquement)..." rows="2" class="exp-missions w-full p-1.5 border rounded bg-white outline-none" oninput="maj()">${missions}</textarea>`;
-            document.getElementById('container-exp').appendChild(div);
+                <input type="text" placeholder="Nom de l'entreprise, Ville" class="w-full p-2 border rounded exp-lieu outline-none" oninput="maj()">
+                <textarea placeholder="Descriptif des missions" rows="2" class="w-full p-2 border rounded exp-missions outline-none" oninput="maj()"></textarea>`;
+            container.appendChild(div);
             maj();
         }
 
-        function ajouterTech(nom="") {
+        function ajouterForm() {
+            const container = document.getElementById('container-form');
+            if (!container) return;
+            const id = Date.now() + Math.random().toString(36).substr(2, 5);
             const div = document.createElement('div');
-            div.className = "sub-block-item flex items-center gap-2 text-xs";
+            div.className = "p-3 border border-gray-200 rounded-lg bg-white relative space-y-2 text-xs shadow-sm sub-block-item pt-7 pr-7 pl-12";
+            div.id = `form-${id}`;
             div.innerHTML = `
-                <input type="text" placeholder="Ex: Pack Office, Permis B..." class="tech-nom w-full p-1.5 border rounded bg-white outline-none" value="${nom}" oninput="maj()">
-                <button onclick="this.parentElement.remove(); maj();" class="text-red-500 font-bold hover:text-red-700 cursor-pointer">✕</button>`;
-            document.getElementById('container-tech').appendChild(div);
+                <div class="absolute top-1.5 left-2 flex items-center gap-1 text-[10px] text-gray-400 select-none">
+                    <button onclick="monterSousBloc(this)" class="hover:text-gray-700 font-bold cursor-pointer" type="button">🔼</button>
+                    <button onclick="descendreSousBloc(this)" class="hover:text-gray-700 font-bold cursor-pointer" type="button">🔽</button>
+                </div>
+                <button onclick="this.closest('.sub-block-item').remove(); maj();" class="absolute right-2 top-1.5 text-red-500 font-bold hover:text-red-700 text-sm cursor-pointer" type="button">✕</button>
+                <div class="grid grid-cols-3 gap-2">
+                    <input type="text" placeholder="Année" class="p-2 border rounded form-dates outline-none" oninput="maj()">
+                    <input type="text" placeholder="Intitulé du diplôme / niveau" class="col-span-2 p-2 border rounded form-diplome outline-none" oninput="maj()">
+                </div>
+                <input type="text" placeholder="Nom établissement, ville (département, pays)" class="w-full p-2 border rounded form-ecole outline-none" oninput="maj()"/>`;
+            container.appendChild(div);
             maj();
         }
 
-        function ajouterLang(nom="") {
+        function ajouterTech() {
+            const container = document.getElementById('container-tech');
+            if (!container) return;
+            const id = Date.now() + Math.random().toString(36).substr(2, 5);
             const div = document.createElement('div');
-            div.className = "sub-block-item flex items-center gap-2 text-xs";
+            div.className = "flex items-center gap-2 relative pr-7 pl-12 sub-block-item";
+            div.id = `tech-${id}`;
             div.innerHTML = `
-                <input type="text" placeholder="Ex: Français (maternels), Anglais (A2)..." class="lang-nom w-full p-1.5 border rounded bg-white outline-none" value="${nom}" oninput="maj()">
-                <button onclick="this.parentElement.remove(); maj();" class="text-red-500 font-bold hover:text-red-700 cursor-pointer">✕</button>`;
-            document.getElementById('container-lang').appendChild(div);
+                <div class="absolute top-2 left-1 flex items-center gap-0.5 text-[9px] text-gray-400 select-none">
+                    <button onclick="monterSousBloc(this)" class="hover:text-gray-700 cursor-pointer" type="button">🔼</button>
+                    <button onclick="descendreSousBloc(this)" class="hover:text-gray-700 cursor-pointer" type="button">🔽</button>
+                </div>
+                <input type="text" placeholder="Outil / Compétence" class="w-full p-2 border rounded text-xs tech-nom outline-none" oninput="maj()">
+                <button onclick="this.closest('.sub-block-item').remove(); maj();" class="absolute right-1 top-2 text-red-500 font-bold hover:text-red-700 text-sm cursor-pointer" type="button">✕</button>`;
+            container.appendChild(div);
             maj();
         }
 
-        function ajouterLoisir(titre="") {
+        function ajouterLang() {
+            const container = document.getElementById('container-lang');
+            if (!container) return;
+            const id = Date.now() + Math.random().toString(36).substr(2, 5);
             const div = document.createElement('div');
-            div.className = "sub-block-item flex items-center gap-2 text-xs";
+            div.className = "flex items-center gap-2 relative pr-7 pl-12 sub-block-item";
+            div.id = `lang-${id}`;
             div.innerHTML = `
-                <input type="text" placeholder="Ex: Jardinage, Football, Lecture..." class="loisir-titre w-full p-1.5 border rounded bg-white outline-none" value="${titre}" oninput="maj()">
-                <button onclick="this.parentElement.remove(); maj();" class="text-red-500 font-bold hover:text-red-700 cursor-pointer">✕</button>`;
-            document.getElementById('container-loisir').appendChild(div);
+                <div class="absolute top-2 left-1 flex items-center gap-0.5 text-[9px] text-gray-400 select-none">
+                    <button onclick="monterSousBloc(this)" class="hover:text-gray-700 cursor-pointer" type="button">🔼</button>
+                    <button onclick="descendreSousBloc(this)" class="hover:text-gray-700 cursor-pointer" type="button">🔽</button>
+                </div>
+                <input type="text" placeholder="Langue (ex: Anglais - B2)" class="w-full p-2 border rounded text-xs lang-nom outline-none" oninput="maj()">
+                <button onclick="this.closest('.sub-block-item').remove(); maj();" class="absolute right-1 top-2 text-red-500 font-bold hover:text-red-700 text-sm cursor-pointer" type="button">✕</button>`;
+            container.appendChild(div);
             maj();
         }
 
-        // --- GESTION TRIS / REORDONNANCEMENT DES BLOCS ---
+        function ajouterLoisir() {
+            const container = document.getElementById('container-loisir');
+            if (!container) return;
+            const id = Date.now() + Math.random().toString(36).substr(2, 5);
+            const div = document.createElement('div');
+            div.className = "flex items-center gap-2 relative pr-7 pl-12 sub-block-item";
+            div.id = `loisir-${id}`;
+            div.innerHTML = `
+                <div class="absolute top-2 left-1 flex items-center gap-0.5 text-[9px] text-gray-400 select-none">
+                    <button onclick="monterSousBloc(this)" class="hover:text-gray-700 cursor-pointer" type="button">🔼</button>
+                    <button onclick="descendreSousBloc(this)" class="hover:text-gray-700 cursor-pointer" type="button">🔽</button>
+                </div>
+                <input type="text" placeholder="Centre d'intérêt (ex: Football en club)" class="w-full p-2 border rounded text-xs loisir-titre outline-none" oninput="maj()">
+                <button onclick="this.closest('.sub-block-item').remove(); maj();" class="absolute right-1 top-2 text-red-500 font-bold hover:text-red-700 text-sm cursor-pointer" type="button">✕</button>`;
+            container.appendChild(div);
+            maj();
+        }
+
         function inverserOrdreBlocs() {
             ordreInverse = !ordreInverse;
-            const container = document.getElementById('form-dynamic-order');
-            const secForm = document.getElementById('form-sec-form');
-            const secExp = document.getElementById('form-sec-exp');
-
-            const cvContainer = document.getElementById('cv-render-dynamic-order');
-            const cvSecForm = document.getElementById('sec-form');
-            const cvSecExp = document.getElementById('sec-exp');
+            const formForm = document.getElementById('form-sec-form');
+            const formExp = document.getElementById('form-sec-exp');
+            const cvForm = document.getElementById('sec-form');
+            const cvExp = document.getElementById('sec-exp');
 
             if (ordreInverse) {
-                container.appendChild(secExp);
-                container.appendChild(secForm);
-                cvContainer.appendChild(cvSecExp);
-                cvContainer.appendChild(cvSecForm);
+                formForm.style.order = "2";
+                formExp.style.order = "1";
+                cvForm.style.order = "2";
+                cvExp.style.order = "1";
             } else {
-                container.appendChild(secForm);
-                container.appendChild(secExp);
-                cvContainer.appendChild(cvSecForm);
-                cvContainer.appendChild(cvSecExp);
+                formForm.style.order = "1";
+                formExp.style.order = "2";
+                cvForm.style.order = "1";
+                cvExp.style.order = "2";
             }
-            maj();
+            sauvegarderEtatFormulaire();
         }
 
-        function monterBlocSec(id) {
-            const index = ordreSecondaire.indexOf(id);
+        function monterBlocSec(idBloc) {
+            const index = ordreSecondaire.indexOf(idBloc);
             if (index > 0) {
                 const temp = ordreSecondaire[index];
                 ordreSecondaire[index] = ordreSecondaire[index - 1];
                 ordreSecondaire[index - 1] = temp;
-                remonterBlocsSecondairesParTableau();
-                maj();
+                appliquerOrdreSecondaire();
             }
         }
 
-        function descendreBlocSec(id) {
-            const index = ordreSecondaire.indexOf(id);
-            if (index > -1 && index < ordreSecondaire.length - 1) {
+        function descendreBlocSec(idBloc) {
+            const index = ordreSecondaire.indexOf(idBloc);
+            if (index < ordreSecondaire.length - 1 && index !== -1) {
                 const temp = ordreSecondaire[index];
                 ordreSecondaire[index] = ordreSecondaire[index + 1];
                 ordreSecondaire[index + 1] = temp;
-                remonterBlocsSecondairesParTableau();
-                maj();
+                appliquerOrdreSecondaire();
             }
         }
 
-        function remonterBlocsSecondairesParTableau() {
-            const containerForm = document.getElementById('form-secondary-order');
-            ordreSecondaire.forEach(id => {
-                const elem = document.getElementById(id);
-                if (elem) containerForm.appendChild(elem);
+        function appliquerOrdreSecondaire() {
+            ordreSecondaire.forEach((id, index) => {
+                const el = document.getElementById(id);
+                if (el) el.style.order = index + 1;
             });
 
             const colLeft = document.getElementById('cv-col-left');
             const colRight = document.getElementById('cv-col-right');
-            colLeft.innerHTML = "";
-            colRight.innerHTML = "";
 
-            let count = 0;
-            ordreSecondaire.forEach(id => {
-                let targetRenderId = "";
-                if (id === 'form-sec-tech') targetRenderId = "sec-tech";
-                if (id === 'form-sec-lang') targetRenderId = "sec-lang";
-                if (id === 'form-sec-loisir') targetRenderId = "sec-loisirs";
+            if (colLeft && colRight) {
+                const mappingCV = {
+                    'form-sec-tech': document.getElementById('sec-tech'),
+                    'form-sec-lang': document.getElementById('sec-lang'),
+                    'form-sec-loisir': document.getElementById('sec-loisirs')
+                };
 
-                const cvElem = document.getElementById(targetRenderId);
-                if (cvElem) {
-                    if (count < 2) {
-                        colLeft.appendChild(cvElem);
-                    } else {
-                        colRight.appendChild(cvElem);
+                colLeft.innerHTML = "";
+                colRight.innerHTML = "";
+
+                ordreSecondaire.forEach((idForm, index) => {
+                    const domNode = mappingCV[idForm];
+                    if (domNode) {
+                        if (index < 2) {
+                            colLeft.appendChild(domNode);
+                        } else {
+                            colRight.appendChild(domNode);
+                        }
                     }
-                    count++;
-                }
-            });
+                });
+            }
+            maj();
         }
 
-        // --- SÉCURITÉ ACCÈS & PANEL ADMIN ---
-        function verifierCode() {
-            const code = document.getElementById('gatekeeper-code').value.trim();
-            if (code === CODE_VALIDATION) {
-                document.getElementById('gatekeeper-screen').classList.add('hidden');
-                localStorage.setItem('cv_express_auth_token', 'true');
-                initialiserApplicationComplete();
+        function monterSousBloc(btn) {
+            const item = btn.closest('.sub-block-item');
+            const parent = item.parentNode;
+            if (item.previousElementSibling) {
+                parent.insertBefore(item, item.previousElementSibling);
+                maj();
+            }
+        }
+
+        function descendreSousBloc(btn) {
+            const item = btn.closest('.sub-block-item');
+            const parent = item.parentNode;
+            if (item.nextElementSibling) {
+                parent.insertBefore(item.nextElementSibling, item);
+                maj();
+            }
+        }
+
+        // --- CHARGEMENT INITIALISATION PAGE ---
+        window.addEventListener('DOMContentLoaded', () => {
+            if (sessionStorage.getItem('session_active_cv') !== 'true') {
+                document.getElementById('gatekeeper-screen').classList.remove('hidden');
             } else {
-                document.getElementById('gatekeeper-error').classList.remove('hidden');
+                sauvegarderEvenementSupabase("ouvertures");
+            }
+            recupererStatsSupabase();
+
+            // S'il n'y a pas de sauvegarde précédente, on génère une ligne par défaut partout
+            if (!chargerEtatFormulaire()) {
+                ajouterForm();
+                ajouterExp();
+                ajouterTech();
+                ajouterLang();
+                ajouterLoisir();
+            }
+        });
+
+        function verifierCode() {
+            const saisie = document.getElementById('gatekeeper-code').value;
+            if (saisie === CODE_VALIDATION) {
+                sessionStorage.setItem('session_active_cv', 'true');
+                document.getElementById('gatekeeper-screen').classList.add('hidden');
+                sauvegarderEvenementSupabase("ouvertures");
+            } else {
+                const err = document.getElementById('gatekeeper-error');
+                err.classList.remove('hidden');
+                setTimeout(() => { err.classList.add('hidden'); }, 3000);
+            }
+        }
+
+        async function recupererStatsSupabase() {
+            try {
+                const response = await fetch(`${SUPABASE_URL}/rest/v1/statistiques?id=eq.1`, {
+                    method: "GET",
+                    headers: { "apikey": SUPABASE_KEY, "Authorization": `Bearer ${SUPABASE_KEY}` }
+                });
+                const data = await response.json();
+                if (data && data.length > 0) {
+                    document.getElementById('stat-ouvertures').innerText = data[0].ouvertures ?? 0;
+                    document.getElementById('stat-telechargements').innerText = data[0].telechargements ?? 0;
+                }
+            } catch (error) { console.error(error); }
+        }
+
+        async function sauvegarderEvenementSupabase(typeColonne) {
+            try {
+                const responseGet = await fetch(`${SUPABASE_URL}/rest/v1/statistiques?id=eq.1`, {
+                    method: "GET",
+                    headers: { "apikey": SUPABASE_KEY, "Authorization": `Bearer ${SUPABASE_KEY}` }
+                });
+                const data = await responseGet.json();
+                if (data && data.length > 0) {
+                    const valeurActuelle = parseInt(data[0][typeColonne] || 0);
+                    const nouvelleValeur = valeurActuelle + 1;
+                    const corpsRequete = {};
+                    corpsRequete[typeColonne] = nouvelleValeur;
+
+                    await fetch(`${SUPABASE_URL}/rest/v1/statistiques?id=eq.1`, {
+                        method: "PATCH",
+                        headers: {
+                            "apikey": SUPABASE_KEY,
+                            "Authorization": `Bearer ${SUPABASE_KEY}`,
+                            "Content-Type": "application/json",
+                            "Prefer": "return=minimal"
+                        },
+                        body: JSON.stringify(corpsRequete)
+                    });
+                    recupererStatsSupabase();
+                }
+            } catch (error) { console.error(error); }
+        }
+
+        async function reinitialiserStatsSupabase() {
+            if (confirm("⚠️ Réinitialiser les compteurs généraux ?")) {
+                try {
+                    await fetch(`${SUPABASE_URL}/rest/v1/statistiques?id=eq.1`, {
+                        method: "PATCH",
+                        headers: {
+                            "apikey": SUPABASE_KEY,
+                            "Authorization": `Bearer ${SUPABASE_KEY}`,
+                            "Content-Type": "application/json"
+                        },
+                        body: JSON.stringify({ ouvertures: 0, telechargements: 0 })
+                    });
+                    recupererStatsSupabase();
+                } catch (error) { console.error(error); }
             }
         }
 
         function toggleAdmin() {
             const panel = document.getElementById('admin-panel');
             panel.classList.toggle('hidden');
+            if (!panel.classList.contains('hidden')) { recupererStatsSupabase(); }
         }
-
-        function initialiserApplicationComplete() {
-            // Tente de charger l'état existant, sinon crée par défaut 1 élément vide
-            const aRestaure = chargerEtatFormulaire();
-            if (!aRestaure) {
-                ajouterForm();
-                ajouterExp();
-                ajouterTech();
-                ajouterLang();
-                ajouterLoisir();
-                maj();
-            }
-        }
-
-        // Chargement initial au démarrage
-        window.addEventListener('DOMContentLoaded', () => {
-            const estAuth = localStorage.getItem('cv_express_auth_token');
-            if (estAuth === 'true') {
-                initialiserApplicationComplete();
-            } else {
-                document.getElementById('gatekeeper-screen').classList.remove('hidden');
-            }
-        });
     </script>
 </body>
 </html>
