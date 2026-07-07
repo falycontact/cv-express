@@ -361,4 +361,377 @@
             const saisie = document.getElementById('gatekeeper-code').value;
             if (saisie === CODE_VALIDATION) {
                 sessionStorage.setItem('session_active_cv', 'true');
-                document.getElementById('gatekeeper-screen
+                document.getElementById('gatekeeper-screen').classList.add('hidden');
+                sauvegarderEvenementSupabase("ouvertures");
+            } else {
+                const err = document.getElementById('gatekeeper-error');
+                err.classList.remove('hidden');
+                setTimeout(() => { err.classList.add('hidden'); }, 3000);
+            }
+        }
+
+        async function recupererStatsSupabase() {
+            try {
+                const response = await fetch(`${SUPABASE_URL}/rest/v1/statistiques?id=eq.1`, {
+                    method: "GET",
+                    headers: { "apikey": SUPABASE_KEY, "Authorization": `Bearer ${SUPABASE_KEY}` }
+                });
+                const data = await response.json();
+                if (data && data.length > 0) {
+                    document.getElementById('stat-ouvertures').innerText = data[0].ouvertures ?? 0;
+                    document.getElementById('stat-telechargements').innerText = data[0].telechargements ?? 0;
+                }
+            } catch (error) { console.error(error); }
+        }
+
+        async function sauvegarderEvenementSupabase(typeColonne) {
+            try {
+                const responseGet = await fetch(`${SUPABASE_URL}/rest/v1/statistiques?id=eq.1`, {
+                    method: "GET",
+                    headers: { "apikey": SUPABASE_KEY, "Authorization": `Bearer ${SUPABASE_KEY}` }
+                });
+                const data = await responseGet.json();
+                if (data && data.length > 0) {
+                    const valeurActuelle = parseInt(data[0][typeColonne] || 0);
+                    const nouvelleValeur = valeurActuelle + 1;
+                    const corpsRequete = {};
+                    corpsRequete[typeColonne] = nouvelleValeur;
+
+                    await fetch(`${SUPABASE_URL}/rest/v1/statistiques?id=eq.1`, {
+                        method: "PATCH",
+                        headers: {
+                            "apikey": SUPABASE_KEY,
+                            "Authorization": `Bearer ${SUPABASE_KEY}`,
+                            "Content-Type": "application/json",
+                            "Prefer": "return=minimal"
+                        },
+                        body: JSON.stringify(corpsRequete)
+                    });
+                    recupererStatsSupabase();
+                }
+            } catch (error) { console.error(error); }
+        }
+
+        async function reinitialiserStatsSupabase() {
+            if (confirm("⚠️ Réinitialiser les compteurs généraux ?")) {
+                try {
+                    await fetch(`${SUPABASE_URL}/rest/v1/statistiques?id=eq.1`, {
+                        method: "PATCH",
+                        headers: {
+                            "apikey": SUPABASE_KEY,
+                            "Authorization": `Bearer ${SUPABASE_KEY}`,
+                            "Content-Type": "application/json"
+                        },
+                        body: JSON.stringify({ ouvertures: 0, telechargements: 0 })
+                    });
+                    recupererStatsSupabase();
+                } catch (error) { console.error(error); }
+            }
+        }
+
+        function toggleAdmin() {
+            const panel = document.getElementById('admin-panel');
+            panel.classList.toggle('hidden');
+            if (!panel.classList.contains('hidden')) { recupererStatsSupabase(); }
+        }
+
+        // Listes de niveaux exactes demandées
+        const listNivTech = ["Initiation", "Compétences professionnelles limitées", "Compétences professionnelles complètes", "Expert"];
+        const listNivLang = ["Initiation", "Niveau scolaire", "Compétences professionnelles limitées", "Compétences professionnelles complètes", "Bilingue", "Langue maternelle"];
+
+        function ajouterExp() {
+            const container = document.getElementById('container-exp');
+            if (!container) return;
+            const id = Date.now();
+            const div = document.createElement('div');
+            div.className = "p-3 border border-gray-200 rounded-lg bg-white relative space-y-2 text-xs shadow-sm sub-block-item pt-7";
+            div.id = `exp-${id}`;
+            div.innerHTML = `
+                <div class="absolute top-1 left-2 flex items-center gap-1.5 text-[10px] text-gray-400 select-none">
+                    <button onclick="monterSousBloc(this)" class="hover:text-gray-700 font-bold cursor-pointer">🔼</button>
+                    <button onclick="descendreSousBloc(this)" class="hover:text-gray-700 font-bold cursor-pointer">🔽</button>
+                </div>
+                <button onclick="supprimer('${div.id}')" class="absolute top-1 right-2 text-red-500 font-bold hover:text-red-700 text-sm cursor-pointer">✕</button>
+                <div class="grid grid-cols-3 gap-2">
+                    <input type="text" placeholder="Années (ex: 2024-2025)" class="p-2 border rounded exp-dates outline-none" oninput="maj()">
+                    <input type="text" placeholder="Poste occupé" class="col-span-2 p-2 border rounded exp-poste outline-none" oninput="maj()">
+                </div>
+                <input type="text" placeholder="Nom de l'entreprise, Ville" class="w-full p-2 border rounded exp-lieu outline-none" oninput="maj()">
+                <textarea placeholder="Descriptif des missions" rows="2" class="w-full p-2 border rounded exp-missions outline-none" oninput="maj()"></textarea>
+            `;
+            container.appendChild(div);
+            maj();
+        }
+
+        function ajouterForm() {
+            const container = document.getElementById('container-form');
+            if (!container) return;
+            const id = Date.now();
+            const div = document.createElement('div');
+            div.className = "p-3 border border-gray-200 rounded-lg bg-white relative space-y-2 text-xs shadow-sm sub-block-item pt-7 pr-7 pl-12";
+            div.id = `form-${id}`;
+            div.innerHTML = `
+                <div class="absolute top-1.5 left-2 flex items-center gap-1 text-[10px] text-gray-400 select-none">
+                    <button onclick="monterSousBloc(this)" class="hover:text-gray-700 font-bold cursor-pointer">🔼</button>
+                    <button onclick="descendreSousBloc(this)" class="hover:text-gray-700 font-bold cursor-pointer">🔽</button>
+                </div>
+                <button onclick="supprimer('${div.id}')" class="absolute right-2 top-1.5 text-red-500 font-bold hover:text-red-700 text-sm cursor-pointer">✕</button>
+                <div class="grid grid-cols-3 gap-2">
+                    <input type="text" placeholder="Année" class="p-2 border rounded form-dates outline-none" oninput="maj()">
+                    <input type="text" placeholder="Intitulé du diplôme / niveau" class="col-span-2 p-2 border rounded form-diplome outline-none" oninput="maj()">
+                </div>
+                <input type="text" placeholder="Nom établissement, ville (département, pays)" class="w-full p-2 border rounded form-ecole outline-none" oninput="maj()">
+            `;
+            container.appendChild(div);
+            maj();
+        }
+
+        function ajouterTech() {
+            const container = document.getElementById('container-tech');
+            if (!container) return;
+            const id = Date.now();
+            const div = document.createElement('div');
+            div.className = "grid grid-cols-2 gap-2 relative pr-7 pl-12 sub-block-item";
+            div.id = `tech-${id}`;
+            let options = listNivTech.map(n => `<option value="${n}">${n}</option>`).join('');
+            div.innerHTML = `
+                <div class="absolute top-2 left-1 flex items-center gap-0.5 text-[9px] text-gray-400 select-none">
+                    <button onclick="monterSousBloc(this)" class="hover:text-gray-700 cursor-pointer">🔼</button>
+                    <button onclick="descendreSousBloc(this)" class="hover:text-gray-700 cursor-pointer">🔽</button>
+                </div>
+                <input type="text" placeholder="Compétence" class="p-2 border rounded text-xs tech-nom outline-none" oninput="maj()">
+                <select class="p-2 border rounded text-xs bg-white tech-niv outline-none" onchange="maj()"><option value="">Niveau...</option>${options}</select>
+                <button onclick="supprimer('${div.id}')" class="absolute right-1 top-2 text-red-500 font-bold hover:text-red-700 text-sm cursor-pointer">✕</button>
+            `;
+            container.appendChild(div);
+            maj();
+        }
+
+        function ajouterLang() {
+            const container = document.getElementById('container-lang');
+            if (!container) return;
+            const id = Date.now();
+            const div = document.createElement('div');
+            div.className = "grid grid-cols-2 gap-2 relative pr-7 pl-12 sub-block-item";
+            div.id = `lang-${id}`;
+            let options = listNivLang.map(n => `<option value="${n}">${n}</option>`).join('');
+            div.innerHTML = `
+                <div class="absolute top-2 left-1 flex items-center gap-0.5 text-[9px] text-gray-400 select-none">
+                    <button onclick="monterSousBloc(this)" class="hover:text-gray-700 cursor-pointer">🔼</button>
+                    <button onclick="descendreSousBloc(this)" class="hover:text-gray-700 cursor-pointer">🔽</button>
+                </div>
+                <input type="text" placeholder="Langue" class="p-2 border rounded text-xs lang-nom outline-none" oninput="maj()">
+                <select class="p-2 border rounded text-xs bg-white lang-niv outline-none" onchange="maj()"><option value="">Niveau...</option>${options}</select>
+                <button onclick="supprimer('${div.id}')" class="absolute right-1 top-2 text-red-500 font-bold hover:text-red-700 text-sm cursor-pointer">✕</button>
+            `;
+            container.appendChild(div);
+            maj();
+        }
+
+        function ajouterLoisir() {
+            const container = document.getElementById('container-loisir');
+            if (!container) return;
+            const id = Date.now();
+            const div = document.createElement('div');
+            div.className = "p-3 border border-gray-200 rounded-lg bg-white relative space-y-2 text-xs shadow-sm sub-block-item pt-7";
+            div.id = `loisir-${id}`;
+            div.innerHTML = `
+                <div class="absolute top-1 left-2 flex items-center gap-1.5 text-[10px] text-gray-400 select-none">
+                    <button onclick="monterSousBloc(this)" class="hover:text-gray-700 font-bold cursor-pointer">🔼</button>
+                    <button onclick="descendreSousBloc(this)" class="hover:text-gray-700 font-bold cursor-pointer">🔽</button>
+                </div>
+                <button onclick="supprimer('${div.id}')" class="absolute top-1 right-2 text-red-500 font-bold hover:text-red-700 text-sm cursor-pointer">✕</button>
+                <input type="text" placeholder="Loisir" class="w-full p-2 border rounded loisir-nom outline-none" oninput="maj()">
+                <textarea placeholder="Détails" rows="1" class="w-full p-2 border rounded loisir-details outline-none" oninput="maj()"></textarea>
+            `;
+            container.appendChild(div);
+            maj();
+        }
+
+        function supprimer(id) { 
+            const el = document.getElementById(id);
+            if (el) el.remove(); 
+            maj(); 
+        }
+        
+        function formaterEnPuces(texte) {
+            if (!texte.trim()) return "";
+            const fragments = texte.split('\n').filter(f => f.trim() !== "");
+            let res = `<ul class="cv-bullet-list text-gray-600">`;
+            fragments.forEach(f => { res += `<li>${f}</li>`; });
+            return res + `</ul>`;
+        }
+
+        function maj() {
+            if (!document.getElementById('out-title-form')) return;
+
+            document.getElementById('out-title-form').innerText = document.getElementById('title-form').value || "Formations & Diplômes";
+            document.getElementById('out-title-exp').innerText = document.getElementById('title-exp').value || "Expériences Professionnelles";
+            
+            const titleTechEl = document.getElementById('title-tech');
+            const outTitleTechEl = document.getElementById('out-title-tech');
+            if (titleTechEl && outTitleTechEl) outTitleTechEl.innerText = titleTechEl.value || "Compétences Techniques";
+            
+            const titleLangEl = document.getElementById('title-lang');
+            const outTitleLangEl = document.getElementById('out-title-lang');
+            if (titleLangEl && outTitleLangEl) outTitleLangEl.innerText = titleLangEl.value || "Compétences Linguistiques";
+            
+            const titleLoisirEl = document.getElementById('title-loisir');
+            const outTitleLoisirEl = document.getElementById('out-title-loisir');
+            if (titleLoisirEl && outTitleLoisirEl) outTitleLoisirEl.innerText = titleLoisirEl.value || "Centres d'intérêt";
+
+            const brutePrenom = document.getElementById('in-prenom').value.trim();
+            const prenomFormate = brutePrenom ? brutePrenom.charAt(0).toUpperCase() + brutePrenom.slice(1).toLowerCase() : "";
+            const bruteNom = document.getElementById('in-nom').value.trim();
+            const nomFormate = bruteNom ? bruteNom.toUpperCase() : "";
+
+            if (prenomFormate || nomFormate) {
+                document.getElementById('out-identity').innerText = `${prenomFormate} ${nomFormate}`.trim();
+            } else {
+                document.getElementById('out-identity').innerText = "Prénom NOM";
+            }
+            
+            document.getElementById('out-metier').innerText = document.getElementById('in-metier').value || "PROJET / MÉTIER VISÉ";
+            document.getElementById('out-tel').innerText = document.getElementById('in-tel').value ? "📞 " + document.getElementById('in-tel').value : "📞 Téléphone";
+            document.getElementById('out-email').innerText = document.getElementById('in-email').value ? "✉️ " + document.getElementById('in-email').value : "✉️ Adresse Email";
+            
+            const accrocheVal = document.getElementById('in-accroche').value;
+            document.getElementById('out-accroche').innerText = accrocheVal || "Présentation courte...";
+            document.getElementById('sec-accroche').className = accrocheVal ? "my-6" : "my-6 opacity-30";
+
+            // Mise à jour des Formations
+            const containerForm = document.getElementById('container-form');
+            const listeFormInputs = containerForm ? containerForm.children : [];
+            const outListeForm = document.getElementById('out-liste-form');
+            if (outListeForm) {
+                outListeForm.innerHTML = "";
+                if (listeFormInputs.length > 0) {
+                    document.getElementById('sec-form').classList.remove('hidden-cv');
+                    Array.from(listeFormInputs).forEach(item => {
+                        const dates = item.querySelector('.form-dates').value;
+                        const diplome = item.querySelector('.form-diplome').value;
+                        const ecole = item.querySelector('.form-ecole').value;
+                        if (dates || diplome || ecole) {
+                            const divNode = document.createElement('div');
+                            divNode.className = "text-xs";
+                            divNode.innerHTML = `
+                                <div class="flex justify-between font-bold text-gray-900">
+                                    <span>${diplome || "Intitulé du diplôme / niveau"}</span>
+                                    <span class="text-blue-600 ml-2 whitespace-nowrap">${dates || "Année"}</span>
+                                </div>
+                                <p class="text-gray-500 font-medium italic mt-0.5">${ecole || "Établissement, ville"}</p>
+                            `;
+                            outListeForm.appendChild(divNode);
+                        }
+                    });
+                } else { document.getElementById('sec-form').classList.add('hidden-cv'); }
+            }
+
+            // Mise à jour des Expériences
+            const containerExp = document.getElementById('container-exp');
+            const listeExpInputs = containerExp ? containerExp.children : [];
+            const outListeExp = document.getElementById('out-liste-exp');
+            if (outListeExp) {
+                outListeExp.innerHTML = "";
+                if (listeExpInputs.length > 0) {
+                    document.getElementById('sec-exp').classList.remove('hidden-cv');
+                    Array.from(listeExpInputs).forEach(item => {
+                        const dates = item.querySelector('.exp-dates').value;
+                        const poste = item.querySelector('.exp-poste').value;
+                        const lieu = item.querySelector('.exp-lieu').value;
+                        const missions = item.querySelector('.exp-missions').value;
+                        if (dates || poste || lieu || missions) {
+                            const divNode = document.createElement('div');
+                            divNode.className = "text-xs";
+                            divNode.innerHTML = `
+                                <div class="flex justify-between font-bold text-gray-900"><span>${poste || "Poste"}</span><span class="text-blue-600">${dates || "Années"}</span></div>
+                                <p class="text-gray-500 font-medium italic">${lieu || "Entreprise"}</p>
+                                <div class="mt-1 pl-2 border-l border-gray-100">${formaterEnPuces(missions)}</div>
+                            `;
+                            outListeExp.appendChild(divNode);
+                        }
+                    });
+                } else { document.getElementById('sec-exp').classList.add('hidden-cv'); }
+            }
+
+            // Compétences Techniques
+            const containerTech = document.getElementById('container-tech');
+            const listeTechInputs = containerTech ? containerTech.children : [];
+            const outListeTech = document.getElementById('out-liste-tech');
+            let hasTech = false;
+            if (outListeTech) {
+                outListeTech.innerHTML = "";
+                Array.from(listeTechInputs).forEach(item => {
+                    const nom = item.querySelector('.tech-nom').value;
+                    const niv = item.querySelector('.tech-niv').value;
+                    if (nom) { hasTech = true; outListeTech.innerHTML += `<li>🛠️ <strong>${nom}</strong> : <span class="text-gray-600">${niv || "Non renseigné"}</span></li>`; }
+                });
+                const secTech = document.getElementById('sec-tech');
+                if (secTech) {
+                    if (hasTech) secTech.classList.remove('hidden-cv');
+                    else secTech.classList.add('hidden-cv');
+                }
+            }
+
+            // Compétences Linguistiques
+            const containerLang = document.getElementById('container-lang');
+            const listeLangInputs = containerLang ? containerLang.children : [];
+            const outListeLang = document.getElementById('out-liste-lang');
+            let hasLang = false;
+            if (outListeLang) {
+                outListeLang.innerHTML = "";
+                Array.from(listeLangInputs).forEach(item => {
+                    const nom = item.querySelector('.lang-nom').value;
+                    const niv = item.querySelector('.lang-niv').value;
+                    if (nom) { hasLang = true; outListeLang.innerHTML += `<li>🗣️ <strong>${nom}</strong> : <span class="text-gray-600">${niv || "Non renseigné"}</span></li>`; }
+                });
+                const secLang = document.getElementById('sec-lang');
+                if (secLang) {
+                    if (hasLang) secLang.classList.remove('hidden-cv');
+                    else secLang.classList.add('hidden-cv');
+                }
+            }
+
+            // Loisirs
+            const containerLoisir = document.getElementById('container-loisir');
+            const listeLoisirInputs = containerLoisir ? containerLoisir.children : [];
+            const outListeLoisirs = document.getElementById('out-liste-loisirs');
+            if (outListeLoisirs) {
+                outListeLoisirs.innerHTML = "";
+                if (listeLoisirInputs.length > 0) {
+                    const secLoisirs = document.getElementById('sec-loisirs');
+                    if (secLoisirs) secLoisirs.classList.remove('hidden-cv');
+                    Array.from(listeLoisirInputs).forEach(item => {
+                        const nom = item.querySelector('.loisir-nom').value;
+                        const details = item.querySelector('.loisir-details').value;
+                        if (nom || details) {
+                            const divNode = document.createElement('div');
+                            divNode.className = "text-xs";
+                            divNode.innerHTML = `<strong class="text-gray-900">🔹 ${nom || "Activité"}</strong><div class="mt-0.5 pl-2">${formaterEnPuces(details)}</div>`;
+                            outListeLoisirs.appendChild(divNode);
+                        }
+                    });
+                } else { 
+                    const secLoisirs = document.getElementById('sec-loisirs');
+                    if (secLoisirs) secLoisirs.classList.add('hidden-cv'); 
+                }
+            }
+        }
+
+        function telecharger() {
+            sauvegarderEvenementSupabase("telechargements");
+            const element = document.getElementById('cv-preview');
+            const prenomJeune = document.getElementById('in-prenom').value || "Mon";
+            const nomJeune = document.getElementById('in-nom').value || "CV";
+            const opt = {
+                margin:       0,
+                filename:     `CV_${prenomJeune.replace(/\s+/g, '_')}_${nomJeune.replace(/\s+/g, '_')}.pdf`,
+                image:        { type: 'jpeg', quality: 0.98 },
+                html2canvas:  { scale: 2, useCORS: true },
+                jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+            };
+            html2pdf().set(opt).from(element).save();
+        }
+    </script>
+</body>
+</html>
