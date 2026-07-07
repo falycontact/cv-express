@@ -433,12 +433,10 @@
                 jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
             };
 
-            // Notification d'évènement à Supabase
             if (typeof sauvegarderEvenementSupabase === "function") {
                 sauvegarderEvenementSupabase("telechargements");
             }
 
-            // Lancement natif du téléchargement
             html2pdf().set(opt).from(element).save();
         }
 
@@ -641,7 +639,7 @@
             div.innerHTML = `
                 <div class="absolute top-2 left-1 flex items-center gap-0.5 text-[9px] text-gray-400 select-none">
                     <button onclick="monterSousBloc(this)" class="hover:text-gray-700 cursor-pointer" type="button">🔼</button>
-                    <button onclick="descendreSousBloc(this)" class="hover:text-gray-700 cursor-pointer" type="button">🔽</button>
+                    <button onclick="descendreSousBloc(this)" class="hover:text-gray-700 cursor-pointer" type="button">▼</button>
                 </div>
                 <input type="text" placeholder="Outil / Compétence" class="w-full p-2 border rounded text-xs tech-nom outline-none" oninput="maj()">
                 <button onclick="this.closest('.sub-block-item').remove(); maj();" class="absolute right-1 top-2 text-red-500 font-bold hover:text-red-700 text-sm cursor-pointer" type="button">✕</button>`;
@@ -659,7 +657,7 @@
             div.innerHTML = `
                 <div class="absolute top-2 left-1 flex items-center gap-0.5 text-[9px] text-gray-400 select-none">
                     <button onclick="monterSousBloc(this)" class="hover:text-gray-700 cursor-pointer" type="button">🔼</button>
-                    <button onclick="descendreSousBloc(this)" class="hover:text-gray-700 cursor-pointer" type="button">🔽</button>
+                    <button onclick="descendreSousBloc(this)" class="hover:text-gray-700 cursor-pointer" type="button">▼</button>
                 </div>
                 <input type="text" placeholder="Langue (ex: Anglais - B2)" class="w-full p-2 border rounded text-xs lang-nom outline-none" oninput="maj()">
                 <button onclick="this.closest('.sub-block-item').remove(); maj();" class="absolute right-1 top-2 text-red-500 font-bold hover:text-red-700 text-sm cursor-pointer" type="button">✕</button>`;
