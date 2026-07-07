@@ -189,4 +189,187 @@
 
                         <div id="cv-render-dynamic-order" class="flex flex-col">
                             
-                            <div id="sec-
+                            <div id="sec-form" class="mb-6 hidden-cv order-1">
+                                <h3 id="out-title-form" class="text-sm font-bold text-blue-700 uppercase tracking-wider border-b pb-1 mb-3">Formations & Diplômes</h3>
+                                <div id="out-liste-form" class="space-y-3"></div>
+                            </div>
+
+                            <div id="sec-exp" class="mb-6 hidden-cv order-2">
+                                <h3 id="out-title-exp" class="text-sm font-bold text-blue-700 uppercase tracking-wider border-b pb-1 mb-3">Expériences Professionnelles</h3>
+                                <div id="out-liste-exp" class="space-y-4"></div>
+                            </div>
+
+                        </div>
+
+                        <div id="cv-secondary-columns" class="grid grid-cols-2 gap-6 mb-6">
+                            
+                            <div id="cv-col-left" class="space-y-4 flex flex-col justify-start">
+                                <div id="sec-tech" class="hidden-cv">
+                                    <h3 id="out-title-tech" class="text-sm font-bold text-blue-700 uppercase tracking-wider border-b pb-1 mb-2">Compétences Techniques</h3>
+                                    <ul id="out-liste-tech" class="space-y-1.5 text-xs"></ul>
+                                </div>
+                                <div id="sec-lang" class="hidden-cv">
+                                    <h3 id="out-title-lang" class="text-sm font-bold text-blue-700 uppercase tracking-wider border-b pb-1 mb-2">Compétences Linguistiques</h3>
+                                    <ul id="out-liste-lang" class="space-y-1.5 text-xs"></ul>
+                                </div>
+                            </div>
+
+                            <div id="cv-col-right" class="space-y-4 flex flex-col justify-start">
+                                <div id="sec-loisirs" class="hidden-cv">
+                                    <h3 id="out-title-loisir" class="text-sm font-bold text-blue-700 uppercase tracking-wider border-b pb-1 mb-2">Centres d'intérêt</h3>
+                                    <div id="out-liste-loisirs" class="space-y-3"></div>
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+
+                    <div onclick="toggleAdmin()" class="border-t pt-2 text-center text-[10px] text-gray-400 font-semibold tracking-wide cursor-pointer select-none">
+                        Développement du modèle sur une idée de Faly R.®
+                    </div>
+
+                </div>
+
+            </div>
+        </div>
+
+    </main>
+
+    <script>
+        // Code d'activation mensuel modifiable
+        const CODE_VALIDATION = "ML2026";
+        
+        const SUPABASE_URL = "https://mlbjvzadwjbdaaenfeae.supabase.co";
+        const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1sYmp2emFkd2piZGFhZW5mZWFlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODMzNDk2MzgsImV4cCI6MjA5ODkyNTYzOH0.EC3kal19wHH35OnTll2rYnxmQyqzlOghxPdjkPdas5w";
+
+        let ordreInverse = false;
+
+        // Ordre initial pour les 3 blocs secondaires
+        let ordreSecondaire = ['form-sec-tech', 'form-sec-lang', 'form-sec-loisir'];
+
+        function inverserOrdreBlocs() {
+            ordreInverse = !ordreInverse;
+            
+            const formForm = document.getElementById('form-sec-form');
+            const formExp = document.getElementById('form-sec-exp');
+            const cvForm = document.getElementById('sec-form');
+            const cvExp = document.getElementById('sec-exp');
+
+            if (ordreInverse) {
+                formForm.style.order = "2";
+                formExp.style.order = "1";
+                cvForm.style.order = "2";
+                cvExp.style.order = "1";
+            } else {
+                formForm.style.order = "1";
+                formExp.style.order = "2";
+                cvForm.style.order = "1";
+                cvExp.style.order = "2";
+            }
+        }
+
+        // Fonctions pour faire monter/descendre l'ordre global des 3 blocs secondaires
+        function monterBlocSec(idBloc) {
+            const index = ordreSecondaire.indexOf(idBloc);
+            if (index > 0) {
+                const temp = ordreSecondaire[index];
+                ordreSecondaire[index] = ordreSecondaire[index - 1];
+                ordreSecondaire[index - 1] = temp;
+                appliquerOrdreSecondaire();
+            }
+        }
+
+        function descendreBlocSec(idBloc) {
+            const index = ordreSecondaire.indexOf(idBloc);
+            if (index < ordreSecondaire.length - 1 && index !== -1) {
+                const temp = ordreSecondaire[index];
+                ordreSecondaire[index] = ordreSecondaire[index + 1];
+                ordreSecondaire[index + 1] = temp;
+                appliquerOrdreSecondaire();
+            }
+        }
+
+        function appliquerOrdreSecondaire() {
+            // Appliquer l'ordre visuel dans le formulaire
+            ordreSecondaire.forEach((id, index) => {
+                document.getElementById(id).style.order = index + 1;
+            });
+
+            // Répartir dynamiquement les blocs dans l'aperçu graphique (2 colonnes)
+            // Les deux premiers vont à gauche, le dernier va à droite
+            const colLeft = document.getElementById('cv-col-left');
+            const colRight = document.getElementById('cv-col-right');
+
+            const mappingCV = {
+                'form-sec-tech': document.getElementById('sec-tech'),
+                'form-sec-lang': document.getElementById('sec-lang'),
+                'form-sec-loisir': document.getElementById('sec-loisirs')
+            };
+
+            // Vider proprement et réinjecter dans le bon ordre
+            colLeft.innerHTML = "";
+            colRight.innerHTML = "";
+
+            ordreSecondaire.forEach((idForm, index) => {
+                const domNode = mappingCV[idForm];
+                if (index < 2) {
+                    colLeft.appendChild(domNode);
+                } else {
+                    colRight.appendChild(domNode);
+                }
+            });
+            maj();
+        }
+
+        // Fonctions génériques pour manipuler l'ordre des sous-blocs enfants à l'intérieur d'un conteneur
+        function monterSousBloc(btn) {
+            const item = btn.closest('.sub-block-item');
+            const parent = item.parentNode;
+            if (item.previousElementSibling) {
+                parent.insertBefore(item, item.previousElementSibling);
+                maj();
+            }
+        }
+
+        function descendreSousBloc(btn) {
+            const item = btn.closest('.sub-block-item');
+            const parent = item.parentNode;
+            if (item.nextElementSibling) {
+                parent.insertBefore(item.nextElementSibling, item);
+                maj();
+            }
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            if (sessionStorage.getItem('session_active_cv') !== 'true') {
+                document.getElementById('gatekeeper-screen').classList.remove('hidden');
+            } else {
+                sauvegarderEvenementSupabase("ouvertures");
+            }
+            recupererStatsSupabase();
+            appliquerOrdreSecondaire();
+        });
+
+        function verifierCode() {
+            const saisie = document.getElementById('gatekeeper-code').value;
+            if (saisie === CODE_VALIDATION) {
+                sessionStorage.setItem('session_active_cv', 'true');
+                document.getElementById('gatekeeper-screen').classList.add('hidden');
+                sauvegarderEvenementSupabase("ouvertures");
+            } else {
+                const err = document.getElementById('gatekeeper-error');
+                err.classList.remove('hidden');
+                setTimeout(() => { err.classList.add('hidden'); }, 3000);
+            }
+        }
+
+        async function recupererStatsSupabase() {
+            try {
+                const response = await fetch(`${SUPABASE_URL}/rest/v1/statistiques?id=eq.1`, {
+                    method: "GET",
+                    headers: { "apikey": SUPABASE_KEY, "Authorization": `Bearer ${SUPABASE_KEY}` }
+                });
+                const data = await response.json();
+                if (data && data.length > 0) {
+                    document.getElementById('stat-ouvertures').innerText = data[0].ouvertures ?? 0;
+                    document.getElementById('stat-telechargements').innerText = data[0].telechargements
