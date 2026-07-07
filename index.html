@@ -14,17 +14,6 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     
     <style>
-        /* Écran de verrouillage */
-        #auth-screen {
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background-color: #111827;
-            z-index: 9999;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
         /* Configuration de la zone d'impression A4 stricte */
         #cv-preview {
             width: 210mm;
@@ -71,31 +60,31 @@
         @media (min-width: 1440px) { .preview-scale-container { transform: scale(0.70); margin-bottom: -250mm; } }
     </style>
 </head>
-<body class="bg-gray-100 font-sans min-h-screen flex flex-col items-center p-4 md:p-8">
+<body class="bg-gray-100 font-sans min-h-screen flex flex-col items-center justify-center p-4 md:p-8">
 
-    <!-- ÉCRAN D'AUTHENTIFICATION OBLIGATOIRE -->
-    <div id="auth-screen">
-        <div class="bg-gray-800 p-8 rounded-2xl shadow-2xl max-w-sm w-full text-center border border-gray-700">
-            <h2 class="text-2xl font-bold text-white mb-2">Espace Sécurisé</h2>
-            <p class="text-gray-400 text-sm mb-6">Veuillez saisir le mot de passe pour accéder au générateur de CV.</p>
-            <form onsubmit="verifierMotDePasse(event)" class="space-y-4">
-                <input type="password" id="password-input" placeholder="Mot de passe" class="w-full p-3 rounded-xl bg-gray-900 border border-gray-700 text-white text-center outline-none focus:border-blue-500 transition font-mono tracking-widest">
-                <p id="auth-error" class="text-red-500 text-xs font-semibold hidden">Mot de passe incorrect.</p>
-                <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-xl transition cursor-pointer">
-                    Se connecter
-                </button>
-            </form>
-        </div>
+    <!-- ÉCRAN DE VERROUILLAGE / CONNEXION -->
+    <div id="gatekeeper-screen" class="w-full max-w-md bg-white p-8 rounded-2xl shadow-xl text-center border border-gray-200 z-50">
+        <div class="w-16 h-16 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl">🔒</div>
+        <h2 class="text-2xl font-bold text-gray-800">Accès Sécurisé</h2>
+        <p class="text-gray-500 text-sm mt-1 mb-6">Veuillez saisir le code d'accès pour utiliser l'outil.</p>
+        
+        <form onsubmit="verifierMotDePasse(event)" class="space-y-4">
+            <input type="password" id="gatekeeper-input" placeholder="Code d'accès (ex: ML2026)" class="w-full p-3 border border-gray-300 rounded-xl text-center font-mono tracking-widest outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition" required>
+            <p id="gatekeeper-error" class="text-red-500 text-xs font-semibold hidden">⚠️ Code d'accès incorrect.</p>
+            <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-xl shadow-md transition cursor-pointer">
+                Valider et Entrer
+            </button>
+        </form>
     </div>
 
-    <!-- CONTENU DU GÉNÉRATEUR (MASQUÉ INITIALEMENT) -->
-    <div id="app-content" class="w-full max-w-7xl hidden">
+    <!-- CONTENU PRINCIPAL DE L'APPLICATION (Masqué par défaut) -->
+    <div id="app-content" class="w-full hidden">
         <header class="text-center my-4 max-w-2xl mx-auto">
             <h1 class="text-3xl font-bold text-blue-600">Je crée mon CV express</h1>
             <p class="text-gray-600 text-sm mt-2">Remplissez les informations à gauche, l'aperçu se met à jour en temps réel à droite.</p>
         </header>
 
-        <main class="w-full grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
+        <main class="w-full max-w-7xl grid grid-cols-1 lg:grid-cols-2 gap-8 items-start mx-auto">
             
             <!-- FORMULAIRE (GAUCHE) -->
             <div class="bg-white p-6 rounded-2xl shadow-md space-y-6 max-h-[85vh] overflow-y-auto">
@@ -179,10 +168,10 @@
                             </div>
                         </div>
                         
-                        <!-- PIED DE PAGE AVEC MENTION COPYRIGHT ET LIEN STATS (REMPLACER LE LIEN SI BESOIN) -->
+                        <!-- PIED DE PAGE DU CV AVEC VOTRE MARQUE ET LIEN VERS LES STATISTIQUES -->
                         <div class="border-t pt-2 text-center text-[10px] text-gray-400 font-semibold flex justify-between items-center">
                             <span>Générateur de CV Professionnel Express</span>
-                            <span>Modèle de CV sur une idée de Faly R.<span onclick="ouvrirStats()" class="text-blue-500 hover:text-blue-700 cursor-pointer ml-0.5 select-none text-[11px]" title="Voir les statistiques">®</span></span>
+                            <span>Modèle de CV sur une idée de Faly R.<a href="https://docs.google.com/spreadsheets" target="_blank" class="text-blue-400 font-bold hover:underline ml-0.5">®</a></span>
                         </div>
                     </div>
                 </div>
@@ -192,27 +181,24 @@
     </div>
 
     <script>
-        // --- SYSTÈME DE SÉCURITÉ DE CONEXION ---
+        // --- CONTRÔLE D'ACCÈS OBLIGATOIRE À CHAQUE CONNEXION ---
         function verifierMotDePasse(event) {
             event.preventDefault();
-            const input = document.getElementById('password-input').value;
-            const errorText = document.getElementById('auth-error');
-
+            const input = document.getElementById('gatekeeper-input').value;
+            const errorElement = document.getElementById('gatekeeper-error');
+            
             if (input === "ML2026") {
-                document.getElementById('auth-screen').style.display = 'none';
+                // Révéler l'application et adapter la mise en page globale
+                document.getElementById('gatekeeper-screen').classList.add('hidden');
                 document.getElementById('app-content').classList.remove('hidden');
-                chargerEtatFormulaire(); // Charge les données après connexion réussie
+                document.body.classList.remove('justify-center'); 
+                
+                // Charger le formulaire à l'état propre
+                chargerEtatFormulaire();
             } else {
-                errorText.classList.remove('hidden');
-                document.getElementById('password-input').value = "";
+                errorElement.classList.remove('hidden');
+                document.getElementById('gatekeeper-input').value = "";
             }
-        }
-
-        // --- ACCÈS AUX STATISTIQUES VIA LE ® ---
-        function ouvrirStats() {
-            // Remplacez cette URL par celle de votre script Google Apps Script / Google Sheet si nécessaire
-            const urlStats = "https://script.google.com/macros/s/AKfycbwR_TclwA_Uat_R2YvI0-zPAn9K54mCunD3tqX2WjM/exec";
-            window.open(urlStats, '_blank');
         }
 
         function ajouterForm() {
@@ -337,7 +323,6 @@
             sauvegarderEtatFormulaire();
         }
 
-        // --- EXPORT PDF STABLE ---
         function telecharger() {
             if (typeof html2pdf === "undefined") {
                 alert("Le système PDF charge ses composants. Patientez un instant.");
@@ -369,7 +354,6 @@
             });
         }
 
-        // --- RÉINITIALISATION AVEC ALERTE DETRAVAIL ---
         function reinitialiserFormulaire() {
             if (confirm("⚠️ ATTENTION : Vous allez effacer l'intégralité du formulaire ainsi que votre sauvegarde automatique. Vos données seront définitivement perdues. Souhaitez-vous continuer ?")) {
                 localStorage.removeItem('cv_express_solidaire_backup');
