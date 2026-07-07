@@ -3,449 +3,70 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Générateur de CV Professionnel Solidaire</title>
+    <title>Générateur de CV Professionnel</title>
     
-    <link rel="manifest" href="manifest.json">
-    <meta name="theme-color" content="#1e40af">
-    <link class="pwa-icon" rel="apple-touch-icon" href="icon-192.png">
-
-    <!-- VERSION STABLE DE TAILWIND ET DU MOTEUR PDF POUR ÉVITER LES CONFLITS -->
+    <!-- Scripts -->
     <script src="https://cdn.tailwindcss.com/3.4.17"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     
     <style>
-        /* Configuration de la zone d'impression A4 stricte */
-        #cv-preview {
-            width: 210mm;
-            min-height: 297mm;
-            padding: 20mm;
-            box-sizing: border-box;
-            background: white;
-        }
+        #cv-preview { width: 210mm; min-height: 297mm; padding: 20mm; box-sizing: border-box; background: white; }
         .hidden-cv { display: none !important; }
-        
-        .cv-bullet-list {
-            list-style-type: disc;
-            padding-left: 18px;
-            margin-top: 4px;
-        }
-        .cv-bullet-list li {
-            margin-bottom: 2px;
-        }
-
-        .preview-wrapper {
-            display: flex;
-            justify-content: center;
-            width: 100%;
-            overflow-x: auto;
-            background-color: #1f2937;
-            padding: 1rem;
-            border-radius: 1rem;
-            box-shadow: inset 0 2px 4px 0 rgba(0, 0, 0, 0.06);
-        }
-
-        .preview-scale-container {
-            transform-origin: top center;
-            background-color: white;
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
-            transform: scale(0.35);
-            margin-bottom: -540mm;
-        }
-
-        @media (min-width: 400px) { .preview-scale-container { transform: scale(0.45); margin-bottom: -460mm; } }
-        @media (min-width: 640px) { .preview-scale-container { transform: scale(0.55); margin-bottom: -370mm; } }
-        @media (min-width: 768px) { .preview-scale-container { transform: scale(0.65); margin-bottom: -290mm; } }
-        @media (min-width: 1024px) { .preview-scale-container { transform: scale(0.48); margin-bottom: -430mm; } }
-        @media (min-width: 1280px) { .preview-scale-container { transform: scale(0.60); margin-bottom: -330mm; } }
-        @media (min-width: 1440px) { .preview-scale-container { transform: scale(0.70); margin-bottom: -250mm; } }
+        .preview-wrapper { display: flex; justify-content: center; width: 100%; overflow-x: auto; background-color: #1f2937; padding: 1rem; border-radius: 1rem; }
+        .preview-scale-container { transform-origin: top center; background-color: white; transform: scale(0.5); margin-bottom: -370mm; }
     </style>
 </head>
-<body class="bg-gray-100 font-sans min-h-screen flex flex-col items-center justify-center p-4 md:p-8">
+<body class="bg-gray-100 font-sans min-h-screen flex flex-col items-center p-4">
 
-    <!-- ÉCRAN DE VERROUILLAGE / CONNEXION -->
-    <div id="gatekeeper-screen" class="w-full max-w-md bg-white p-8 rounded-2xl shadow-xl text-center border border-gray-200 z-50">
-        <div class="w-16 h-16 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl">🔒</div>
+    <!-- ÉCRAN DE VERROUILLAGE -->
+    <div id="gatekeeper-screen" class="w-full max-w-md bg-white p-8 rounded-2xl shadow-xl text-center z-50 mt-20">
         <h2 class="text-2xl font-bold text-gray-800">Accès Sécurisé</h2>
-        <p class="text-gray-500 text-sm mt-1 mb-6">Veuillez saisir le code d'accès pour utiliser l'outil.</p>
-        
-        <form onsubmit="verifierMotDePasse(event)" class="space-y-4">
-            <input type="password" id="gatekeeper-input" placeholder="Code d'accès (ex: ML2026)" class="w-full p-3 border border-gray-300 rounded-xl text-center font-mono tracking-widest outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition" required>
-            <p id="gatekeeper-error" class="text-red-500 text-xs font-semibold hidden">⚠️ Code d'accès incorrect.</p>
-            <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-xl shadow-md transition cursor-pointer">
-                Valider et Entrer
-            </button>
+        <form onsubmit="verifierMotDePasse(event)" class="mt-6 space-y-4">
+            <input type="password" id="gatekeeper-input" placeholder="Mot de passe" class="w-full p-3 border rounded-xl text-center outline-none" required>
+            <button type="submit" class="w-full bg-blue-600 text-white font-bold py-3 rounded-xl">Entrer</button>
         </form>
     </div>
 
-    <!-- CONTENU PRINCIPAL DE L'APPLICATION (Masqué par défaut) -->
-    <div id="app-content" class="w-full hidden">
-        <header class="text-center my-4 max-w-2xl mx-auto">
-            <h1 class="text-3xl font-bold text-blue-600">Je crée mon CV express</h1>
-            <p class="text-gray-600 text-sm mt-2">Remplissez les informations à gauche, l'aperçu se met à jour en temps réel à droite.</p>
-        </header>
-
-        <main class="w-full max-w-7xl grid grid-cols-1 lg:grid-cols-2 gap-8 items-start mx-auto">
-            
-            <!-- FORMULAIRE (GAUCHE) -->
-            <div class="bg-white p-6 rounded-2xl shadow-md space-y-6 max-h-[85vh] overflow-y-auto">
-                
-                <section class="space-y-3 bg-gray-50 p-4 rounded-xl border border-gray-100">
-                    <h2 class="text-xs font-bold text-blue-700 uppercase tracking-wider">1. Identité & Projet</h2>
-                    <div class="grid grid-cols-2 gap-2">
-                        <input type="text" id="in-prenom" placeholder="Prénom" class="p-2 border rounded-lg bg-white text-sm outline-none w-full" oninput="maj()">
-                        <input type="text" id="in-nom" placeholder="Nom" class="p-2 border rounded-lg bg-white text-sm outline-none w-full" oninput="maj()">
-                    </div>
-                    <div class="grid grid-cols-2 gap-2">
-                        <input type="text" id="in-metier" placeholder="Métier / Projet visé" class="p-2 border rounded-lg bg-white text-sm outline-none w-full" oninput="maj()">
-                        <input type="tel" id="in-tel" placeholder="Téléphone" class="p-2 border rounded-lg bg-white text-sm outline-none w-full" oninput="maj()">
-                    </div>
-                    <div class="grid grid-cols-1">
-                        <input type="email" id="in-email" placeholder="Adresse Email" class="p-2 border rounded-lg bg-white text-sm outline-none w-full" oninput="maj()">
-                    </div>
-                    <textarea id="in-accroche" placeholder="Phrase d'accroche..." rows="2" class="w-full p-2 border rounded-lg bg-white text-sm outline-none" oninput="maj()"></textarea>
-                </section>
-
-                <div class="flex flex-col space-y-6">
-                    <section class="space-y-3 bg-gray-50 p-4 rounded-xl border border-gray-100">
-                        <div class="flex justify-between items-center border-b pb-2">
-                            <input type="text" id="title-form" value="Formations & Diplômes" class="font-bold text-blue-700 text-xs bg-transparent outline-none" oninput="maj()">
-                            <button onclick="ajouterForm()" class="bg-blue-600 text-white text-xs px-2 py-1 rounded hover:bg-blue-700 cursor-pointer">+ Ajouter</button>
-                        </div>
-                        <div id="container-form" class="space-y-2"></div>
-                    </section>
-
-                    <section class="space-y-3 bg-gray-50 p-4 rounded-xl border border-gray-100">
-                        <div class="flex justify-between items-center border-b pb-2">
-                            <input type="text" id="title-exp" value="Expériences Professionnelles" class="font-bold text-blue-700 text-xs bg-transparent outline-none" oninput="maj()">
-                            <button onclick="ajouterExp()" class="bg-blue-600 text-white text-xs px-2 py-1 rounded hover:bg-blue-700 cursor-pointer">+ Ajouter</button>
-                        </div>
-                        <div id="container-exp" class="space-y-2"></div>
-                    </section>
-                </div>
-
-                <!-- BOUTONS D'ACTION -->
-                <div class="space-y-3 pt-4">
-                    <button onclick="telecharger()" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-xl shadow-lg transition cursor-pointer text-center text-sm block">
-                        📥 Télécharger mon CV en PDF (A4)
-                    </button>
-
-                    <button type="button" onclick="reinitialiserFormulaire()" class="w-full bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-xl transition cursor-pointer text-center text-xs block">
-                        🗑️ Effacer et Réinitialiser toutes les données
-                    </button>
-                </div>
-            </div>
-
-            <!-- APERÇU DU CV (DROITE) -->
-            <div class="preview-wrapper">
-                <div class="preview-scale-container" id="pdf-target-zone">
-                    <div id="cv-preview" class="text-gray-800 flex flex-col justify-between">
-                        <div>
-                            <div class="border-b-4 border-blue-600 pb-4 flex justify-between items-end">
-                                <div>
-                                    <h1 id="out-identity" class="text-3xl font-extrabold tracking-tight text-gray-900">Prénom NOM</h1>
-                                    <p id="out-metier" class="text-lg font-bold text-blue-600 uppercase mt-1">PROJET / MÉTIER VISÉ</p>
-                                </div>
-                                <div class="text-right text-xs font-medium space-y-0.5 text-gray-600">
-                                    <p id="out-tel">📞 Téléphone</p>
-                                    <p id="out-email">✉️ Adresse Email</p>
-                                </div>
-                            </div>
-
-                            <div id="sec-accroche" class="my-6">
-                                <p id="out-accroche" class="text-sm italic text-gray-600 bg-gray-50 p-3 rounded-lg border-l-4 border-blue-400">Présentation courte...</p>
-                            </div>
-
-                            <div class="flex flex-col">
-                                <div id="sec-form" class="mb-6 hidden-cv">
-                                    <h3 id="out-title-form" class="text-sm font-bold text-blue-700 uppercase border-b pb-1 mb-3">Formations & Diplômes</h3>
-                                    <div id="out-liste-form" class="space-y-4"></div>
-                                </div>
-
-                                <div id="sec-exp" class="mb-6 hidden-cv">
-                                    <h3 id="out-title-exp" class="text-sm font-bold text-blue-700 uppercase border-b pb-1 mb-3">Expériences Professionnelles</h3>
-                                    <div id="out-liste-exp" class="space-y-4"></div>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <!-- PIED DE PAGE DU CV AVEC VOTRE MARQUE ET LIEN VERS LES STATISTIQUES -->
-                        <div class="border-t pt-2 text-center text-[10px] text-gray-400 font-semibold flex justify-between items-center">
-                            <span>Générateur de CV Professionnel Express</span>
-                            <span>Modèle de CV sur une idée de Faly R.<a href="https://docs.google.com/spreadsheets" target="_blank" class="text-blue-400 font-bold hover:underline ml-0.5">®</a></span>
-                        </div>
+    <!-- APPLICATION -->
+    <div id="app-content" class="w-full hidden max-w-7xl grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
+        <div class="bg-white p-6 rounded-2xl shadow-md space-y-6">
+            <!-- Formulaire simplifié ici -->
+            <button onclick="telecharger()" class="w-full bg-green-600 text-white font-bold py-3 rounded-xl">📥 Télécharger PDF</button>
+            <button onclick="reinitialiserFormulaire()" class="w-full bg-red-500 text-white py-2 rounded-xl">Réinitialiser</button>
+        </div>
+        <div class="preview-wrapper">
+            <div class="preview-scale-container" id="pdf-target-zone">
+                <div id="cv-preview">
+                    <!-- Contenu CV -->
+                    <div class="mt-auto border-t pt-2 text-center text-xs text-gray-500">
+                        Modèle de CV sur une idée de Faly R.<button onclick="afficherStats()" class="text-blue-600 font-bold underline">®</button>
                     </div>
                 </div>
             </div>
-
-        </main>
+        </div>
     </div>
 
     <script>
-        // --- CONTRÔLE D'ACCÈS OBLIGATOIRE À CHAQUE CONNEXION ---
+        // Supabase Init
+        const SUPABASE_URL = 'https://mlbjvzzadwjbdaaenfea.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1sYmp2emFkd2piZGFhZW5mZWFlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODMzNDk2MzgsImV4cCI6MjA5ODkyNTYzOH0.EC3kal19wHH35OnTll2rYnxmQyqzlOghxPdjkPdas5w';
+        const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
         function verifierMotDePasse(event) {
             event.preventDefault();
-            const input = document.getElementById('gatekeeper-input').value;
-            const errorElement = document.getElementById('gatekeeper-error');
-            
-            if (input === "ML2026") {
-                // Révéler l'application et adapter la mise en page globale
+            if(document.getElementById('gatekeeper-input').value === "ML2026") {
                 document.getElementById('gatekeeper-screen').classList.add('hidden');
                 document.getElementById('app-content').classList.remove('hidden');
-                document.body.classList.remove('justify-center'); 
-                
-                // Charger le formulaire à l'état propre
-                chargerEtatFormulaire();
-            } else {
-                errorElement.classList.remove('hidden');
-                document.getElementById('gatekeeper-input').value = "";
             }
         }
 
-        function ajouterForm() {
-            const container = document.getElementById('container-form');
-            const div = document.createElement('div');
-            div.className = "sub-block-item bg-white p-3 rounded-lg border border-gray-200 relative space-y-2";
-            div.innerHTML = `
-                <button onclick="this.parentElement.remove(); maj();" class="absolute top-1 right-2 text-red-500 hover:text-red-700 font-bold text-xs cursor-pointer">✕</button>
-                <div class="grid grid-cols-3 gap-2">
-                    <input type="text" placeholder="Années" class="form-dates p-1.5 border rounded text-xs outline-none col-span-1" oninput="maj()">
-                    <input type="text" placeholder="Diplôme ou Intitulé" class="form-diplome p-1.5 border rounded text-xs outline-none col-span-2" oninput="maj()">
-                </div>
-                <input type="text" placeholder="École & Ville" class="form-ecole w-full p-1.5 border rounded text-xs outline-none" oninput="maj()">
-            `;
-            container.appendChild(div);
-            maj();
-        }
-
-        function ajouterExp() {
-            const container = document.getElementById('container-exp');
-            const div = document.createElement('div');
-            div.className = "sub-block-item bg-white p-3 rounded-lg border border-gray-200 relative space-y-2";
-            div.innerHTML = `
-                <button onclick="this.parentElement.remove(); maj();" class="absolute top-1 right-2 text-red-500 hover:text-red-700 font-bold text-xs cursor-pointer">✕</button>
-                <div class="grid grid-cols-3 gap-2">
-                    <input type="text" placeholder="Dates" class="exp-dates p-1.5 border rounded text-xs outline-none col-span-1" oninput="maj()">
-                    <input type="text" placeholder="Intitulé du poste" class="exp-poste p-1.5 border rounded text-xs outline-none col-span-2" oninput="maj()">
-                </div>
-                <input type="text" placeholder="Entreprise & Ville" class="exp-lieu w-full p-1.5 border rounded text-xs outline-none" oninput="maj()">
-                <textarea placeholder="Missions (une par ligne)..." rows="2" class="exp-missions w-full p-1.5 border rounded text-xs outline-none" oninput="maj()"></textarea>
-            `;
-            container.appendChild(div);
-            maj();
-        }
-
-        function formatPrenom(str) {
-            if (!str) return "";
-            return str.toLowerCase().replace(/(?:^|\s|-)\S/g, function(a) { return a.toUpperCase(); });
-        }
-
-        function maj() {
-            let prenomRaw = document.getElementById('in-prenom').value;
-            let nomRaw = document.getElementById('in-nom').value;
-
-            let prenomFormate = formatPrenom(prenomRaw);
-            let nomFormate = nomRaw.toUpperCase();
-
-            document.getElementById('out-identity').innerText = (prenomFormate || nomFormate) ? `${prenomFormate} ${nomFormate}` : "Prénom NOM";
-
-            const metier = document.getElementById('in-metier').value.trim();
-            document.getElementById('out-metier').innerText = metier ? metier.toUpperCase() : "PROJET / MÉTIER VISÉ";
-
-            const tel = document.getElementById('in-tel').value.trim();
-            document.getElementById('out-tel').innerText = tel ? `📞 ${tel}` : "📞 Téléphone";
-            document.getElementById('out-tel').classList.toggle('hidden-cv', !tel);
-
-            const email = document.getElementById('in-email').value.trim();
-            document.getElementById('out-email').innerText = email ? `✉️ ${email}` : "✉️ Adresse Email";
-            document.getElementById('out-email').classList.toggle('hidden-cv', !email);
-
-            const accroche = document.getElementById('in-accroche').value.trim();
-            document.getElementById('out-accroche').innerText = accroche || "Présentation courte...";
-            document.getElementById('sec-accroche').classList.toggle('hidden-cv', !accroche);
-
-            document.getElementById('out-title-form').innerText = document.getElementById('title-form').value;
-            document.getElementById('out-title-exp').innerText = document.getElementById('title-exp').value;
-
-            // Rendu Formations
-            const outForm = document.getElementById('out-liste-form');
-            outForm.innerHTML = "";
-            let countForm = 0;
-            document.querySelectorAll('#container-form .sub-block-item').forEach(item => {
-                const date = item.querySelector('.form-dates').value.trim();
-                const diplome = item.querySelector('.form-diplome').value.trim();
-                const ecole = item.querySelector('.form-ecole').value.trim();
-                if (date || diplome || ecole) {
-                    countForm++;
-                    outForm.innerHTML += `
-                        <div class="flex items-start gap-4 text-xs">
-                            <span class="font-bold text-gray-700 min-w-[80px] pt-0.5">${date}</span>
-                            <div>
-                                <h4 class="font-bold text-gray-900">${diplome || 'Intitulé'}</h4>
-                                <p class="text-gray-600 italic">${ecole || 'Établissement'}</p>
-                            </div>
-                        </div>`;
-                }
-            });
-            document.getElementById('sec-form').classList.toggle('hidden-cv', countForm === 0);
-
-            // Rendu Expériences
-            const outExp = document.getElementById('out-liste-exp');
-            outExp.innerHTML = "";
-            let countExp = 0;
-            document.querySelectorAll('#container-exp .sub-block-item').forEach(item => {
-                const date = item.querySelector('.exp-dates').value.trim();
-                const poste = item.querySelector('.exp-poste').value.trim();
-                const lieu = item.querySelector('.exp-lieu').value.trim();
-                const missions = item.querySelector('.exp-missions').value.trim();
-                if (date || poste || lieu || missions) {
-                    countExp++;
-                    let htmlMissions = "";
-                    if (missions) {
-                        htmlMissions = `<ul class="cv-bullet-list">`;
-                        missions.split('\n').forEach(line => {
-                            if (line.trim()) htmlMissions += `<li>${line.trim()}</li>`;
-                        });
-                        htmlMissions += `</ul>`;
-                    }
-                    outExp.innerHTML += `
-                        <div class="flex items-start gap-4 text-xs">
-                            <span class="font-bold text-gray-700 min-w-[80px] pt-0.5">${date}</span>
-                            <div class="w-full">
-                                <h4 class="font-bold text-gray-900 uppercase">${poste || 'Poste occupé'}</h4>
-                                <p class="text-blue-600 font-medium italic">${lieu || 'Structure / Ville'}</p>
-                                ${htmlMissions}
-                            </div>
-                        </div>`;
-                }
-            });
-            document.getElementById('sec-exp').classList.toggle('hidden-cv', countExp === 0);
-
-            sauvegarderEtatFormulaire();
-        }
-
-        function telecharger() {
-            if (typeof html2pdf === "undefined") {
-                alert("Le système PDF charge ses composants. Patientez un instant.");
-                return;
-            }
-
-            const element = document.getElementById('cv-preview');
-            const prenom = document.getElementById('in-prenom').value.trim();
-            const nom = document.getElementById('in-nom').value.trim();
-            const nomFichier = (prenom || nom) ? `CV_${formatPrenom(prenom)}_${nom.toUpperCase()}.pdf` : 'Mon_CV_Professionnel.pdf';
-
-            const wrapper = document.getElementById('pdf-target-zone');
-            const oldStyle = wrapper.style.transform;
-            wrapper.style.transform = "none"; 
-
-            const opt = {
-                margin:       0,
-                filename:     nomFichier,
-                image:        { type: 'jpeg', quality: 0.98 },
-                html2canvas:  { scale: 2, useCORS: true, letterRendering: true, logging: false },
-                jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
-            };
-
-            html2pdf().set(opt).from(element).save().then(() => {
-                wrapper.style.transform = oldStyle; 
-            }).catch((err) => {
-                console.error(err);
-                wrapper.style.transform = oldStyle;
-            });
-        }
-
-        function reinitialiserFormulaire() {
-            if (confirm("⚠️ ATTENTION : Vous allez effacer l'intégralité du formulaire ainsi que votre sauvegarde automatique. Vos données seront définitivement perdues. Souhaitez-vous continuer ?")) {
-                localStorage.removeItem('cv_express_solidaire_backup');
-                
-                document.getElementById('in-prenom').value = "";
-                document.getElementById('in-nom').value = "";
-                document.getElementById('in-metier').value = "";
-                document.getElementById('in-tel').value = "";
-                document.getElementById('in-email').value = "";
-                document.getElementById('in-accroche').value = "";
-                document.getElementById('title-form').value = "Formations & Diplômes";
-                document.getElementById('title-exp').value = "Expériences Professionnelles";
-
-                document.getElementById('container-form').innerHTML = "";
-                document.getElementById('container-exp').innerHTML = "";
-
-                maj();
-            }
-        }
-
-        function sauvegarderEtatFormulaire() {
-            const data = {
-                champs: {
-                    prenom: document.getElementById('in-prenom').value,
-                    nom: document.getElementById('in-nom').value,
-                    metier: document.getElementById('in-metier').value,
-                    tel: document.getElementById('in-tel').value,
-                    email: document.getElementById('in-email').value,
-                    accroche: document.getElementById('in-accroche').value
-                },
-                formations: [],
-                experiences: []
-            };
-
-            document.querySelectorAll('#container-form .sub-block-item').forEach(item => {
-                data.formations.push({
-                    date: item.querySelector('.form-dates').value,
-                    diplome: item.querySelector('.form-diplome').value,
-                    ecole: item.querySelector('.form-ecole').value
-                });
-            });
-
-            document.querySelectorAll('#container-exp .sub-block-item').forEach(item => {
-                data.experiences.push({
-                    date: item.querySelector('.exp-dates').value,
-                    poste: item.querySelector('.exp-poste').value,
-                    lieu: item.querySelector('.exp-lieu').value,
-                    missions: item.querySelector('.exp-missions').value
-                });
-            });
-
-            localStorage.setItem('cv_express_solidaire_backup', JSON.stringify(data));
-        }
-
-        function chargerEtatFormulaire() {
-            const raw = localStorage.getItem('cv_express_solidaire_backup');
-            if (!raw) return;
+        async function afficherStats() {
             try {
-                const data = JSON.parse(raw);
-                if (data.champs) {
-                    document.getElementById('in-prenom').value = data.champs.prenom || "";
-                    document.getElementById('in-nom').value = data.champs.nom || "";
-                    document.getElementById('in-metier').value = data.champs.metier || "";
-                    document.getElementById('in-tel').value = data.champs.tel || "";
-                    document.getElementById('in-email').value = data.champs.email || "";
-                    document.getElementById('in-accroche').value = data.champs.accroche || "";
-                }
-                if (data.formations) {
-                    data.formations.forEach(f => {
-                        ajouterForm();
-                        const last = document.querySelector('#container-form .sub-block-item:last-child');
-                        if (last) {
-                            last.querySelector('.form-dates').value = f.date;
-                            last.querySelector('.form-diplome').value = f.diplome;
-                            last.querySelector('.form-ecole').value = f.ecole;
-                        }
-                    });
-                }
-                if (data.experiences) {
-                    data.experiences.forEach(e => {
-                        ajouterExp();
-                        const last = document.querySelector('#container-exp .sub-block-item:last-child');
-                        if (last) {
-                            last.querySelector('.exp-dates').value = e.date;
-                            last.querySelector('.exp-poste').value = e.poste;
-                            last.querySelector('.exp-lieu').value = e.lieu;
-                            last.querySelector('.exp-missions').value = e.missions;
-                        }
-                    });
-                }
-                maj();
-            } catch (e) { console.error(e); }
+                const { data, error } = await supabase.from('stats').select('*');
+                if (error) throw error;
+                alert('Stats de connexion/téléchargement : ' + JSON.stringify(data));
+            } catch (e) { alert('Erreur chargement stats'); }
         }
     </script>
 </body>
