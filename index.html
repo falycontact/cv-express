@@ -7,31 +7,40 @@
     <style>
         body {
             font-family: Arial, sans-serif;
-            margin: 20px;
+            margin: 0;
+            padding: 15px;
             background-color: #f9f9f9;
         }
 
         .form-container {
+            width: 100%;
             max-width: 600px;
             margin: 0 auto;
             background: #fff;
             padding: 20px;
             border-radius: 8px;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            box-sizing: border-box; /* Évite que le conteneur dépasse sur smartphone */
         }
 
-        /* CORRECTION : Ajustement pour éviter que les titres soient coupés */
+        /* CORRECTION STRICTE POUR LES TITRES DE RUBRIQUES
+           Force le titre à s'afficher entièrement, quitte à passer sur plusieurs lignes sur smartphone.
+        */
         .section-title {
-            font-size: 1.2rem;
+            font-size: 1.25rem;
             color: #333;
             border-bottom: 2px solid #007BFF;
-            padding-bottom: 5px;
+            padding-bottom: 6px;
             margin-top: 25px;
             margin-bottom: 15px;
-            /* Sécurités pour que le texte s'affiche entièrement */
-            white-space: normal; 
-            word-wrap: break-word;
-            overflow: visible;
+            
+            /* Propriétés de sécurité anti-coupure */
+            display: block !important;       /* Force un affichage en bloc complet */
+            white-space: normal !important;  /* Autorise le retour à la ligne automatique */
+            overflow: visible !important;    /* Empêche de masquer le texte qui dépasse */
+            text-overflow: clip !important;  /* Supprime les éventuels points de suspension (...) */
+            max-width: 100% !important;      /* Utilise toute la largeur disponible */
+            height: auto !important;         /* Laisse la hauteur s'adapter au texte */
         }
 
         .form-group {
@@ -42,41 +51,49 @@
             display: block;
             margin-bottom: 5px;
             font-weight: bold;
+            font-size: 0.95rem;
         }
 
         input[type="text"], textarea {
             width: 100%;
-            padding: 8px;
+            padding: 10px;
             border: 1px solid #ccc;
             border-radius: 4px;
             box-sizing: border-box;
+            font-size: 1rem; /* Évite le zoom automatique sur iPhone lors de la saisie */
         }
 
-        /* Style pour la phrase de prévention */
+        /* Phrase de prévention */
         .info-note {
             font-size: 0.9rem;
             color: #555;
             background-color: #e9f7fe;
             border-left: 4px solid #007BFF;
-            padding: 10px;
+            padding: 12px;
             margin-top: 25px;
             margin-bottom: 15px;
             border-radius: 4px;
+            line-height: 1.4;
         }
 
-        /* Zone des boutons */
+        /* Zone des boutons adaptative pour smartphone */
         .button-group {
             display: flex;
             gap: 10px;
             justify-content: flex-end;
+            margin-top: 20px;
         }
 
         .btn {
-            padding: 10px 20px;
+            padding: 12px 20px;
             border: none;
             border-radius: 4px;
             cursor: pointer;
             font-weight: bold;
+            font-size: 0.95rem;
+            flex: 1; /* Sur smartphone, les boutons prendront la même largeur */
+            max-width: 200px; /* Limite leur taille sur grand écran */
+            text-align: center;
         }
 
         .btn-submit {
@@ -84,18 +101,30 @@
             color: white;
         }
 
-        .btn-submit:hover {
-            background-color: #0056b3;
-        }
-
-        /* Style du nouveau bouton Réinitialiser */
         .btn-reset {
             background-color: #6c757d;
             color: white;
         }
 
-        .btn-reset:hover {
-            background-color: #5a6268;
+        /* AJUSTEMENTS SPÉCIFIQUES POUR ÉCRANS DE SMARTPHONES (Mobiles) */
+        @media (max-width: 480px) {
+            body {
+                padding: 10px;
+            }
+            .form-container {
+                padding: 15px;
+            }
+            .section-title {
+                font-size: 1.1rem; /* Réduit légèrement la taille de police pour que ça tienne mieux */
+            }
+            .button-group {
+                flex-direction: column-reverse; /* Aligne les boutons l'un sur l'autre pour plus de confort sur mobile */
+                gap: 8px;
+            }
+            .btn {
+                max-width: 100%; /* Les boutons prennent toute la largeur sur mobile */
+                width: 100%;
+            }
         }
     </style>
 </head>
@@ -104,10 +133,10 @@
 <div class="form-container">
     <form id="profileForm">
         
-        <h2 class="section-title">Compétences techniques</h2>
+        <h2 class="section-title">Formations & Diplômes</h2>
         <div class="form-group">
-            <label for="skills">Vos compétences (séparées par des virgules) :</label>
-            <input type="text" id="skills" name="skills" placeholder="ex: HTML, CSS, JavaScript...">
+            <label for="education">Vos diplômes et écoles :</label>
+            <input type="text" id="education" name="education" placeholder="ex: Master Informatique, Université...">
         </div>
 
         <h2 class="section-title">Expériences professionnelles</h2>
@@ -116,13 +145,25 @@
             <textarea id="experience" name="experience" rows="4" placeholder="Décrivez vos anciens postes..."></textarea>
         </div>
 
+        <h2 class="section-title">Compétences techniques</h2>
+        <div class="form-group">
+            <label for="skills">Vos outils et langages :</label>
+            <input type="text" id="skills" name="skills" placeholder="ex: HTML, CSS, React...">
+        </div>
+
+        <h2 class="section-title">Compétences linguistiques</h2>
+        <div class="form-group">
+            <label for="languages">Langues parlées et niveau :</label>
+            <input type="text" id="languages" name="languages" placeholder="ex: Anglais (Courant), Allemand (B2)...">
+        </div>
+
         <div class="info-note">
             ℹ️ <strong>Information :</strong> En cliquant sur "Enregistrer", les données saisies ci-dessus seront automatiquement sauvegardées et mises à jour dans votre profil.
         </div>
 
         <div class="button-group">
             <button type="reset" class="btn btn-reset">Réinitialiser</button>
-            <button type="submit" class="btn btn-submit">Enregistrer les modifications</button>
+            <button type="submit" class="btn btn-submit">Enregistrer</button>
         </div>
 
     </form>
