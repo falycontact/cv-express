@@ -3,94 +3,171 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Générateur de CV Professionnel Solidaire</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <title>Formulaire de Profil</title>
     <style>
-        #cv-preview { width: 210mm; min-height: 297mm; padding: 20mm; background: white; }
-        .hidden-cv { display: none !important; }
-        .preview-wrapper { overflow-x: auto; background: #1f2937; padding: 1rem; border-radius: 1rem; }
-    </style>
-</head>
-<body class="bg-gray-100 p-4">
-
-    <!-- Gatekeeper -->
-    <div id="gatekeeper-screen" class="fixed inset-0 bg-blue-950 z-50 flex items-center justify-center p-4">
-        <div class="bg-white p-8 rounded-2xl max-w-sm w-full text-center space-y-4">
-            <h2 class="text-xl font-bold text-blue-900">Accès Sécurisé</h2>
-            <input type="password" id="gatekeeper-code" placeholder="Code d'accès" class="w-full p-2 border rounded text-center">
-            <button onclick="verifierCode()" class="w-full bg-blue-600 text-white py-2 rounded">Valider</button>
-        </div>
-    </div>
-
-    <!-- Admin Panel -->
-    <div id="admin-panel" class="hidden fixed bottom-4 left-4 bg-gray-900 text-white p-4 rounded-xl z-40 text-xs">
-        <p>Ouvertures : <span id="stat-ouvertures">...</span></p>
-        <p>Téléchargements : <span id="stat-telechargements">...</span></p>
-        <button onclick="reinitialiserStats()" class="bg-red-600 w-full mt-2 rounded">Reset Cloud</button>
-    </div>
-
-    <!-- UI (Formulaire simplifié pour l'exemple) -->
-    <div class="max-w-4xl mx-auto space-y-6">
-        <div class="grid grid-cols-2 gap-2">
-            <input type="text" id="in-prenom" placeholder="Prénom" oninput="maj()" class="p-2 border rounded">
-            <input type="text" id="in-nom" placeholder="Nom" oninput="maj()" class="p-2 border rounded">
-        </div>
-        <button onclick="telecharger()" class="bg-green-600 text-white py-2 px-4 rounded">Télécharger PDF</button>
-        <button onclick="confirmerReset()" class="bg-red-600 text-white py-2 px-4 rounded">Réinitialiser</button>
-    </div>
-
-    <!-- CV Preview -->
-    <div class="preview-wrapper mt-8">
-        <div id="cv-preview">
-            <h1 id="out-identity" class="text-3xl font-bold">Prénom NOM</h1>
-        </div>
-        <div onclick="toggleAdmin()" class="text-center text-gray-400 cursor-pointer text-xs mt-4">
-            Développement du modèle sur une idée de Faly R.®
-        </div>
-    </div>
-
-    <script>
-        const SUPABASE_URL = "https://mlbjvzadwjbdaaenfeae.supabase.co";
-        const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1sYmp2emFkd2piZGFhZW5mZWFlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODMzNDk2MzgsImV4cCI6MjA5ODkyNTYzOH0.EC3kal19wHH35OnTll2rYnxmQyqzlOghxPdjkPdas5w";
-        const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-
-        function verifierCode() {
-            if(document.getElementById('gatekeeper-code').value === "ML2026") {
-                document.getElementById('gatekeeper-screen').style.display = 'none';
-            } else { alert("Code incorrect"); }
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f9f9f9;
         }
 
-        function maj() {
-            let p = document.getElementById('in-prenom').value;
-            let n = document.getElementById('in-nom').value;
-            // Formatage Prénom (1ere maj, reste min) et Nom (tout maj)
-            let formattedP = p.charAt(0).toUpperCase() + p.slice(1).toLowerCase();
-            let formattedN = n.toUpperCase();
-            document.getElementById('out-identity').innerText = `${formattedP} ${formattedN}`;
+        .form-container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            box-sizing: border-box; /* Évite que le conteneur ne dépasse sur mobile */
         }
 
-        function telecharger() {
-            const element = document.getElementById('cv-preview');
-            html2pdf().from(element).save('Mon_CV.pdf');
+        /* CORRECTION ET BLINDAGE : Évite à 100% que les titres soient coupés */
+        .section-title {
+            font-size: 1.25rem;
+            color: #333;
+            border-bottom: 2px solid #007BFF;
+            padding-bottom: 5px;
+            margin-top: 30px;
+            margin-bottom: 15px;
+            
+            /* Sécurités pour forcer l'affichage entier (PC et Mobile) */
+            display: block !important;
+            width: 100% !important;
+            white-space: normal !important; 
+            word-wrap: break-word !important;
+            overflow: visible !important;
+            height: auto !important;
         }
 
-        function confirmerReset() {
-            if(confirm("Êtes-vous sûr de vouloir tout effacer ? Cette action est irréversible.")) {
-                localStorage.clear();
-                location.reload();
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+
+        input[type="text"], textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+            font-size: 16px; /* Taille idéale pour éviter le zoom automatique sur iPhone */
+        }
+
+        /* Style pour la phrase de prévention */
+        .info-note {
+            font-size: 0.9rem;
+            color: #555;
+            background-color: #e9f7fe;
+            border-left: 4px solid #007BFF;
+            padding: 12px;
+            margin-top: 25px;
+            margin-bottom: 15px;
+            border-radius: 4px;
+            line-height: 1.4;
+        }
+
+        /* Zone des boutons */
+        .button-group {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+        }
+
+        .btn {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 0.95rem;
+        }
+
+        .btn-submit {
+            background-color: #007BFF;
+            color: white;
+        }
+
+        .btn-submit:hover {
+            background-color: #0056b3;
+        }
+
+        /* Style du bouton Réinitialiser */
+        .btn-reset {
+            background-color: #6c757d;
+            color: white;
+        }
+
+        .btn-reset:hover {
+            background-color: #5a6268;
+        }
+
+        /* AJUSTEMENT CORRECTIF SPÉCIFIQUE POUR SMARTPHONES */
+        @media (max-width: 480px) {
+            body {
+                margin: 10px; /* Réduit la marge extérieure pour gagner de la place */
+            }
+            .form-container {
+                padding: 15px; /* Optimise l'espace interne */
+            }
+            .section-title {
+                font-size: 1.15rem; /* Ajuste finement la taille pour les petits écrans */
+            }
+            .button-group {
+                flex-direction: column-reverse; /* Empile les boutons verticalement */
+                gap: 8px;
+            }
+            .btn {
+                width: 100%; /* Les boutons prennent toute la largeur sur mobile */
+                padding: 14px; /* Zone de clic plus confortable */
             }
         }
+    </style>
+</head>
+<body>
 
-        function toggleAdmin() {
-            document.getElementById('admin-panel').classList.toggle('hidden');
-        }
+<div class="form-container">
+    <form id="profileForm">
+        
+        <h2 class="section-title">Formations & Diplômes</h2>
+        <div class="form-group">
+            <label for="education">Vos formations, diplômes et écoles :</label>
+            <input type="text" id="education" name="education" placeholder="ex: Master Informatique, Université...">
+        </div>
 
-        async function reinitialiserStats() {
-            // Logique de reset table Supabase ici
-            alert("Stats réinitialisées sur le Cloud.");
-        }
-    </script>
+        <h2 class="section-title">Expériences professionnelles</h2>
+        <div class="form-group">
+            <label for="experience">Résumé de vos expériences :</label>
+            <textarea id="experience" name="experience" rows="4" placeholder="Décrivez vos anciens postes..."></textarea>
+        </div>
+
+        <h2 class="section-title">Compétences techniques</h2>
+        <div class="form-group">
+            <label for="skills">Vos compétences (séparées par des virgules) :</label>
+            <input type="text" id="skills" name="skills" placeholder="ex: HTML, CSS, JavaScript...">
+        </div>
+
+        <h2 class="section-title">Compétences linguistiques</h2>
+        <div class="form-group">
+            <label for="languages">Langues maîtrisées et niveau :</label>
+            <input type="text" id="languages" name="languages" placeholder="ex: Anglais (Courant), Espagnol (B2)...">
+        </div>
+
+        <div class="info-note">
+            ℹ️ <strong>Information :</strong> En cliquant sur "Enregistrer les modifications", les données saisies ci-dessus seront automatiquement sauvegardées et mises à jour dans votre profil.
+        </div>
+
+        <div class="button-group">
+            <button type="reset" class="btn btn-reset">Réinitialiser</button>
+            <button type="submit" class="btn btn-submit">Enregistrer les modifications</button>
+        </div>
+
+    </form>
+</div>
+
 </body>
 </html>
