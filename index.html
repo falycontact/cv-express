@@ -23,7 +23,6 @@
         }
         /* Masquage propre des éléments vides */
         .hidden-cv { display: none !important; }
-        
         /* Style des listes à puces automatiques dans le CV */
         .cv-bullet-list {
             list-style-type: disc;
@@ -34,7 +33,7 @@
             margin-bottom: 2px;
         }
 
-        /* Ajustement du conteneur de l'aperçu */
+        /* AJUSTEMENT CORRECTIF DU CONTENEUR DE L'APERÇU SUR PC PORTABLE & ÉCRANS INTERMÉDIAIRES */
         .preview-wrapper {
             display: flex;
             justify-content: center;
@@ -46,7 +45,7 @@
             box-shadow: inset 0 2px 4px 0 rgba(0, 0, 0, 0.06);
         }
 
-        /* Échelle dynamique de l'aperçu sur l'écran */
+        /* Échelle dynamique ultra-précise pour éviter les débordements sur tous les écrans */
         .preview-scale-container {
             transform-origin: top center;
             background-color: white;
@@ -65,6 +64,7 @@
             .preview-scale-container { transform: scale(0.65); margin-bottom: -290mm; }
         }
         @media (min-width: 1024px) {
+            /* Configuration spéciale PC portable */
             .preview-scale-container { transform: scale(0.48); margin-bottom: -430mm; }
         }
         @media (min-width: 1280px) {
@@ -77,9 +77,30 @@
 </head>
 <body class="bg-gray-100 font-sans min-h-screen flex flex-col items-center p-4 md:p-8">
 
+    <div id="gatekeeper-screen" class="fixed inset-0 bg-blue-950 z-50 flex flex-col items-center justify-center p-4 hidden">
+        <div class="bg-white p-8 rounded-2xl shadow-2xl max-w-md w-full text-center space-y-4">
+            <h2 class="text-2xl font-bold text-blue-900">Accès Sécurisé</h2>
+            <p class="text-gray-600 text-sm">Veuillez saisir le code d'activation qui vous a été communiqué pour accéder à l'outil.</p>
+            <input type="password" id="gatekeeper-code" placeholder="Code d'accès" class="w-full p-3 border rounded-xl text-center font-mono text-lg outline-none focus:border-blue-500">
+            <button onclick="verifierCode()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl transition cursor-pointer">Valider l'accès</button>
+            <p id="gatekeeper-error" class="text-red-500 text-xs font-semibold hidden">❌ Code incorrect. Veuillez réessayer.</p>
+            <p class="text-gray-500 text-xs pt-2 border-t border-gray-100">Problème de connexion ? Contactez-nous à <a href="mailto:faly.contact@gmail.com" class="text-blue-600 hover:underline font-medium">faly.contact@gmail.com</a></p>
+        </div>
+    </div>
+
+    <div id="admin-panel" class="fixed bottom-4 left-4 bg-gray-900 text-white text-xs p-4 rounded-xl shadow-2xl border border-gray-700 z-40 hidden space-y-2 max-w-xs">
+        <div class="flex justify-between items-center border-b border-gray-700 pb-1">
+            <span class="font-bold text-blue-400">📊 Stats Globales (Supabase)</span>
+            <button onclick="toggleAdmin()" class="text-gray-400 hover:text-white font-bold">✕</button>
+        </div>
+        <p>Total ouvertures : <span id="stat-ouvertures" class="font-bold text-green-400">Chargement...</span></p>
+        <p>Total CV téléchargés : <span id="stat-telechargements" class="font-bold text-green-400">Chargement...</span></p>
+        <button onclick="reinitialiserStatsSupabase()" class="w-full bg-red-900 hover:bg-red-800 text-[10px] py-1 rounded mt-1 font-medium transition cursor-pointer">Remettre à zéro sur le Cloud</button>
+    </div>
+
     <header class="text-center my-4 max-w-2xl">
         <h1 class="text-3xl font-bold text-blue-600">Je crée mon CV express</h1>
-        <p class="text-gray-600 text-sm mt-2">Remplissez les informations à gauche, l'aperçu se met à jour en temps réel à droite.</p>
+        <p class="text-gray-600 text-sm mt-2">Personnalise les titres des rubriques directement. Utilise les flèches 🔼 et 🔽 pour réouvrir ou réorganiser tes expériences, formations ou blocs à tout moment.</p>
     </header>
 
     <main class="w-full max-w-7xl grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
@@ -94,51 +115,111 @@
                 </div>
                 <div class="grid grid-cols-2 gap-2">
                     <input type="text" id="in-metier" placeholder="Métier / Projet visé" class="p-2 border rounded-lg bg-white text-sm outline-none w-full" oninput="maj()">
-                    <input type="tel" id="in-tel" placeholder="Téléphone" class="p-2 border rounded-lg bg-white text-sm outline-none w-full" oninput="maj()">
+                    <input type="tel" id="in-tel" placeholder="Téléphone (ex: 06 00...)" class="p-2 border rounded-lg bg-white text-sm outline-none w-full" oninput="maj()">
                 </div>
                 <div class="grid grid-cols-1">
                     <input type="email" id="in-email" placeholder="Adresse Email" class="p-2 border rounded-lg bg-white text-sm outline-none w-full" oninput="maj()">
                 </div>
-                <textarea id="in-accroche" placeholder="Phrase d'accroche..." rows="2" class="w-full p-2 border rounded-lg bg-white text-sm outline-none" oninput="maj()"></textarea>
+                <textarea id="in-accroche" placeholder="Phrase d'accroche ou présentation courte..." rows="2" class="w-full p-2 border rounded-lg bg-white text-sm outline-none" oninput="maj()"></textarea>
             </section>
 
-            <div class="flex flex-col space-y-6">
-                <section class="space-y-3 bg-gray-50 p-4 rounded-xl border border-gray-100">
-                    <div class="flex justify-between items-center border-b pb-2">
-                        <input type="text" id="title-form" value="Formations & Diplômes" class="font-bold text-blue-700 text-xs bg-transparent outline-none" oninput="maj()">
-                        <button onclick="ajouterForm()" class="bg-blue-600 text-white text-xs px-2 py-1 rounded hover:bg-blue-700 cursor-pointer">+ Ajouter</button>
-                    </div>
-                    <div id="container-form" class="space-y-2"></div>
-                </section>
-
-                <section class="space-y-3 bg-gray-50 p-4 rounded-xl border border-gray-100">
-                    <div class="flex justify-between items-center border-b pb-2">
-                        <input type="text" id="title-exp" value="Expériences Professionnelles" class="font-bold text-blue-700 text-xs bg-transparent outline-none" oninput="maj()">
-                        <button onclick="ajouterExp()" class="bg-blue-600 text-white text-xs px-2 py-1 rounded hover:bg-blue-700 cursor-pointer">+ Ajouter</button>
-                    </div>
-                    <div id="container-exp" class="space-y-2"></div>
-                </section>
+            <div class="flex justify-center">
+                <button onclick="inverserOrdreBlocs()" class="flex items-center gap-2 bg-amber-50 hover:bg-amber-100 text-amber-800 text-xs font-semibold px-4 py-2.5 rounded-xl border border-amber-200 transition shadow-sm cursor-pointer">
+                    🔄 Intervertir les blocs (Formations ⇄ Expériences)
+                </button>
             </div>
 
-            <div class="space-y-3 pt-4">
-                <button onclick="telecharger()" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-xl shadow-lg transition cursor-pointer text-center text-sm block">
-                    📥 Télécharger mon CV en PDF (A4)
-                </button>
+            <div id="form-dynamic-order" class="flex flex-col space-y-6">
+                
+                <section id="form-sec-form" class="space-y-3 bg-gray-50 p-4 rounded-xl border border-gray-100 order-1">
+                    <div class="flex flex-col sm:flex-row justify-between gap-2 border-b pb-2 mb-2">
+                        <input type="text" id="title-form" value="Formations & Diplômes" class="font-bold text-blue-700 uppercase tracking-wider text-xs bg-transparent border-b border-dashed border-blue-300 outline-none p-0.5 w-full sm:w-auto" oninput="maj()">
+                        <button onclick="ajouterForm()" class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold py-1 px-3 rounded-lg cursor-pointer transition whitespace-nowrap">+ Ajouter une formation</button>
+                    </div>
+                    <div id="container-form" class="space-y-3"></div>
+                </section>
 
-                <button type="button" onclick="reinitialiserFormulaire()" class="w-full bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-xl transition cursor-pointer text-center text-xs block">
-                    🗑️ Effacer et Réinitialiser toutes les données
+                <section id="form-sec-exp" class="space-y-3 bg-gray-50 p-4 rounded-xl border border-gray-100 order-2">
+                    <div class="flex flex-col sm:flex-row justify-between gap-2 border-b pb-2 mb-2">
+                        <input type="text" id="title-exp" value="Expériences Professionnelles" class="font-bold text-blue-700 uppercase tracking-wider text-xs bg-transparent border-b border-dashed border-blue-300 outline-none p-0.5 w-full sm:w-auto" oninput="maj()">
+                        <button onclick="ajouterExp()" class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold py-1 px-3 rounded-lg cursor-pointer transition whitespace-nowrap">+ Ajouter une expérience</button>
+                    </div>
+                    <div id="container-exp" class="space-y-4"></div>
+                </section>
+                
+            </div>
+
+            <div id="form-secondary-order" class="flex flex-col space-y-6">
+
+                <section id="form-sec-tech" class="space-y-3 bg-gray-50 p-4 rounded-xl border border-gray-100 order-1">
+                    <div class="flex justify-between items-center border-b pb-2 mb-2">
+                        <div class="flex items-center gap-1 w-full">
+                            <div class="flex flex-col text-[9px] text-gray-400 mr-1">
+                                <button onclick="monterBlocSec('form-sec-tech')" class="hover:text-gray-700 cursor-pointer">▲</button>
+                                <button onclick="descendreBlocSec('form-sec-tech')" class="hover:text-gray-700 cursor-pointer">▼</button>
+                            </div>
+                            <input type="text" id="title-tech" value="Compétences Techniques" class="font-bold text-blue-700 uppercase tracking-wider text-xs bg-transparent border-b border-dashed border-blue-300 outline-none p-0.5 w-full sm:w-auto" oninput="maj()">
+                        </div>
+                        <button onclick="ajouterTech()" class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold py-1 px-3 rounded-lg cursor-pointer transition whitespace-nowrap">+ Ajouter</button>
+                    </div>
+                    <div id="container-tech" class="space-y-2"></div>
+                </section>
+
+                <section id="form-sec-lang" class="space-y-3 bg-gray-50 p-4 rounded-xl border border-gray-100 order-2">
+                    <div class="flex justify-between items-center border-b pb-2 mb-2">
+                        <div class="flex items-center gap-1 w-full">
+                            <div class="flex flex-col text-[9px] text-gray-400 mr-1">
+                                <button onclick="monterBlocSec('form-sec-lang')" class="hover:text-gray-700 cursor-pointer">▲</button>
+                                <button onclick="descendreBlocSec('form-sec-lang')" class="hover:text-gray-700 cursor-pointer">▼</button>
+                            </div>
+                            <input type="text" id="title-lang" value="Compétences Linguistiques" class="font-bold text-blue-700 uppercase tracking-wider text-xs bg-transparent border-b border-dashed border-blue-300 outline-none p-0.5 w-full sm:w-auto" oninput="maj()">
+                        </div>
+                        <button onclick="ajouterLang()" class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold py-1 px-3 rounded-lg cursor-pointer transition whitespace-nowrap">+ Ajouter</button>
+                    </div>
+                    <div id="container-lang" class="space-y-2"></div>
+                </section>
+
+                <section id="form-sec-loisir" class="space-y-3 bg-gray-50 p-4 rounded-xl border border-gray-100 order-3">
+                    <div class="flex justify-between items-center border-b pb-2 mb-2">
+                        <div class="flex items-center gap-1 w-full">
+                            <div class="flex flex-col text-[9px] text-gray-400 mr-1">
+                                <button onclick="monterBlocSec('form-sec-loisir')" class="hover:text-gray-700 cursor-pointer">▲</button>
+                                <button onclick="descendreBlocSec('form-sec-loisir')" class="hover:text-gray-700 cursor-pointer">▼</button>
+                            </div>
+                            <input type="text" id="title-loisir" value="Centres d'intérêt" class="font-bold text-blue-700 uppercase tracking-wider text-xs bg-transparent border-b border-dashed border-blue-300 outline-none p-0.5 w-full sm:w-auto" oninput="maj()">
+                        </div>
+                        <button onclick="ajouterLoisir()" class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold py-1 px-3 rounded-lg cursor-pointer transition whitespace-nowrap">+ Ajouter</button>
+                    </div>
+                    <div id="container-loisir" class="space-y-3"></div>
+                </section>
+
+            </div>
+
+            <button onclick="telecharger()" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-xl shadow-lg transition transform active:scale-95 cursor-pointer text-center block text-sm">
+                📥 Imprimer / Télécharger mon CV au propre en PDF (format A4)
+            </button>
+
+            <div style="background: #f8fafc; padding: 15px; margin-top: 20px; border-radius: 12px; border: 1px solid #e2e8f0; font-family: sans-serif;">
+                <p style="margin: 0 0 12px 0; font-size: 13px; color: #475569; line-height: 1.5;">
+                    ℹ️ <strong>Respect de votre vie privée (RGPD) :</strong> Vos saisies sont automatiquement mémorisées sur ce navigateur pour vous éviter de perdre votre travail. Aucune donnée personnelle n'est envoyée ou stockée sur nos serveurs. 
+                    <strong>Si vous utilisez un ordinateur public ou partagé</strong>, pensez à cliquer sur le bouton ci-dessous avant de partir pour que personne ne puisse voir vos informations.
+                </p>
+                <button type="button" onclick="reinitialiserFormulaire()" style="background: #ef4444; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 12px; transition: background 0.2s;">
+                    🗑️ Effacer toutes mes données enregistrées
                 </button>
             </div>
         </div>
 
         <div class="preview-wrapper">
             <div class="preview-scale-container">
+                
                 <div id="cv-preview" class="text-gray-800 flex flex-col justify-between">
+                    
                     <div>
                         <div class="border-b-4 border-blue-600 pb-4 flex justify-between items-end">
                             <div>
                                 <h1 id="out-identity" class="text-3xl font-extrabold tracking-tight text-gray-900">Prénom NOM</h1>
-                                <p id="out-metier" class="text-lg font-bold text-blue-600 uppercase mt-1">PROJET / MÉTIER VISÉ</p>
+                                <p id="out-metier" class="text-lg font-bold text-blue-600 tracking-wide uppercase mt-1">PROJET / MÉTIER VISÉ</p>
                             </div>
                             <div class="text-right text-xs font-medium space-y-0.5 text-gray-600">
                                 <p id="out-tel">📞 Téléphone</p>
@@ -147,66 +228,68 @@
                         </div>
 
                         <div id="sec-accroche" class="my-6">
-                            <p id="out-accroche" class="text-sm italic text-gray-600 bg-gray-50 p-3 rounded-lg border-l-4 border-blue-400">Présentation courte...</p>
+                            <p id="out-accroche" class="text-sm italic text-gray-600 bg-gray-50 p-3 rounded-lg border-l-4 border-blue-400">
+                                Présentation courte...
+                            </p>
                         </div>
 
-                        <div class="flex flex-col">
-                            <div id="sec-form" class="mb-6 hidden-cv">
-                                <h3 id="out-title-form" class="text-sm font-bold text-blue-700 uppercase border-b pb-1 mb-3">Formations & Diplômes</h3>
+                        <div id="cv-render-dynamic-order" class="flex flex-col">
+                            
+                            <div id="sec-form" class="mb-6 hidden-cv order-1">
+                                <h3 id="out-title-form" class="text-sm font-bold text-blue-700 uppercase tracking-wider border-b pb-1 mb-3">Formations & Diplômes</h3>
                                 <div id="out-liste-form" class="space-y-4"></div>
                             </div>
 
-                            <div id="sec-exp" class="mb-6 hidden-cv">
-                                <h3 id="out-title-exp" class="text-sm font-bold text-blue-700 uppercase border-b pb-1 mb-3">Expériences Professionnelles</h3>
+                            <div id="sec-exp" class="mb-6 hidden-cv order-2">
+                                <h3 id="out-title-exp" class="text-sm font-bold text-blue-700 uppercase tracking-wider border-b pb-1 mb-3">Expériences Professionnelles</h3>
                                 <div id="out-liste-exp" class="space-y-4"></div>
                             </div>
+
+                        </div>
+
+                        <div id="cv-secondary-columns" class="grid grid-cols-2 gap-6 mb-6">
+                            
+                            <div id="cv-col-left" class="space-y-4 flex flex-col justify-start">
+                                <div id="sec-tech" class="hidden-cv">
+                                    <h3 id="out-title-tech" class="text-sm font-bold text-blue-700 uppercase tracking-wider border-b pb-1 mb-2">Compétences Techniques</h3>
+                                    <ul id="out-liste-tech" class="space-y-1.5 text-xs"></ul>
+                                </div>
+                                <div id="sec-lang" class="hidden-cv">
+                                    <h3 id="out-title-lang" class="text-sm font-bold text-blue-700 uppercase tracking-wider border-b pb-1 mb-2">Compétences Linguistiques</h3>
+                                    <ul id="out-liste-lang" class="space-y-1.5 text-xs"></ul>
+                                </div>
+                            </div>
+
+                            <div id="cv-col-right" class="space-y-4 flex flex-col justify-start">
+                                <div id="sec-loisirs" class="hidden-cv">
+                                    <h3 id="out-title-loisir" class="text-sm font-bold text-blue-700 uppercase tracking-wider border-b pb-1 mb-2">Centres d'intérêt</h3>
+                                    <div id="out-liste-loisirs" class="space-y-3"></div>
+                                </div>
+                            </div>
+
                         </div>
                     </div>
-                    <div class="border-t pt-2 text-center text-[10px] text-gray-400 font-semibold">
-                        Générateur de CV Professionnel Express
+
+                    <div onclick="toggleAdmin()" class="border-t pt-2 text-center text-[10px] text-gray-400 font-semibold tracking-wide cursor-pointer select-none">
+                        Développement du modèle sur une idée de Faly R.®
                     </div>
+
                 </div>
+
             </div>
         </div>
 
     </main>
 
     <script>
-        // --- INJECTION DES BLOCS DYNAMIQUES DU FORMULAIRE ---
-        function ajouterForm() {
-            const container = document.getElementById('container-form');
-            const div = document.createElement('div');
-            div.className = "sub-block-item bg-white p-3 rounded-lg border border-gray-200 relative space-y-2";
-            div.innerHTML = `
-                <button onclick="this.parentElement.remove(); maj();" class="absolute top-1 right-2 text-red-500 hover:text-red-700 font-bold text-xs cursor-pointer">✕</button>
-                <div class="grid grid-cols-3 gap-2">
-                    <input type="text" placeholder="Années (ex: 2022-2024)" class="form-dates p-1.5 border rounded text-xs outline-none col-span-1" oninput="maj()">
-                    <input type="text" placeholder="Diplôme ou Intitulé" class="form-diplome p-1.5 border rounded text-xs outline-none col-span-2" oninput="maj()">
-                </div>
-                <input type="text" placeholder="École / Établissement & Ville" class="form-ecole w-full p-1.5 border rounded text-xs outline-none" oninput="maj()">
-            `;
-            container.appendChild(div);
-            maj();
-        }
+        const CODE_VALIDATION = "ML2026";
+        const SUPABASE_URL = "https://mlbjvzadwjbdaaenfeae.supabase.co";
+        const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1sYmp2emFkd2piZGFhZW5mZWFlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODMzNDk2MzgsImV4cCI6MjA5ODkyNTYzOH0.EC3kal19wHH35OnTll2rYnxmQyqzlOghxPdjkPdas5w";
 
-        function ajouterExp() {
-            const container = document.getElementById('container-exp');
-            const div = document.createElement('div');
-            div.className = "sub-block-item bg-white p-3 rounded-lg border border-gray-200 relative space-y-2";
-            div.innerHTML = `
-                <button onclick="this.parentElement.remove(); maj();" class="absolute top-1 right-2 text-red-500 hover:text-red-700 font-bold text-xs cursor-pointer">✕</button>
-                <div class="grid grid-cols-3 gap-2">
-                    <input type="text" placeholder="Dates" class="exp-dates p-1.5 border rounded text-xs outline-none col-span-1" oninput="maj()">
-                    <input type="text" placeholder="Intitulé du poste" class="exp-poste p-1.5 border rounded text-xs outline-none col-span-2" oninput="maj()">
-                </div>
-                <input type="text" placeholder="Entreprise / Structure & Ville" class="exp-lieu w-full p-1.5 border rounded text-xs outline-none" oninput="maj()">
-                <textarea placeholder="Missions (une par ligne)..." rows="2" class="exp-missions w-full p-1.5 border rounded text-xs outline-none" oninput="maj()"></textarea>
-            `;
-            container.appendChild(div);
-            maj();
-        }
+        let ordreInverse = false;
+        let ordreSecondaire = ['form-sec-tech', 'form-sec-lang', 'form-sec-loisir'];
 
-        // --- SYNCHRONISATION EN TEMPS RÉEL ---
+        // --- GESTION ET SYNCHRONISATION EN TEMPS RÉEL (maj) ---
         function maj() {
             const prenom = document.getElementById('in-prenom').value.trim();
             const nom = document.getElementById('in-nom').value.trim();
@@ -227,10 +310,14 @@
             document.getElementById('out-accroche').innerText = accroche || "Présentation courte...";
             document.getElementById('sec-accroche').classList.toggle('hidden-cv', !accroche);
 
+            // Synchronisation dynamique des titres de rubriques
             document.getElementById('out-title-form').innerText = document.getElementById('title-form').value;
             document.getElementById('out-title-exp').innerText = document.getElementById('title-exp').value;
+            document.getElementById('out-title-tech').innerText = document.getElementById('title-tech').value;
+            document.getElementById('out-title-lang').innerText = document.getElementById('title-lang').value;
+            document.getElementById('out-title-loisir').innerText = document.getElementById('title-loisir').value;
 
-            // Rendu Formations
+            // Rendu de la liste des Formations
             const outForm = document.getElementById('out-liste-form');
             outForm.innerHTML = "";
             let countForm = 0;
@@ -242,7 +329,7 @@
                     countForm++;
                     outForm.innerHTML += `
                         <div class="flex items-start gap-4 text-xs">
-                            <span class="font-bold text-gray-700 min-w-[80px] pt-0.5">${date}</span>
+                            <span class="font-bold text-gray-700 min-w-[70px] pt-0.5">${date}</span>
                             <div>
                                 <h4 class="font-bold text-gray-900">${diplome || 'Intitulé'}</h4>
                                 <p class="text-gray-600 italic">${ecole || 'Établissement'}</p>
@@ -252,7 +339,7 @@
             });
             document.getElementById('sec-form').classList.toggle('hidden-cv', countForm === 0);
 
-            // Rendu Expériences
+            // Rendu de la liste des Expériences
             const outExp = document.getElementById('out-liste-exp');
             outExp.innerHTML = "";
             let countExp = 0;
@@ -273,9 +360,9 @@
                     }
                     outExp.innerHTML += `
                         <div class="flex items-start gap-4 text-xs">
-                            <span class="font-bold text-gray-700 min-w-[80px] pt-0.5">${date}</span>
+                            <span class="font-bold text-gray-700 min-w-[70px] pt-0.5">${date}</span>
                             <div class="w-full">
-                                <h4 class="font-bold text-gray-900 uppercase">${poste || 'Poste occupé'}</h4>
+                                <h4 class="font-bold text-gray-900 uppercase tracking-tight">${poste || 'Poste occupé'}</h4>
                                 <p class="text-blue-600 font-medium italic">${lieu || 'Structure / Ville'}</p>
                                 ${htmlMissions}
                             </div>
@@ -284,27 +371,68 @@
             });
             document.getElementById('sec-exp').classList.toggle('hidden-cv', countExp === 0);
 
+            // Rendu des Compétences Techniques
+            const outTech = document.getElementById('out-liste-tech');
+            outTech.innerHTML = "";
+            let countTech = 0;
+            document.querySelectorAll('#container-tech .sub-block-item').forEach(item => {
+                const nom = item.querySelector('.tech-nom').value.trim();
+                if (nom) {
+                    countTech++;
+                    outTech.innerHTML += `<li>• <strong>${nom}</strong></li>`;
+                }
+            });
+            document.getElementById('sec-tech').classList.toggle('hidden-cv', countTech === 0);
+
+            // Rendu des Compétences Linguistiques
+            const outLang = document.getElementById('out-liste-lang');
+            outLang.innerHTML = "";
+            let countLang = 0;
+            document.querySelectorAll('#container-lang .sub-block-item').forEach(item => {
+                const nom = item.querySelector('.lang-nom').value.trim();
+                if (nom) {
+                    countLang++;
+                    outLang.innerHTML += `<li>• <strong>${nom}</strong></li>`;
+                }
+            });
+            document.getElementById('sec-lang').classList.toggle('hidden-cv', countLang === 0);
+
+            // Rendu des Centres d'intérêt
+            const outLoisir = document.getElementById('out-liste-loisirs');
+            outLoisir.innerHTML = "";
+            let countLoisir = 0;
+            document.querySelectorAll('#container-loisir .sub-block-item').forEach(item => {
+                const titre = item.querySelector('.loisir-titre').value.trim();
+                if (titre) {
+                    countLoisir++;
+                    outLoisir.innerHTML += `<div class="text-xs"><p class="text-gray-700 font-medium">• ${titre}</p></div>`;
+                }
+            });
+            document.getElementById('sec-loisirs').classList.toggle('hidden-cv', countLoisir === 0);
+
             sauvegarderEtatFormulaire();
         }
 
-        // --- OPÉRATION DE TÉLÉCHARGEMENT PDF NETTOYÉ ---
+        // --- EXPORTATION DU DOCUMENT FINAL EN PDF (RÉPARÉ ET AJUSTÉ) ---
         function telecharger() {
             if (typeof html2pdf === "undefined") {
-                alert("Le moteur PDF se charge, réessayez dans une seconde.");
+                alert("Le moteur PDF n'est pas encore prêt. Veuillez patienter une seconde.");
                 return;
             }
 
-            const previewElement = document.getElementById('cv-preview');
+            const originElement = document.getElementById('cv-preview');
             const prenom = document.getElementById('in-prenom').value.trim();
             const nom = document.getElementById('in-nom').value.trim();
             const nomFichier = (prenom || nom) ? `CV_${prenom}_${nom.toUpperCase()}.pdf` : 'Mon_CV_Professionnel.pdf';
 
-            // Création du clone isolé pour éviter les problèmes d'échelle responsive
-            const clone = previewElement.cloneNode(true);
+            // 1. On crée une copie parfaite du CV à l'instant T
+            const clone = originElement.cloneNode(true);
+            
+            // 2. On neutralise tous les styles liés à la mise à l'échelle (scale/responsive) pour éviter les distorsions sur le PDF
             clone.style.transform = "none";
             clone.style.margin = "0";
             clone.style.position = "fixed";
-            clone.style.top = "-9999px";
+            clone.style.top = "-9999px"; 
             clone.style.left = "-9999px";
             document.body.appendChild(clone);
 
@@ -312,57 +440,52 @@
                 margin:       0,
                 filename:     nomFichier,
                 image:        { type: 'jpeg', quality: 0.98 },
-                html2canvas:  { scale: 2, useCORS: true, letterRendering: true, logging: false },
+                html2canvas:  { 
+                    scale: 2, 
+                    useCORS: true, 
+                    letterRendering: true, 
+                    logging: false 
+                },
                 jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
             };
 
-            // On accorde 150ms au moteur pour dessiner le clone proprement avant capture
-            setTimeout(() => {
-                html2pdf().set(opt).from(clone).save().then(() => {
-                    clone.remove();
-                }).catch((err) => {
-                    console.error(err);
-                    clone.remove();
-                });
-            }, 150);
-        }
-
-        // --- GESTION DES DONNÉES ET RÉINITIALISATION ---
-        function reinitialiserFormulaire() {
-            if (confirm("Êtes-vous sûr de vouloir vider tout le formulaire ? Vos modifications sauvegardées seront perdues.")) {
-                localStorage.removeItem('cv_express_solidaire_backup');
-                
-                // Reset des champs simples
-                document.getElementById('in-prenom').value = "";
-                document.getElementById('in-nom').value = "";
-                document.getElementById('in-metier').value = "";
-                document.getElementById('in-tel').value = "";
-                document.getElementById('in-email').value = "";
-                document.getElementById('in-accroche').value = "";
-                document.getElementById('title-form').value = "Formations & Diplômes";
-                document.getElementById('title-exp').value = "Expériences Professionnelles";
-
-                // Vider les containers d'éléments dynamiques
-                document.getElementById('container-form').innerHTML = "";
-                document.getElementById('container-exp').innerHTML = "";
-
-                // Forcer la mise à jour de l'affichage à blanc
-                maj();
+            // Notification d'évènement à Supabase
+            if (typeof sauvegarderEvenementSupabase === "function") {
+                sauvegarderEvenementSupabase("telechargements");
             }
+
+            // 3. On extrait le PDF depuis le clone propre puis on le détruit proprement du DOM
+            html2pdf().set(opt).from(clone).save().then(() => {
+                clone.remove();
+            }).catch((err) => {
+                console.error("Erreur d'exportation PDF :", err);
+                clone.remove();
+            });
         }
 
+        // --- SYSTÈME DE SAUVEGARDE RGPD AUTOMATIQUE (localStorage) ---
         function sauvegarderEtatFormulaire() {
             const data = {
-                champs: {
-                    prenom: document.getElementById('in-prenom').value,
-                    nom: document.getElementById('in-nom').value,
-                    metier: document.getElementById('in-metier').value,
-                    tel: document.getElementById('in-tel').value,
-                    email: document.getElementById('in-email').value,
-                    accroche: document.getElementById('in-accroche').value
+                ordreInverse: ordreInverse,
+                ordreSecondaire: ordreSecondaire,
+                champsSimples: {
+                    'in-prenom': document.getElementById('in-prenom').value,
+                    'in-nom': document.getElementById('in-nom').value,
+                    'in-metier': document.getElementById('in-metier').value,
+                    'in-tel': document.getElementById('in-tel').value,
+                    'in-email': document.getElementById('in-email').value,
+                    'in-accroche': document.getElementById('in-accroche').value,
+                    'title-form': document.getElementById('title-form').value,
+                    'title-exp': document.getElementById('title-exp').value,
+                    'title-tech': document.getElementById('title-tech').value,
+                    'title-lang': document.getElementById('title-lang').value,
+                    'title-loisir': document.getElementById('title-loisir').value
                 },
                 formations: [],
-                experiences: []
+                experiences: [],
+                techniques: [],
+                linguistiques: [],
+                loisirs: []
             };
 
             document.querySelectorAll('#container-form .sub-block-item').forEach(item => {
@@ -382,51 +505,67 @@
                 });
             });
 
+            document.querySelectorAll('#container-tech .sub-block-item').forEach(item => {
+                data.techniques.push({ nom: item.querySelector('.tech-nom').value });
+            });
+
+            document.querySelectorAll('#container-lang .sub-block-item').forEach(item => {
+                data.linguistiques.push({ nom: item.querySelector('.lang-nom').value });
+            });
+
+            document.querySelectorAll('#container-loisir .sub-block-item').forEach(item => {
+                data.loisirs.push({ titre: item.querySelector('.loisir-titre').value });
+            });
+
             localStorage.setItem('cv_express_solidaire_backup', JSON.stringify(data));
         }
 
         function chargerEtatFormulaire() {
-            const raw = localStorage.getItem('cv_express_solidaire_backup');
-            if (!raw) return;
+            const rawData = localStorage.getItem('cv_express_solidaire_backup');
+            if (!rawData) return false;
+
             try {
-                const data = JSON.parse(raw);
-                if (data.champs) {
-                    document.getElementById('in-prenom').value = data.champs.prenom || "";
-                    document.getElementById('in-nom').value = data.champs.nom || "";
-                    document.getElementById('in-metier').value = data.champs.metier || "";
-                    document.getElementById('in-tel').value = data.champs.tel || "";
-                    document.getElementById('in-email').value = data.champs.email || "";
-                    document.getElementById('in-accroche').value = data.champs.accroche || "";
+                const data = JSON.parse(rawData);
+                ordreInverse = !!data.ordreInverse;
+                if (data.ordreSecondaire) ordreSecondaire = data.ordreSecondaire;
+
+                if (data.champsSimples) {
+                    for (const key in data.champsSimples) {
+                        const el = document.getElementById(key);
+                        if (el) el.value = data.champsSimples[key] || "";
+                    }
                 }
-                if (data.formations) {
+
+                document.getElementById('container-form').innerHTML = "";
+                if (data.formations && data.formations.length > 0) {
                     data.formations.forEach(f => {
                         ajouterForm();
                         const last = document.querySelector('#container-form .sub-block-item:last-child');
                         if (last) {
-                            last.querySelector('.form-dates').value = f.date;
-                            last.querySelector('.form-diplome').value = f.diplome;
-                            last.querySelector('.form-ecole').value = f.ecole;
+                            last.querySelector('.form-dates').value = f.date || "";
+                            last.querySelector('.form-diplome').value = f.diplome || "";
+                            last.querySelector('.form-ecole').value = f.ecole || "";
                         }
                     });
                 }
-                if (data.experiences) {
+
+                document.getElementById('container-exp').innerHTML = "";
+                if (data.experiences && data.experiences.length > 0) {
                     data.experiences.forEach(e => {
                         ajouterExp();
                         const last = document.querySelector('#container-exp .sub-block-item:last-child');
                         if (last) {
-                            last.querySelector('.exp-dates').value = e.date;
-                            last.querySelector('.exp-poste').value = e.poste;
-                            last.querySelector('.exp-lieu').value = e.lieu;
-                            last.querySelector('.exp-missions').value = e.missions;
+                            last.querySelector('.exp-dates').value = e.date || "";
+                            last.querySelector('.exp-poste').value = e.poste || "";
+                            last.querySelector('.exp-lieu').value = e.lieu || "";
+                            last.querySelector('.exp-missions').value = e.missions || "";
                         }
                     });
                 }
-                maj();
-            } catch (e) { console.error(e); }
+            } catch (e) {
+                console.error("Erreur de chargement du backup local :", e);
+            }
         }
-
-        // Chargement initial automatique au démarrage
-        window.onload = chargerEtatFormulaire;
     </script>
 </body>
 </html>
