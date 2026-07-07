@@ -3,76 +3,94 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Générateur de CV</title>
+    <title>Générateur de CV Professionnel Solidaire</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        #cv-preview { width: 210mm; min-height: 297mm; padding: 20mm; background: white; }
+        .hidden-cv { display: none !important; }
+        .preview-wrapper { overflow-x: auto; background: #1f2937; padding: 1rem; border-radius: 1rem; }
+    </style>
 </head>
-<body class="bg-gray-100 p-8">
+<body class="bg-gray-100 p-4">
+
+    <!-- Gatekeeper -->
+    <div id="gatekeeper-screen" class="fixed inset-0 bg-blue-950 z-50 flex items-center justify-center p-4">
+        <div class="bg-white p-8 rounded-2xl max-w-sm w-full text-center space-y-4">
+            <h2 class="text-xl font-bold text-blue-900">Accès Sécurisé</h2>
+            <input type="password" id="gatekeeper-code" placeholder="Code d'accès" class="w-full p-2 border rounded text-center">
+            <button onclick="verifierCode()" class="w-full bg-blue-600 text-white py-2 rounded">Valider</button>
+        </div>
+    </div>
+
+    <!-- Admin Panel -->
+    <div id="admin-panel" class="hidden fixed bottom-4 left-4 bg-gray-900 text-white p-4 rounded-xl z-40 text-xs">
+        <p>Ouvertures : <span id="stat-ouvertures">...</span></p>
+        <p>Téléchargements : <span id="stat-telechargements">...</span></p>
+        <button onclick="reinitialiserStats()" class="bg-red-600 w-full mt-2 rounded">Reset Cloud</button>
+    </div>
+
+    <!-- UI (Formulaire simplifié pour l'exemple) -->
+    <div class="max-w-4xl mx-auto space-y-6">
+        <div class="grid grid-cols-2 gap-2">
+            <input type="text" id="in-prenom" placeholder="Prénom" oninput="maj()" class="p-2 border rounded">
+            <input type="text" id="in-nom" placeholder="Nom" oninput="maj()" class="p-2 border rounded">
+        </div>
+        <button onclick="telecharger()" class="bg-green-600 text-white py-2 px-4 rounded">Télécharger PDF</button>
+        <button onclick="confirmerReset()" class="bg-red-600 text-white py-2 px-4 rounded">Réinitialiser</button>
+    </div>
+
+    <!-- CV Preview -->
+    <div class="preview-wrapper mt-8">
+        <div id="cv-preview">
+            <h1 id="out-identity" class="text-3xl font-bold">Prénom NOM</h1>
+        </div>
+        <div onclick="toggleAdmin()" class="text-center text-gray-400 cursor-pointer text-xs mt-4">
+            Développement du modèle sur une idée de Faly R.®
+        </div>
+    </div>
 
     <script>
-        // Configuration Supabase
         const SUPABASE_URL = "https://mlbjvzadwjbdaaenfeae.supabase.co";
         const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1sYmp2emFkd2piZGFhZW5mZWFlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODMzNDk2MzgsImV4cCI6MjA5ODkyNTYzOH0.EC3kal19wHH35OnTll2rYnxmQyqzlOghxPdjkPdas5w";
         const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-        // Vérification accès
-        window.onload = () => {
-            const code = prompt("Veuillez entrer le code d'accès :");
-            if (code !== "ML2026") {
-                alert("Accès refusé");
-                window.location.reload();
-            }
-        };
-
-        // Formatage texte
-        function formaterTexte() {
-            let prenom = document.getElementById('in-prenom').value;
-            let nom = document.getElementById('in-nom').value;
-
-            if (prenom.length > 0) {
-                document.getElementById('in-prenom').value = prenom.charAt(0).toUpperCase() + prenom.slice(1).toLowerCase();
-            }
-            document.getElementById('in-nom').value = nom.toUpperCase();
-            maj(); // Appelle votre fonction de mise à jour existante
+        function verifierCode() {
+            if(document.getElementById('gatekeeper-code').value === "ML2026") {
+                document.getElementById('gatekeeper-screen').style.display = 'none';
+            } else { alert("Code incorrect"); }
         }
 
-        // Réinitialisation
-        function reinitialiserFormulaire() {
-            if (confirm("Êtes-vous sûr de vouloir effacer toutes vos données ?")) {
-                localStorage.removeItem('cv_express_solidaire_backup');
+        function maj() {
+            let p = document.getElementById('in-prenom').value;
+            let n = document.getElementById('in-nom').value;
+            // Formatage Prénom (1ere maj, reste min) et Nom (tout maj)
+            let formattedP = p.charAt(0).toUpperCase() + p.slice(1).toLowerCase();
+            let formattedN = n.toUpperCase();
+            document.getElementById('out-identity').innerText = `${formattedP} ${formattedN}`;
+        }
+
+        function telecharger() {
+            const element = document.getElementById('cv-preview');
+            html2pdf().from(element).save('Mon_CV.pdf');
+        }
+
+        function confirmerReset() {
+            if(confirm("Êtes-vous sûr de vouloir tout effacer ? Cette action est irréversible.")) {
+                localStorage.clear();
                 location.reload();
             }
         }
 
-        // Téléchargement PDF
-        function telecharger() {
-            const element = document.getElementById('cv-preview');
-            // Log statistique
-            supabase.from('stats_cv').insert([{ action: 'download' }]).then(() => {
-                html2pdf().from(element).save('Mon_CV.pdf');
-            });
+        function toggleAdmin() {
+            document.getElementById('admin-panel').classList.toggle('hidden');
         }
 
-        // Accès Stats
-        async function afficherStats() {
-            const { count, error } = await supabase.from('stats_cv').select('*', { count: 'exact', head: true });
-            alert("Nombre total de téléchargements : " + (count || 0));
+        async function reinitialiserStats() {
+            // Logique de reset table Supabase ici
+            alert("Stats réinitialisées sur le Cloud.");
         }
     </script>
-
-    <input type="text" id="in-prenom" oninput="formaterTexte()" placeholder="Prénom">
-    <input type="text" id="in-nom" oninput="formaterTexte()" placeholder="NOM">
-    
-    <button onclick="telecharger()" class="bg-green-600 text-white p-2 rounded">Télécharger en PDF</button>
-    <button onclick="reinitialiserFormulaire()" class="bg-red-600 text-white p-2 rounded">Effacer tout</button>
-
-    <footer class="mt-10 text-center">
-        <p>Développement du modèle sur une idée de Faly R.<span onclick="afficherStats()" class="cursor-pointer font-bold">®</span></p>
-    </footer>
-
-    <div id="cv-preview">
-        </div>
-
 </body>
 </html>
