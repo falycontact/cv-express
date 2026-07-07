@@ -3,59 +3,171 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Générateur de CV Professionnel</title>
-    
-    <script src="https://cdn.tailwindcss.com/3.4.17"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    
+    <title>Formulaire de Profil</title>
     <style>
-        #cv-preview { width: 210mm; min-height: 297mm; padding: 20mm; box-sizing: border-box; background: white; }
-        .preview-wrapper { display: flex; justify-content: center; width: 100%; overflow-x: auto; background-color: #1f2937; padding: 1rem; border-radius: 1rem; }
-        .preview-scale-container { transform-origin: top center; background-color: white; transform: scale(0.5); }
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f9f9f9;
+        }
+
+        .form-container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            box-sizing: border-box; /* Évite que le conteneur ne dépasse sur mobile */
+        }
+
+        /* CORRECTION ET BLINDAGE : Évite à 100% que les titres soient coupés */
+        .section-title {
+            font-size: 1.25rem;
+            color: #333;
+            border-bottom: 2px solid #007BFF;
+            padding-bottom: 5px;
+            margin-top: 30px;
+            margin-bottom: 15px;
+            
+            /* Sécurités pour forcer l'affichage entier (PC et Mobile) */
+            display: block !important;
+            width: 100% !important;
+            white-space: normal !important; 
+            word-wrap: break-word !important;
+            overflow: visible !important;
+            height: auto !important;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+
+        input[type="text"], textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+            font-size: 16px; /* Taille idéale pour éviter le zoom automatique sur iPhone */
+        }
+
+        /* Style pour la phrase de prévention */
+        .info-note {
+            font-size: 0.9rem;
+            color: #555;
+            background-color: #e9f7fe;
+            border-left: 4px solid #007BFF;
+            padding: 12px;
+            margin-top: 25px;
+            margin-bottom: 15px;
+            border-radius: 4px;
+            line-height: 1.4;
+        }
+
+        /* Zone des boutons */
+        .button-group {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+        }
+
+        .btn {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 0.95rem;
+        }
+
+        .btn-submit {
+            background-color: #007BFF;
+            color: white;
+        }
+
+        .btn-submit:hover {
+            background-color: #0056b3;
+        }
+
+        /* Style du bouton Réinitialiser */
+        .btn-reset {
+            background-color: #6c757d;
+            color: white;
+        }
+
+        .btn-reset:hover {
+            background-color: #5a6268;
+        }
+
+        /* AJUSTEMENT CORRECTIF SPÉCIFIQUE POUR SMARTPHONES */
+        @media (max-width: 480px) {
+            body {
+                margin: 10px; /* Réduit la marge extérieure pour gagner de la place */
+            }
+            .form-container {
+                padding: 15px; /* Optimise l'espace interne */
+            }
+            .section-title {
+                font-size: 1.15rem; /* Ajuste finement la taille pour les petits écrans */
+            }
+            .button-group {
+                flex-direction: column-reverse; /* Empile les boutons verticalement */
+                gap: 8px;
+            }
+            .btn {
+                width: 100%; /* Les boutons prennent toute la largeur sur mobile */
+                padding: 14px; /* Zone de clic plus confortable */
+            }
+        }
     </style>
 </head>
-<body class="bg-gray-100 font-sans min-h-screen p-4">
+<body>
 
-    <!-- APPLICATION (Accès direct) -->
-    <div id="app-content" class="w-full max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
+<div class="form-container">
+    <form id="profileForm">
         
-        <div class="bg-white p-6 rounded-2xl shadow-md space-y-6">
-            <h1 class="text-2xl font-bold">Générateur de CV</h1>
-            <button onclick="telecharger()" class="w-full bg-green-600 text-white font-bold py-3 rounded-xl">📥 Télécharger PDF</button>
-            <button onclick="reinitialiserFormulaire()" class="w-full bg-red-500 text-white py-2 rounded-xl">Réinitialiser</button>
+        <h2 class="section-title">Formations & Diplômes</h2>
+        <div class="form-group">
+            <label for="education">Vos formations, diplômes et écoles :</label>
+            <input type="text" id="education" name="education" placeholder="ex: Master Informatique, Université...">
         </div>
 
-        <div class="preview-wrapper">
-            <div class="preview-scale-container" id="pdf-target-zone">
-                <div id="cv-preview">
-                    <!-- Contenu du CV -->
-                    <div class="mt-auto border-t pt-2 text-center text-xs text-gray-500">
-                        Modèle de CV sur une idée de Faly R.<button onclick="afficherStats()" class="text-blue-600 font-bold underline">®</button>
-                    </div>
-                </div>
-            </div>
+        <h2 class="section-title">Expériences professionnelles</h2>
+        <div class="form-group">
+            <label for="experience">Résumé de vos expériences :</label>
+            <textarea id="experience" name="experience" rows="4" placeholder="Décrivez vos anciens postes..."></textarea>
         </div>
-    </div>
 
-    <script>
-        // Supabase Init
-        const SUPABASE_URL = 'https://mlbjvzzadwjbdaaenfea.supabase.co';
-        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1sYmp2emFkd2piZGFhZW5mZWFlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODMzNDk2MzgsImV4cCI6MjA5ODkyNTYzOH0.EC3kal19wHH35OnTll2rYnxmQyqzlOghxPdjkPdas5w';
-        const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        <h2 class="section-title">Compétences techniques</h2>
+        <div class="form-group">
+            <label for="skills">Vos compétences (séparées par des virgules) :</label>
+            <input type="text" id="skills" name="skills" placeholder="ex: HTML, CSS, JavaScript...">
+        </div>
 
-        async function afficherStats() {
-            try {
-                const { data, error } = await supabase.from('stats').select('*');
-                if (error) throw error;
-                alert('Stats de connexion/téléchargement : ' + JSON.stringify(data));
-            } catch (e) { alert('Erreur chargement stats'); }
-        }
+        <h2 class="section-title">Compétences linguistiques</h2>
+        <div class="form-group">
+            <label for="languages">Langues maîtrisées et niveau :</label>
+            <input type="text" id="languages" name="languages" placeholder="ex: Anglais (Courant), Espagnol (B2)...">
+        </div>
 
-        function telecharger() {
-            const element = document.getElementById('cv-preview');
-            html2pdf().from(element).save('CV_Professionnel.pdf');
-        }
-    </script>
+        <div class="info-note">
+            ℹ️ <strong>Information :</strong> En cliquant sur "Enregistrer les modifications", les données saisies ci-dessus seront automatiquement sauvegardées et mises à jour dans votre profil.
+        </div>
+
+        <div class="button-group">
+            <button type="reset" class="btn btn-reset">Réinitialiser</button>
+            <button type="submit" class="btn btn-submit">Enregistrer les modifications</button>
+        </div>
+
+    </form>
+</div>
+
 </body>
 </html>
