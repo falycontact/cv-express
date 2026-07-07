@@ -733,5 +733,61 @@
             html2pdf().set(opt).from(element).save();
         }
     </script>
-</body>
+<div style="background: #f4f4f4; padding: 15px; margin-top: 20px; border-radius: 8px; border: 1px solid #ddd; font-family: sans-serif;">
+    <p style="margin: 0 0 10px 0; font-size: 14px; color: #333;">
+        ℹ️ <strong>Respect de votre vie privée :</strong> Vos saisies sont automatiquement sauvegardées sur ce navigateur pour vous éviter de les perdre. Aucune donnée n'est envoyée vers un serveur. 
+        Si vous utilisez un ordinateur public ou partagé, pensez à vider le formulaire avant de partir.
+    </p>
+    <button type="button" onclick="reinitialiserFormulaire()" style="background: #dc3545; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer; font-weight: bold;">
+        🗑️ Effacer toutes les données enregistrées
+    </button>
+</div>
+
+<script>
+    // 1. Au chargement de la page : on restaure ce qui a été enregistré
+    window.addEventListener('DOMContentLoaded', () => {
+        // On récupère tous les champs de saisie (input, textarea, select)
+        const champs = document.querySelectorAll('input, textarea, select');
+        
+        champs.forEach(champ => {
+            // Si le champ n'a pas d'identifiant (id) ou de nom (name), on l'ignore
+            const clefSaisie = champ.id || champ.name;
+            if (!clefSaisie) return;
+
+            // On regarde s'il y a une valeur sauvegardée pour ce champ
+            const valeurSauvegardee = localStorage.getItem(clefSaisie);
+            
+            if (valeurSauvegardee !== null) {
+                if (champ.type === 'checkbox') {
+                    champ.checked = valeurSauvegardee === 'true';
+                } else if (champ.type === 'radio') {
+                    if (champ.value === valeurSauvegardee) champ.checked = true;
+                } else {
+                    champ.value = valeurSauvegardee;
+                }
+            }
+
+            // 2. À chaque modification : on sauvegarde en temps réel
+            champ.addEventListener('input', () => {
+                if (champ.type === 'checkbox') {
+                    localStorage.setItem(clefSaisie, champ.checked);
+                } else if (champ.type === 'radio') {
+                    if (champ.checked) localStorage.setItem(clefSaisie, champ.value);
+                } else {
+                    localStorage.setItem(clefSaisie, champ.value);
+                }
+            });
+        });
+    });
+
+    // 3. Fonction pour tout effacer proprement (Bouton de sécurité)
+    function reinitialiserFormulaire() {
+        if (confirm("Voulez-vous vraiment effacer tout le formulaire ? Vos modifications sauvegardées seront perdues.")) {
+            // On vide la mémoire locale du navigateur
+            localStorage.clear();
+            // On recharge la page pour remettre le formulaire à zéro
+            window.location.reload();
+        }
+    }
+</script></body>
 </html>
