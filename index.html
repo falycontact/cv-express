@@ -2,31 +2,59 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <title>Accès CV</title>
-    <!-- Tailwind pour le style -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Générateur de CV Professionnel</title>
+    
     <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
+    <style>
+        #cv-preview { width: 210mm; min-height: 297mm; padding: 20mm; box-sizing: border-box; background: white; }
+        .preview-wrapper { display: flex; justify-content: center; width: 100%; overflow-x: auto; background-color: #1f2937; padding: 1rem; border-radius: 1rem; }
+        .preview-scale-container { transform-origin: top center; background-color: white; transform: scale(0.5); }
+    </style>
 </head>
-<body class="bg-gray-100 h-screen flex items-center justify-center">
+<body class="bg-gray-100 font-sans min-h-screen p-4">
 
-    <!-- Écran de connexion pur -->
-    <div id="gatekeeper-screen" class="bg-white p-10 rounded-2xl shadow-2xl text-center w-80">
-        <h2 class="text-xl font-bold mb-6">Accès Sécurisé</h2>
-        <input type="password" id="gatekeeper-input" class="w-full p-3 border rounded-xl mb-4 text-center border-gray-300" placeholder="Mot de passe">
-        <button onclick="checkPass()" class="w-full bg-blue-600 text-white font-bold py-3 rounded-xl hover:bg-blue-700">Valider</button>
+    <!-- APPLICATION (Accès direct) -->
+    <div id="app-content" class="w-full max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
+        
+        <div class="bg-white p-6 rounded-2xl shadow-md space-y-6">
+            <h1 class="text-2xl font-bold">Générateur de CV</h1>
+            <button onclick="telecharger()" class="w-full bg-green-600 text-white font-bold py-3 rounded-xl">📥 Télécharger PDF</button>
+            <button onclick="reinitialiserFormulaire()" class="w-full bg-red-500 text-white py-2 rounded-xl">Réinitialiser</button>
+        </div>
+
+        <div class="preview-wrapper">
+            <div class="preview-scale-container" id="pdf-target-zone">
+                <div id="cv-preview">
+                    <!-- Contenu du CV -->
+                    <div class="mt-auto border-t pt-2 text-center text-xs text-gray-500">
+                        Modèle de CV sur une idée de Faly R.<button onclick="afficherStats()" class="text-blue-600 font-bold underline">®</button>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
-    <!-- Script de vérification immédiat -->
     <script>
-        function checkPass() {
-            var pass = document.getElementById('gatekeeper-input').value;
-            // Vérification stricte
-            if (pass === "ML2026") {
-                // Redirection vers le contenu réel ou affichage
-                document.body.innerHTML = '<div class="p-10 text-center"><h1 class="text-2xl font-bold">Accès autorisé</h1><p>Le système est chargé.</p></div>';
-                // Note: Si vous avez votre code complet, remplacez le contenu du body ici.
-            } else {
-                alert("Mot de passe refusé.");
-            }
+        // Supabase Init
+        const SUPABASE_URL = 'https://mlbjvzzadwjbdaaenfea.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1sYmp2emFkd2piZGFhZW5mZWFlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODMzNDk2MzgsImV4cCI6MjA5ODkyNTYzOH0.EC3kal19wHH35OnTll2rYnxmQyqzlOghxPdjkPdas5w';
+        const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        async function afficherStats() {
+            try {
+                const { data, error } = await supabase.from('stats').select('*');
+                if (error) throw error;
+                alert('Stats de connexion/téléchargement : ' + JSON.stringify(data));
+            } catch (e) { alert('Erreur chargement stats'); }
+        }
+
+        function telecharger() {
+            const element = document.getElementById('cv-preview');
+            html2pdf().from(element).save('CV_Professionnel.pdf');
         }
     </script>
 </body>
