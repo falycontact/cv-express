@@ -101,7 +101,7 @@
             <!-- CONTENEUR DYNAMIQUE POUR L'ORDRE DES BLOCS (Formulaire) -->
             <div id="form-dynamic-order" class="flex flex-col space-y-6">
                 
-                <!-- SECTION 2 : FORMATIONS (En 1er par défaut) -->
+                <!-- SECTION 2 : FORMATIONS -->
                 <section id="form-sec-form" class="space-y-3 bg-gray-50 p-4 rounded-xl border border-gray-100 order-1">
                     <div class="flex flex-col sm:flex-row justify-between gap-2 border-b pb-2 mb-2">
                         <input type="text" id="title-form" value="Formations & Diplômes" class="font-bold text-blue-700 uppercase tracking-wider text-xs bg-transparent border-b border-dashed border-blue-300 outline-none p-0.5 w-full sm:w-auto" oninput="maj()">
@@ -112,7 +112,7 @@
                     </div>
                 </section>
 
-                <!-- SECTION 3 : EXPÉRIENCES PROFESSIONNELLES (En 2e par défaut) -->
+                <!-- SECTION 3 : EXPÉRIENCES PROFESSIONNELLES -->
                 <section id="form-sec-exp" class="space-y-3 bg-gray-50 p-4 rounded-xl border border-gray-100 order-2">
                     <div class="flex flex-col sm:flex-row justify-between gap-2 border-b pb-2 mb-2">
                         <input type="text" id="title-exp" value="Expériences Professionnelles" class="font-bold text-blue-700 uppercase tracking-wider text-xs bg-transparent border-b border-dashed border-blue-300 outline-none p-0.5 w-full sm:w-auto" oninput="maj()">
@@ -217,13 +217,13 @@
                         <!-- CONTENEUR DU RENDU CV À ORDRE INVERSIBLE -->
                         <div id="cv-render-dynamic-order" class="flex flex-col">
                             
-                            <!-- FORMATIONS DU CV (En 1er par défaut) -->
+                            <!-- FORMATIONS DU CV -->
                             <div id="sec-form" class="mb-6 hidden-cv order-1">
                                 <h3 id="out-title-form" class="text-sm font-bold text-blue-700 uppercase tracking-wider border-b pb-1 mb-3">Formations & Diplômes</h3>
                                 <div id="out-liste-form" class="space-y-3"></div>
                             </div>
 
-                            <!-- EXPÉRIENCES DU CV (En 2e par défaut) -->
+                            <!-- EXPÉRIENCES DU CV -->
                             <div id="sec-exp" class="mb-6 hidden-cv order-2">
                                 <h3 id="out-title-exp" class="text-sm font-bold text-blue-700 uppercase tracking-wider border-b pb-1 mb-3">Expériences Professionnelles</h3>
                                 <div id="out-liste-exp" class="space-y-4"></div>
@@ -236,7 +236,6 @@
                             
                             <!-- Colonne Gauche : Destinée aux compétences à l'affichage -->
                             <div id="cv-col-left" class="space-y-4 flex flex-col justify-start">
-                                <!-- Blocs injectés dynamiquement selon l'ordre -->
                                 <div id="sec-tech" class="hidden-cv">
                                     <h3 id="out-title-tech" class="text-sm font-bold text-blue-700 uppercase tracking-wider border-b pb-1 mb-2">Compétences Techniques</h3>
                                     <ul id="out-liste-tech" class="space-y-1.5 text-xs"></ul>
@@ -258,7 +257,7 @@
                         </div>
                     </div>
 
-                    <!-- PIED DE PAGE EXIGÉ -->
+                    <!-- PIED DE PAGE -->
                     <div onclick="toggleAdmin()" class="border-t pt-2 text-center text-[10px] text-gray-400 font-semibold tracking-wide cursor-pointer select-none">
                         Développement du modèle sur une idée de Faly R.®
                     </div>
@@ -272,16 +271,17 @@
 
     <!-- LOGIQUE LOGICIELLE & SYNCHRONISATION SUPABASE -->
     <script>
-        // Code d'activation mensuel modifiable
         const CODE_VALIDATION = "ML2026";
         
         const SUPABASE_URL = "https://mlbjvzadwjbdaaenfeae.supabase.co";
         const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1sYmp2emFkd2piZGFhZW5mZWFlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODMzNDk2MzgsImV4cCI6MjA5ODkyNTYzOH0.EC3kal19wHH35OnTll2rYnxmQyqzlOghxPdjkPdas5w";
 
         let ordreInverse = false;
-
-        // Ordre initial pour les 3 blocs secondaires
         let ordreSecondaire = ['form-sec-tech', 'form-sec-lang', 'form-sec-loisir'];
+
+        // LISTES DE NIVEAUX CORRIGÉES
+        const listNivTech = ["Initiation", "Compétences professionnelles limitées", "Compétences professionnelles complètes", "Expert"];
+        const listNivLang = ["Initiation", "Niveau scolaire", "Compétences professionnelles limitées", "Compétences professionnelles complètes"];
 
         function inverserOrdreBlocs() {
             ordreInverse = !ordreInverse;
@@ -304,7 +304,6 @@
             }
         }
 
-        // Fonctions pour faire monter/descendre l'ordre global des 3 blocs secondaires
         function monterBlocSec(idBloc) {
             const index = ordreSecondaire.indexOf(idBloc);
             if (index > 0) {
@@ -326,13 +325,10 @@
         }
 
         function appliquerOrdreSecondaire() {
-            // Appliquer l'ordre visuel dans le formulaire
             ordreSecondaire.forEach((id, index) => {
                 document.getElementById(id).style.order = index + 1;
             });
 
-            // Répartir dynamiquement les blocs dans l'aperçu graphique (2 colonnes)
-            // Les deux premiers vont à gauche, le dernier va à droite
             const colLeft = document.getElementById('cv-col-left');
             const colRight = document.getElementById('cv-col-right');
 
@@ -342,7 +338,6 @@
                 'form-sec-loisir': document.getElementById('sec-loisirs')
             };
 
-            // Vider proprement et réinjecter dans le bon ordre
             colLeft.innerHTML = "";
             colRight.innerHTML = "";
 
@@ -357,7 +352,6 @@
             maj();
         }
 
-        // Fonctions génériques pour manipuler l'ordre des sous-blocs enfants à l'intérieur d'un conteneur
         function monterSousBloc(btn) {
             const item = btn.closest('.sub-block-item');
             const parent = item.parentNode;
@@ -464,9 +458,6 @@
             if (!panel.classList.contains('hidden')) { recupererStatsSupabase(); }
         }
 
-        const listNivTech = ["Initiation", "Compétences limitées", "Compétences complètes", "Bilingue / Expert", "Langue maternelle"];
-        const listNivLang = ["Initiation", "Niveau scolaire", "Compétences limitées", "Compétences complètes", "Bilingue", "Langue maternelle"];
-
         function ajouterExp() {
             const container = document.getElementById('container-exp');
             const id = Date.now();
@@ -572,21 +563,19 @@
         
         function formaterEnPuces(texte) {
             if (!texte.trim()) return "";
-            const fragments = text = texte.split('\n').filter(f => f.trim() !== "");
+            const fragments = texte.split('\n').filter(f => f.trim() !== "");
             let res = `<ul class="cv-bullet-list text-gray-600">`;
             fragments.forEach(f => { res += `<li>${f}</li>`; });
             return res + `</ul>`;
         }
 
         function maj() {
-            // Traitement des Titres personnalisables
             document.getElementById('out-title-form').innerText = document.getElementById('title-form').value || "Formations & Diplômes";
             document.getElementById('out-title-exp').innerText = document.getElementById('title-exp').value || "Expériences Professionnelles";
             document.getElementById('out-title-tech').innerText = document.getElementById('title-tech').value || "Compétences Techniques";
             document.getElementById('out-title-lang').innerText = document.getElementById('title-lang').value || "Compétences Linguistiques";
             document.getElementById('out-title-loisir').innerText = document.getElementById('title-loisir').value || "Centres d'intérêt";
 
-            // Traitement du Prénom & Nom
             const brutePrenom = document.getElementById('in-prenom').value.trim();
             const prenomFormate = brutePrenom ? brutePrenom.charAt(0).toUpperCase() + brutePrenom.slice(1).toLowerCase() : "";
             const bruteNom = document.getElementById('in-nom').value.trim();
@@ -606,7 +595,6 @@
             document.getElementById('out-accroche').innerText = accrocheVal || "Présentation courte...";
             document.getElementById('sec-accroche').className = accrocheVal ? "my-6" : "my-6 opacity-30";
 
-            // Mise à jour des Formations
             const listeFormInputs = document.getElementById('container-form').children;
             const outListeForm = document.getElementById('out-liste-form');
             outListeForm.innerHTML = "";
@@ -624,7 +612,6 @@
                 });
             } else { document.getElementById('sec-form').classList.add('hidden-cv'); }
 
-            // Mise à jour des Expériences
             const listeExpInputs = document.getElementById('container-exp').children;
             const outListeExp = document.getElementById('out-liste-exp');
             outListeExp.innerHTML = "";
@@ -648,7 +635,6 @@
                 });
             } else { document.getElementById('sec-exp').classList.add('hidden-cv'); }
 
-            // Compétences Techniques & Langues
             const listeTechInputs = document.getElementById('container-tech').children;
             const outListeTech = document.getElementById('out-liste-tech');
             outListeTech.innerHTML = "";
@@ -673,7 +659,6 @@
             if (hasLang) { document.getElementById('sec-lang').classList.remove('hidden-cv'); }
             else { document.getElementById('sec-lang').classList.add('hidden-cv'); }
 
-            // Loisirs
             const listeLoisirInputs = document.getElementById('container-loisir').children;
             const outListeLoisirs = document.getElementById('out-liste-loisirs');
             outListeLoisirs.innerHTML = "";
@@ -707,7 +692,6 @@
             html2pdf().set(opt).from(element).save();
         }
 
-        // Initialisation par défaut de la structure
         ajouterForm();
         ajouterExp();
     </script>
