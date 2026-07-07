@@ -100,7 +100,7 @@
 
     <header class="text-center my-4 max-w-2xl">
         <h1 class="text-3xl font-bold text-blue-600">Je crée mon CV express</h1>
-        <p class="text-gray-600 text-sm mt-2">Personnalise les titres des rubriques directement. Utilise les flèches 🔼 et 🔽 pour réouvrir ou réorganiser tes expériences, formations ou blocs à tout moment.</p>
+        <p class="text-gray-600 text-sm mt-2">Personnalise les titres des rubriques directement. Utilise les flèches 🔼 et 🔽 pour réouvrir ou réorganisez tes expériences, formations ou blocs à tout moment.</p>
     </header>
 
     <main class="w-full max-w-7xl grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
@@ -291,7 +291,6 @@
 
         // --- GESTION ET SYNCHRONISATION DU FORMULAIRE ---
         function maj() {
-            // Éléments de base
             const prenom = document.getElementById('in-prenom').value || "";
             const nom = document.getElementById('in-nom').value || "";
             document.getElementById('out-identity').innerText = (prenom || nom) ? `${prenom} ${nom}` : "Prénom NOM";
@@ -307,13 +306,8 @@
 
             const accroche = document.getElementById('in-accroche').value || "";
             document.getElementById('out-accroche').innerText = accroche || "Présentation courte...";
-            if(!accroche) {
-                document.getElementById('sec-accroche').classList.add('hidden-cv');
-            } else {
-                document.getElementById('sec-accroche').classList.remove('hidden-cv');
-            }
 
-            // Titres Personnalisables
+            // Synchronisation des titres
             document.getElementById('out-title-form').innerText = document.getElementById('title-form').value || "Formations & Diplômes";
             document.getElementById('out-title-exp').innerText = document.getElementById('title-exp').value || "Expériences Professionnelles";
             document.getElementById('out-title-tech').innerText = document.getElementById('title-tech').value || "Compétences Techniques";
@@ -418,7 +412,7 @@
             sauvegarderEtatFormulaire();
         }
 
-        // --- ENREGISTREMENT LOCAL AUTOMATIQUE (RGPD) ---
+        // --- STOCKAGE AUTOMATIQUE RGPD ---
         function sauvegarderEtatFormulaire() {
             const data = {
                 prenom: document.getElementById('in-prenom').value,
@@ -486,10 +480,14 @@
                 if(data.ordreSecondaire) { ordreSecondaire = data.ordreSecondaire; }
 
                 document.getElementById('container-form').innerHTML = "";
-                if(data.formations) data.formations.forEach(f => ajouterForm(f.diplome, f.ecole, f.date));
+                if(data.formations && data.formations.length > 0) {
+                    data.formations.forEach(f => ajouterForm(f.diplome, f.ecole, f.date));
+                }
 
                 document.getElementById('container-exp').innerHTML = "";
-                if(data.experiences) data.experiences.forEach(e => ajouterExp(e.poste, e.entreprise, e.date, e.desc));
+                if(data.experiences && data.experiences.length > 0) {
+                    data.experiences.forEach(e => ajouterExp(e.poste, e.entreprise, e.date, e.desc));
+                }
 
                 document.getElementById('container-tech').innerHTML = "";
                 if(data.techniques) data.techniques.forEach(t => ajouterTech(t));
@@ -512,7 +510,7 @@
             }
         }
 
-        // --- CRÉATION GDS BLOCS DYNAMIQUES (AJOUT/SUPPRESSION) ---
+        // --- CONSTRUCTEURS DE COMPOSANTS FORMULAIRES ---
         function genererBoutonsOrdre() {
             return `
                 <div class="flex items-center gap-1 text-[10px] text-gray-400">
@@ -568,7 +566,7 @@
             const div = document.createElement('div');
             div.className = "flex gap-2 items-center bg-white p-1.5 rounded-lg border border-gray-200 shadow-2xs";
             div.innerHTML = `
-                <input type="text" placeholder="Ex: Anglais (B2 - Intermédiaire)..." value="${val}" class="w-full p-1.5 text-xs bg-transparent outline-none" oninput="maj()">
+                <input type="text" placeholder="Ex: Anglais (B2)..." value="${val}" class="w-full p-1.5 text-xs bg-transparent outline-none" oninput="maj()">
                 <button onclick="this.parentNode.remove(); maj();" class="text-red-400 hover:text-red-600 text-xs px-1 cursor-pointer" type="button">✕</button>`;
             document.getElementById('container-lang').appendChild(div);
             maj();
@@ -578,33 +576,13 @@
             const div = document.createElement('div');
             div.className = "flex gap-2 items-center bg-white p-1.5 rounded-lg border border-gray-200 shadow-2xs";
             div.innerHTML = `
-                <input type="text" placeholder="Ex: Bénévolat, Football..." value="${val}" class="w-full p-1.5 text-xs bg-transparent outline-none" oninput="maj()">
+                <input type="text" placeholder="Ex: Bénévolat, Sport..." value="${val}" class="w-full p-1.5 text-xs bg-transparent outline-none" oninput="maj()">
                 <button onclick="this.parentNode.remove(); maj();" class="text-red-400 hover:text-red-600 text-xs px-1 cursor-pointer" type="button">✕</button>`;
             document.getElementById('container-loisir').appendChild(div);
             maj();
         }
 
-        // --- LOGIQUE DE TÉLÉCHARGEMENT PDF (html2pdf) ---
-        function telecharger() {
-            const element = document.getElementById('cv-preview');
-            const nomFichier = (document.getElementById('in-nom').value || "Mon").trim() + "_" + (document.getElementById('in-prenom').value || "CV").trim() + ".pdf";
-            
-            const options = {
-                margin:       0,
-                filename:     nomFichier,
-                image:        { type: 'jpeg', quality: 0.98 },
-                html2canvas:  { scale: 2, useCORS: true, logging: false },
-                jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
-            };
-
-            if (typeof sauvegarderEvenementSupabase === "function") {
-                sauvegarderEvenementSupabase("telechargements");
-            }
-
-            html2pdf().set(options).from(element).save();
-        }
-
-        // --- ACTIONS STRUCTURES ET ACTIONS CODES ---
+        // --- REORGANISATION ET FILTRES ---
         function inverserOrdreBlocs() {
             ordreInverse = !ordreInverse;
             const formForm = document.getElementById('form-sec-form');
@@ -613,15 +591,15 @@
             const cvExp = document.getElementById('sec-exp');
 
             if (ordreInverse) {
-                formForm.style.order = "2";
-                formExp.style.order = "1";
-                cvForm.style.order = "2";
-                cvExp.style.order = "1";
+                if(formForm) formForm.style.order = "2";
+                if(formExp) formExp.style.order = "1";
+                if(cvForm) cvForm.style.order = "2";
+                if(cvExp) cvExp.style.order = "1";
             } else {
-                formForm.style.order = "1";
-                formExp.style.order = "2";
-                cvForm.style.order = "1";
-                cvExp.style.order = "2";
+                if(formForm) formForm.style.order = "1";
+                if(formExp) formExp.style.order = "2";
+                if(cvForm) cvForm.style.order = "1";
+                if(cvExp) cvExp.style.order = "2";
             }
             sauvegarderEtatFormulaire();
         }
@@ -679,7 +657,7 @@
         function monterSousBloc(btn) {
             const item = btn.closest('.sub-block-item');
             const parent = item.parentNode;
-            if (item.previousElementSibling) {
+            if (item && item.previousElementSibling) {
                 parent.insertBefore(item, item.previousElementSibling);
                 maj();
             }
@@ -688,13 +666,40 @@
         function descendreSousBloc(btn) {
             const item = btn.closest('.sub-block-item');
             const parent = item.parentNode;
-            if (item.nextElementSibling) {
+            if (item && item.nextElementSibling) {
                 parent.insertBefore(item.nextElementSibling, item);
                 maj();
             }
         }
 
-        // --- CHARGEMENT INITIALISATION PAGE ---
+        // --- DISPATCHER & GENERATEUR DE TELECHARGEMENT ---
+        function telecharger() {
+            if (typeof html2pdf === "undefined") {
+                alert("La bibliothèque de téléchargement PDF n'est pas encore prête. Veuillez patienter une seconde.");
+                return;
+            }
+            
+            const element = document.getElementById('cv-preview');
+            const nom = (document.getElementById('in-nom').value || "").trim();
+            const prenom = (document.getElementById('in-prenom').value || "").trim();
+            const nomFichier = (nom || prenom) ? `CV_${nom}_${prenom}.pdf` : "Mon_CV_Professionnel.pdf";
+            
+            const options = {
+                margin:       0,
+                filename:     nomFichier,
+                image:        { type: 'jpeg', quality: 0.98 },
+                html2canvas:  { scale: 2, useCORS: true, logging: false },
+                jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+            };
+
+            if (typeof sauvegarderEvenementSupabase === "function") {
+                sauvegarderEvenementSupabase("telechargements");
+            }
+
+            html2pdf().set(options).from(element).save();
+        }
+
+        // --- CHARGEMENT INITIAL ---
         window.addEventListener('DOMContentLoaded', () => {
             if (sessionStorage.getItem('session_active_cv') !== 'true') {
                 document.getElementById('gatekeeper-screen').classList.remove('hidden');
@@ -703,6 +708,7 @@
             }
             recupererStatsSupabase();
 
+            // S'il n'y a pas de sauvegarde précédente, on génère une ligne vide par défaut partout
             if (!chargerEtatFormulaire()) {
                 ajouterForm();
                 ajouterExp();
