@@ -9,7 +9,7 @@
     <meta name="theme-color" content="#1e40af">
     <link class="pwa-icon" rel="apple-touch-icon" href="icon-192.png">
 
-    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@3"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     
     <style>
@@ -33,7 +33,7 @@
             margin-bottom: 2px;
         }
 
-        /* AJUSTEMENT CORRECTIF DU CONTENEUR DE L'APERÇU SUR PC PORTABLE & ÉCRANS INTERMÉDIAIRES */
+        /* CONTENEUR DE L'APERÇU SUR PC PORTABLE & ÉCRANS INTERMÉDIAIRES */
         .preview-wrapper {
             display: flex;
             justify-content: center;
@@ -45,7 +45,7 @@
             box-shadow: inset 0 2px 4px 0 rgba(0, 0, 0, 0.06);
         }
 
-        /* Échelle dynamique ultra-précise pour éviter les débordements sur tous les écrans */
+        /* Échelle dynamique pour l'aperçu écran */
         .preview-scale-container {
             transform-origin: top center;
             background-color: white;
@@ -64,7 +64,6 @@
             .preview-scale-container { transform: scale(0.65); margin-bottom: -290mm; }
         }
         @media (min-width: 1024px) {
-            /* Configuration spéciale PC portable */
             .preview-scale-container { transform: scale(0.48); margin-bottom: -430mm; }
         }
         @media (min-width: 1280px) {
@@ -100,7 +99,7 @@
 
     <header class="text-center my-4 max-w-2xl">
         <h1 class="text-3xl font-bold text-blue-600">Je crée mon CV express</h1>
-        <p class="text-gray-600 text-sm mt-2">Personnalise les titres des rubriques directement. Utilise les flèches 🔼 et 🔽 pour réouvrir ou réorganizser tes expériences, formations ou blocs à tout moment.</p>
+        <p class="text-gray-600 text-sm mt-2">Personnalise les titres des rubriques directement. Utilise les flèches 🔼 et 🔽 pour réouvrir ou réorganiser tes expériences, formations ou blocs à tout moment.</p>
     </header>
 
     <main class="w-full max-w-7xl grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
@@ -130,7 +129,6 @@
             </div>
 
             <div id="form-dynamic-order" class="flex flex-col space-y-6">
-                
                 <section id="form-sec-form" class="space-y-3 bg-gray-50 p-4 rounded-xl border border-gray-100 order-1">
                     <div class="flex flex-col sm:flex-row justify-between gap-2 border-b pb-2 mb-2">
                         <input type="text" id="title-form" value="Formations & Diplômes" class="font-bold text-blue-700 uppercase tracking-wider text-xs bg-transparent border-b border-dashed border-blue-300 outline-none p-0.5 w-full sm:w-auto" oninput="maj()">
@@ -146,11 +144,9 @@
                     </div>
                     <div id="container-exp" class="space-y-4"></div>
                 </section>
-                
             </div>
 
             <div id="form-secondary-order" class="flex flex-col space-y-6">
-
                 <section id="form-sec-tech" class="space-y-3 bg-gray-50 p-4 rounded-xl border border-gray-100 order-1">
                     <div class="flex justify-between items-center border-b pb-2 mb-2">
                         <div class="flex items-center gap-1 w-full">
@@ -192,7 +188,6 @@
                     </div>
                     <div id="container-loisir" class="space-y-3"></div>
                 </section>
-
             </div>
 
             <button onclick="telecharger()" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-xl shadow-lg transition transform active:scale-95 cursor-pointer text-center block text-sm">
@@ -212,9 +207,7 @@
 
         <div class="preview-wrapper">
             <div class="preview-scale-container">
-                
                 <div id="cv-preview" class="text-gray-800 flex flex-col justify-between">
-                    
                     <div>
                         <div class="border-b-4 border-blue-600 pb-4 flex justify-between items-end">
                             <div>
@@ -234,21 +227,17 @@
                         </div>
 
                         <div id="cv-render-dynamic-order" class="flex flex-col">
-                            
                             <div id="sec-form" class="mb-6 hidden-cv order-1">
                                 <h3 id="out-title-form" class="text-sm font-bold text-blue-700 uppercase tracking-wider border-b pb-1 mb-3">Formations & Diplômes</h3>
                                 <div id="out-liste-form" class="space-y-4"></div>
                             </div>
-
                             <div id="sec-exp" class="mb-6 hidden-cv order-2">
                                 <h3 id="out-title-exp" class="text-sm font-bold text-blue-700 uppercase tracking-wider border-b pb-1 mb-3">Expériences Professionnelles</h3>
                                 <div id="out-liste-exp" class="space-y-4"></div>
                             </div>
-
                         </div>
 
                         <div id="cv-secondary-columns" class="grid grid-cols-2 gap-6 mb-6">
-                            
                             <div id="cv-col-left" class="space-y-4 flex flex-col justify-start">
                                 <div id="sec-tech" class="hidden-cv">
                                     <h3 id="out-title-tech" class="text-sm font-bold text-blue-700 uppercase tracking-wider border-b pb-1 mb-2">Compétences Techniques</h3>
@@ -259,23 +248,19 @@
                                     <ul id="out-liste-lang" class="space-y-1.5 text-xs"></ul>
                                 </div>
                             </div>
-
                             <div id="cv-col-right" class="space-y-4 flex flex-col justify-start">
                                 <div id="sec-loisirs" class="hidden-cv">
                                     <h3 id="out-title-loisir" class="text-sm font-bold text-blue-700 uppercase tracking-wider border-b pb-1 mb-2">Centres d'intérêt</h3>
                                     <div id="out-liste-loisirs" class="space-y-3"></div>
                                 </div>
                             </div>
-
                         </div>
                     </div>
 
                     <div onclick="toggleAdmin()" class="border-t pt-2 text-center text-[10px] text-gray-400 font-semibold tracking-wide cursor-pointer select-none">
                         Développement du modèle sur une idée de Faly R.®
                     </div>
-
                 </div>
-
             </div>
         </div>
 
@@ -289,7 +274,6 @@
         let ordreInverse = false;
         let ordreSecondaire = ['form-sec-tech', 'form-sec-lang', 'form-sec-loisir'];
 
-        // --- GESTION ET SYNCHRONISATION EN TEMPS RÉEL (maj) ---
         function maj() {
             const prenom = document.getElementById('in-prenom').value.trim();
             const nom = document.getElementById('in-nom').value.trim();
@@ -310,14 +294,12 @@
             document.getElementById('out-accroche').innerText = accroche || "Présentation courte...";
             document.getElementById('sec-accroche').classList.toggle('hidden-cv', !accroche);
 
-            // Synchronisation dynamique des titres de rubriques
             document.getElementById('out-title-form').innerText = document.getElementById('title-form').value;
             document.getElementById('out-title-exp').innerText = document.getElementById('title-exp').value;
             document.getElementById('out-title-tech').innerText = document.getElementById('title-tech').value;
             document.getElementById('out-title-lang').innerText = document.getElementById('title-lang').value;
             document.getElementById('out-title-loisir').innerText = document.getElementById('title-loisir').value;
 
-            // Rendu de la liste des Formations
             const outForm = document.getElementById('out-liste-form');
             outForm.innerHTML = "";
             let countForm = 0;
@@ -339,7 +321,6 @@
             });
             document.getElementById('sec-form').classList.toggle('hidden-cv', countForm === 0);
 
-            // Rendu de la liste des Expériences
             const outExp = document.getElementById('out-liste-exp');
             outExp.innerHTML = "";
             let countExp = 0;
@@ -371,7 +352,6 @@
             });
             document.getElementById('sec-exp').classList.toggle('hidden-cv', countExp === 0);
 
-            // Rendu des Compétences Techniques
             const outTech = document.getElementById('out-liste-tech');
             outTech.innerHTML = "";
             let countTech = 0;
@@ -384,7 +364,6 @@
             });
             document.getElementById('sec-tech').classList.toggle('hidden-cv', countTech === 0);
 
-            // Rendu des Compétences Linguistiques
             const outLang = document.getElementById('out-liste-lang');
             outLang.innerHTML = "";
             let countLang = 0;
@@ -397,7 +376,6 @@
             });
             document.getElementById('sec-lang').classList.toggle('hidden-cv', countLang === 0);
 
-            // Rendu des Centres d'intérêt
             const outLoisir = document.getElementById('out-liste-loisirs');
             outLoisir.innerHTML = "";
             let countLoisir = 0;
@@ -413,19 +391,27 @@
             sauvegarderEtatFormulaire();
         }
 
-        // --- EXPORTATION DU DOCUMENT FINAL EN PDF (télécharger) ---
+        // --- EXPORTATION DU DOCUMENT EN PDF (CORRIGÉ POUR TAILWIND v4) ---
         function telecharger() {
             if (typeof html2pdf === "undefined") {
                 alert("Le moteur PDF n'est pas encore prêt. Veuillez patienter une seconde.");
                 return;
             }
 
-            const element = document.getElementById('cv-preview');
+            const originElement = document.getElementById('cv-preview');
             const prenom = document.getElementById('in-prenom').value.trim();
             const nom = document.getElementById('in-nom').value.trim();
             const nomFichier = (prenom || nom) ? `CV_${prenom}_${nom.toUpperCase()}.pdf` : 'Mon_CV_Professionnel.pdf';
 
-            // CORRECTION : Options optimisées pour éviter les interférences avec le zoom d'aperçu de l'écran
+            // ASTUCE DE CONTOURNEMENT : On clone le nœud et on l'isole des styles de distorsion "scale" de l'écran
+            const clone = originElement.cloneNode(true);
+            clone.style.transform = "none";
+            clone.style.margin = "0";
+            clone.style.position = "fixed";
+            clone.style.top = "-9999px"; 
+            clone.style.left = "-9999px";
+            document.body.appendChild(clone);
+
             const opt = {
                 margin:       0,
                 filename:     nomFichier,
@@ -434,23 +420,24 @@
                     scale: 2, 
                     useCORS: true, 
                     letterRendering: true, 
-                    logging: false,
-                    scrollX: 0,
-                    scrollY: 0
+                    logging: false
                 },
                 jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
             };
 
-            // Notification d'évènement à Supabase
             if (typeof sauvegarderEvenementSupabase === "function") {
                 sauvegarderEvenementSupabase("telechargements");
             }
 
-            // Lancement natif du téléchargement
-            html2pdf().set(opt).from(element).save();
+            // Génération depuis le clone propre et suppression juste après
+            html2pdf().set(opt).from(clone).save().then(() => {
+                clone.remove();
+            }).catch((err) => {
+                console.error("Erreur durant la génération du PDF", err);
+                clone.remove();
+            });
         }
 
-        // --- SYSTÈME DE SAUVEGARDE RGPD AUTOMATIQUE (localStorage) ---
         function sauvegarderEtatFormulaire() {
             const data = {
                 ordreInverse: ordreInverse,
@@ -549,8 +536,6 @@
                         }
                     });
                 }
-
-                // ... Reste des fonctions d'initialisation de votre script d'origine
             } catch (e) {
                 console.error("Erreur de chargement du backup local", e);
             }
