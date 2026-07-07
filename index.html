@@ -9,7 +9,7 @@
     <meta name="theme-color" content="#1e40af">
     <link class="pwa-icon" rel="apple-touch-icon" href="icon-192.png">
 
-    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <script src="https://cdn.tailwindcss.com/3.4.17"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     
     <style>
@@ -189,7 +189,6 @@
             maj();
         }
 
-        // --- SYNCHRONISATION EN TEMPS RÉEL AVEC CORRECTION CASSE PRENOM/NOM ---
         function formatPrenom(str) {
             if (!str) return "";
             return str.toLowerCase().replace(/(?:^|\s|-)\S/g, function(a) { return a.toUpperCase(); });
@@ -199,7 +198,6 @@
             let prenomRaw = document.getElementById('in-prenom').value;
             let nomRaw = document.getElementById('in-nom').value;
 
-            // Application stricte des règles de casse demandées
             let prenomFormate = formatPrenom(prenomRaw);
             let nomFormate = nomRaw.toUpperCase();
 
@@ -280,7 +278,7 @@
             sauvegarderEtatFormulaire();
         }
 
-        // --- EXPORT PDF COMPATIBLE AVEC TAILWIND 4 ---
+        // --- EXPORT PDF STABLE ET SÉCURISÉ ---
         function telecharger() {
             if (typeof html2pdf === "undefined") {
                 alert("Le système PDF charge ses composants. Patientez un instant.");
@@ -292,7 +290,7 @@
             const nom = document.getElementById('in-nom').value.trim();
             const nomFichier = (prenom || nom) ? `CV_${formatPrenom(prenom)}_${nom.toUpperCase()}.pdf` : 'Mon_CV_Professionnel.pdf';
 
-            // Pour contourner le bug d'échelle de Tailwind v4, on passe temporairement l'élément cible à sa taille réelle durant la capture
+            // Neutralisation de la mise à l'échelle CSS durant la capture
             const wrapper = document.getElementById('pdf-target-zone');
             const oldStyle = wrapper.style.transform;
             wrapper.style.transform = "none"; 
@@ -306,14 +304,13 @@
             };
 
             html2pdf().set(opt).from(element).save().then(() => {
-                wrapper.style.transform = oldStyle; // Restauration de la vue responsive après capture
+                wrapper.style.transform = oldStyle; 
             }).catch((err) => {
                 console.error(err);
                 wrapper.style.transform = oldStyle;
             });
         }
 
-        // --- GESTION DES DONNÉES ET ALERTES DE RÉINITIALISATION ---
         function reinitialiserFormulaire() {
             if (confirm("⚠️ ATTENTION : Vous allez effacer l'intégralité du formulaire ainsi que votre sauvegarde automatique. Vos données seront définitivement perdues. Souhaitez-vous continuer ?")) {
                 localStorage.removeItem('cv_express_solidaire_backup');
