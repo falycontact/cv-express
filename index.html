@@ -2,58 +2,30 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <title>Générateur de CV</title>
+    <title>Accès CV</title>
+    <!-- Tailwind pour le style -->
     <script src="https://cdn.tailwindcss.com/3.4.17"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
-<body class="bg-gray-100">
+<body class="bg-gray-100 h-screen flex items-center justify-center">
 
-    <!-- ÉCRAN DE CONNEXION -->
-    <div id="gatekeeper-screen" class="fixed inset-0 flex items-center justify-center bg-gray-100 z-50">
-        <div class="bg-white p-8 rounded-2xl shadow-xl text-center w-full max-w-sm">
-            <h2 class="text-xl font-bold mb-6 text-gray-800">Accès réservé</h2>
-            <input type="password" id="gatekeeper-input" placeholder="Mot de passe" class="w-full p-3 border rounded-xl mb-4 text-center">
-            <button id="btn-valider" class="w-full bg-blue-600 text-white font-bold py-3 rounded-xl hover:bg-blue-700">Entrer</button>
-        </div>
+    <!-- Écran de connexion pur -->
+    <div id="gatekeeper-screen" class="bg-white p-10 rounded-2xl shadow-2xl text-center w-80">
+        <h2 class="text-xl font-bold mb-6">Accès Sécurisé</h2>
+        <input type="password" id="gatekeeper-input" class="w-full p-3 border rounded-xl mb-4 text-center border-gray-300" placeholder="Mot de passe">
+        <button onclick="checkPass()" class="w-full bg-blue-600 text-white font-bold py-3 rounded-xl hover:bg-blue-700">Valider</button>
     </div>
 
-    <!-- APPLICATION -->
-    <div id="app-content" class="hidden p-6">
-        <!-- Contenu de votre CV -->
-        <div class="mt-auto border-t pt-4 text-center text-xs text-gray-500">
-            Modèle de CV sur une idée de Faly R.<button onclick="afficherStats()" class="text-blue-600 font-bold underline">®</button>
-        </div>
-    </div>
-
+    <!-- Script de vérification immédiat -->
     <script>
-        // Initialisation forcée après chargement complet
-        document.addEventListener("DOMContentLoaded", () => {
-            document.getElementById('btn-valider').addEventListener('click', () => {
-                const pass = document.getElementById('gatekeeper-input').value.trim();
-                console.log("Valeur saisie :", pass); // Pour déboguer dans la console F12
-                
-                if (pass === "ML2026") {
-                    document.getElementById('gatekeeper-screen').style.display = 'none';
-                    document.getElementById('app-content').classList.remove('hidden');
-                } else {
-                    alert("Mot de passe incorrect !");
-                }
-            });
-        });
-
-        const supabase = supabase.createClient(
-            'https://mlbjvzzadwjbdaaenfea.supabase.co',
-            'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1sYmp2emFkd2piZGFhZW5mZWFlIiwicm9sZSI6Im1hbmFnZXIiLCJpYXQiOjE3ODMzNDk2MzgsImV4cCI6MjA5ODkyNTYzOH0.EC3kal19wHH35OnTll2rYnxmQyqzlOghxPdjkPdas5w'
-        );
-
-        async function afficherStats() {
-            const { data, error } = await supabase.from('stats').select('*');
-            if (error) {
-                alert("Erreur de connexion aux stats");
-                console.error(error);
+        function checkPass() {
+            var pass = document.getElementById('gatekeeper-input').value;
+            // Vérification stricte
+            if (pass === "ML2026") {
+                // Redirection vers le contenu réel ou affichage
+                document.body.innerHTML = '<div class="p-10 text-center"><h1 class="text-2xl font-bold">Accès autorisé</h1><p>Le système est chargé.</p></div>';
+                // Note: Si vous avez votre code complet, remplacez le contenu du body ici.
             } else {
-                alert('Données : ' + JSON.stringify(data));
+                alert("Mot de passe refusé.");
             }
         }
     </script>
