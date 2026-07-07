@@ -9,10 +9,22 @@
     <meta name="theme-color" content="#1e40af">
     <link class="pwa-icon" rel="apple-touch-icon" href="icon-192.png">
 
+    <!-- VERSION STABLE DE TAILWIND ET DU MOTEUR PDF POUR ÉVITER LES CONFLITS -->
     <script src="https://cdn.tailwindcss.com/3.4.17"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     
     <style>
+        /* Écran de verrouillage */
+        #auth-screen {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background-color: #111827;
+            z-index: 9999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
         /* Configuration de la zone d'impression A4 stricte */
         #cv-preview {
             width: 210mm;
@@ -61,101 +73,148 @@
 </head>
 <body class="bg-gray-100 font-sans min-h-screen flex flex-col items-center p-4 md:p-8">
 
-    <header class="text-center my-4 max-w-2xl">
-        <h1 class="text-3xl font-bold text-blue-600">Je crée mon CV express</h1>
-        <p class="text-gray-600 text-sm mt-2">Remplissez les informations à gauche, l'aperçu se met à jour en temps réel à droite.</p>
-    </header>
+    <!-- ÉCRAN D'AUTHENTIFICATION OBLIGATOIRE -->
+    <div id="auth-screen">
+        <div class="bg-gray-800 p-8 rounded-2xl shadow-2xl max-w-sm w-full text-center border border-gray-700">
+            <h2 class="text-2xl font-bold text-white mb-2">Espace Sécurisé</h2>
+            <p class="text-gray-400 text-sm mb-6">Veuillez saisir le mot de passe pour accéder au générateur de CV.</p>
+            <form onsubmit="verifierMotDePasse(event)" class="space-y-4">
+                <input type="password" id="password-input" placeholder="Mot de passe" class="w-full p-3 rounded-xl bg-gray-900 border border-gray-700 text-white text-center outline-none focus:border-blue-500 transition font-mono tracking-widest">
+                <p id="auth-error" class="text-red-500 text-xs font-semibold hidden">Mot de passe incorrect.</p>
+                <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-xl transition cursor-pointer">
+                    Se connecter
+                </button>
+            </form>
+        </div>
+    </div>
 
-    <main class="w-full max-w-7xl grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
-        
-        <div class="bg-white p-6 rounded-2xl shadow-md space-y-6 max-h-[85vh] overflow-y-auto">
+    <!-- CONTENU DU GÉNÉRATEUR (MASQUÉ INITIALEMENT) -->
+    <div id="app-content" class="w-full max-w-7xl hidden">
+        <header class="text-center my-4 max-w-2xl mx-auto">
+            <h1 class="text-3xl font-bold text-blue-600">Je crée mon CV express</h1>
+            <p class="text-gray-600 text-sm mt-2">Remplissez les informations à gauche, l'aperçu se met à jour en temps réel à droite.</p>
+        </header>
+
+        <main class="w-full grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
             
-            <section class="space-y-3 bg-gray-50 p-4 rounded-xl border border-gray-100">
-                <h2 class="text-xs font-bold text-blue-700 uppercase tracking-wider">1. Identité & Projet</h2>
-                <div class="grid grid-cols-2 gap-2">
-                    <input type="text" id="in-prenom" placeholder="Prénom" class="p-2 border rounded-lg bg-white text-sm outline-none w-full" oninput="maj()">
-                    <input type="text" id="in-nom" placeholder="Nom" class="p-2 border rounded-lg bg-white text-sm outline-none w-full" oninput="maj()">
-                </div>
-                <div class="grid grid-cols-2 gap-2">
-                    <input type="text" id="in-metier" placeholder="Métier / Projet visé" class="p-2 border rounded-lg bg-white text-sm outline-none w-full" oninput="maj()">
-                    <input type="tel" id="in-tel" placeholder="Téléphone" class="p-2 border rounded-lg bg-white text-sm outline-none w-full" oninput="maj()">
-                </div>
-                <div class="grid grid-cols-1">
-                    <input type="email" id="in-email" placeholder="Adresse Email" class="p-2 border rounded-lg bg-white text-sm outline-none w-full" oninput="maj()">
-                </div>
-                <textarea id="in-accroche" placeholder="Phrase d'accroche..." rows="2" class="w-full p-2 border rounded-lg bg-white text-sm outline-none" oninput="maj()"></textarea>
-            </section>
-
-            <div class="flex flex-col space-y-6">
+            <!-- FORMULAIRE (GAUCHE) -->
+            <div class="bg-white p-6 rounded-2xl shadow-md space-y-6 max-h-[85vh] overflow-y-auto">
+                
                 <section class="space-y-3 bg-gray-50 p-4 rounded-xl border border-gray-100">
-                    <div class="flex justify-between items-center border-b pb-2">
-                        <input type="text" id="title-form" value="Formations & Diplômes" class="font-bold text-blue-700 text-xs bg-transparent outline-none" oninput="maj()">
-                        <button onclick="ajouterForm()" class="bg-blue-600 text-white text-xs px-2 py-1 rounded hover:bg-blue-700 cursor-pointer">+ Ajouter</button>
+                    <h2 class="text-xs font-bold text-blue-700 uppercase tracking-wider">1. Identité & Projet</h2>
+                    <div class="grid grid-cols-2 gap-2">
+                        <input type="text" id="in-prenom" placeholder="Prénom" class="p-2 border rounded-lg bg-white text-sm outline-none w-full" oninput="maj()">
+                        <input type="text" id="in-nom" placeholder="Nom" class="p-2 border rounded-lg bg-white text-sm outline-none w-full" oninput="maj()">
                     </div>
-                    <div id="container-form" class="space-y-2"></div>
+                    <div class="grid grid-cols-2 gap-2">
+                        <input type="text" id="in-metier" placeholder="Métier / Projet visé" class="p-2 border rounded-lg bg-white text-sm outline-none w-full" oninput="maj()">
+                        <input type="tel" id="in-tel" placeholder="Téléphone" class="p-2 border rounded-lg bg-white text-sm outline-none w-full" oninput="maj()">
+                    </div>
+                    <div class="grid grid-cols-1">
+                        <input type="email" id="in-email" placeholder="Adresse Email" class="p-2 border rounded-lg bg-white text-sm outline-none w-full" oninput="maj()">
+                    </div>
+                    <textarea id="in-accroche" placeholder="Phrase d'accroche..." rows="2" class="w-full p-2 border rounded-lg bg-white text-sm outline-none" oninput="maj()"></textarea>
                 </section>
 
-                <section class="space-y-3 bg-gray-50 p-4 rounded-xl border border-gray-100">
-                    <div class="flex justify-between items-center border-b pb-2">
-                        <input type="text" id="title-exp" value="Expériences Professionnelles" class="font-bold text-blue-700 text-xs bg-transparent outline-none" oninput="maj()">
-                        <button onclick="ajouterExp()" class="bg-blue-600 text-white text-xs px-2 py-1 rounded hover:bg-blue-700 cursor-pointer">+ Ajouter</button>
-                    </div>
-                    <div id="container-exp" class="space-y-2"></div>
-                </section>
+                <div class="flex flex-col space-y-6">
+                    <section class="space-y-3 bg-gray-50 p-4 rounded-xl border border-gray-100">
+                        <div class="flex justify-between items-center border-b pb-2">
+                            <input type="text" id="title-form" value="Formations & Diplômes" class="font-bold text-blue-700 text-xs bg-transparent outline-none" oninput="maj()">
+                            <button onclick="ajouterForm()" class="bg-blue-600 text-white text-xs px-2 py-1 rounded hover:bg-blue-700 cursor-pointer">+ Ajouter</button>
+                        </div>
+                        <div id="container-form" class="space-y-2"></div>
+                    </section>
+
+                    <section class="space-y-3 bg-gray-50 p-4 rounded-xl border border-gray-100">
+                        <div class="flex justify-between items-center border-b pb-2">
+                            <input type="text" id="title-exp" value="Expériences Professionnelles" class="font-bold text-blue-700 text-xs bg-transparent outline-none" oninput="maj()">
+                            <button onclick="ajouterExp()" class="bg-blue-600 text-white text-xs px-2 py-1 rounded hover:bg-blue-700 cursor-pointer">+ Ajouter</button>
+                        </div>
+                        <div id="container-exp" class="space-y-2"></div>
+                    </section>
+                </div>
+
+                <!-- BOUTONS D'ACTION -->
+                <div class="space-y-3 pt-4">
+                    <button onclick="telecharger()" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-xl shadow-lg transition cursor-pointer text-center text-sm block">
+                        📥 Télécharger mon CV en PDF (A4)
+                    </button>
+
+                    <button type="button" onclick="reinitialiserFormulaire()" class="w-full bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-xl transition cursor-pointer text-center text-xs block">
+                        🗑️ Effacer et Réinitialiser toutes les données
+                    </button>
+                </div>
             </div>
 
-            <div class="space-y-3 pt-4">
-                <button onclick="telecharger()" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-xl shadow-lg transition cursor-pointer text-center text-sm block">
-                    📥 Télécharger mon CV en PDF (A4)
-                </button>
-
-                <button type="button" onclick="reinitialiserFormulaire()" class="w-full bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-xl transition cursor-pointer text-center text-xs block">
-                    🗑️ Effacer et Réinitialiser toutes les données
-                </button>
-            </div>
-        </div>
-
-        <div class="preview-wrapper">
-            <div class="preview-scale-container" id="pdf-target-zone">
-                <div id="cv-preview" class="text-gray-800 flex flex-col justify-between">
-                    <div>
-                        <div class="border-b-4 border-blue-600 pb-4 flex justify-between items-end">
-                            <div>
-                                <h1 id="out-identity" class="text-3xl font-extrabold tracking-tight text-gray-900">Prénom NOM</h1>
-                                <p id="out-metier" class="text-lg font-bold text-blue-600 uppercase mt-1">PROJET / MÉTIER VISÉ</p>
-                            </div>
-                            <div class="text-right text-xs font-medium space-y-0.5 text-gray-600">
-                                <p id="out-tel">📞 Téléphone</p>
-                                <p id="out-email">✉️ Adresse Email</p>
-                            </div>
-                        </div>
-
-                        <div id="sec-accroche" class="my-6">
-                            <p id="out-accroche" class="text-sm italic text-gray-600 bg-gray-50 p-3 rounded-lg border-l-4 border-blue-400">Présentation courte...</p>
-                        </div>
-
-                        <div class="flex flex-col">
-                            <div id="sec-form" class="mb-6 hidden-cv">
-                                <h3 id="out-title-form" class="text-sm font-bold text-blue-700 uppercase border-b pb-1 mb-3">Formations & Diplômes</h3>
-                                <div id="out-liste-form" class="space-y-4"></div>
+            <!-- APERÇU DU CV (DROITE) -->
+            <div class="preview-wrapper">
+                <div class="preview-scale-container" id="pdf-target-zone">
+                    <div id="cv-preview" class="text-gray-800 flex flex-col justify-between">
+                        <div>
+                            <div class="border-b-4 border-blue-600 pb-4 flex justify-between items-end">
+                                <div>
+                                    <h1 id="out-identity" class="text-3xl font-extrabold tracking-tight text-gray-900">Prénom NOM</h1>
+                                    <p id="out-metier" class="text-lg font-bold text-blue-600 uppercase mt-1">PROJET / MÉTIER VISÉ</p>
+                                </div>
+                                <div class="text-right text-xs font-medium space-y-0.5 text-gray-600">
+                                    <p id="out-tel">📞 Téléphone</p>
+                                    <p id="out-email">✉️ Adresse Email</p>
+                                </div>
                             </div>
 
-                            <div id="sec-exp" class="mb-6 hidden-cv">
-                                <h3 id="out-title-exp" class="text-sm font-bold text-blue-700 uppercase border-b pb-1 mb-3">Expériences Professionnelles</h3>
-                                <div id="out-liste-exp" class="space-y-4"></div>
+                            <div id="sec-accroche" class="my-6">
+                                <p id="out-accroche" class="text-sm italic text-gray-600 bg-gray-50 p-3 rounded-lg border-l-4 border-blue-400">Présentation courte...</p>
+                            </div>
+
+                            <div class="flex flex-col">
+                                <div id="sec-form" class="mb-6 hidden-cv">
+                                    <h3 id="out-title-form" class="text-sm font-bold text-blue-700 uppercase border-b pb-1 mb-3">Formations & Diplômes</h3>
+                                    <div id="out-liste-form" class="space-y-4"></div>
+                                </div>
+
+                                <div id="sec-exp" class="mb-6 hidden-cv">
+                                    <h3 id="out-title-exp" class="text-sm font-bold text-blue-700 uppercase border-b pb-1 mb-3">Expériences Professionnelles</h3>
+                                    <div id="out-liste-exp" class="space-y-4"></div>
+                                </div>
                             </div>
                         </div>
-                    </div>
-                    <div class="border-t pt-2 text-center text-[10px] text-gray-400 font-semibold">
-                        Générateur de CV Professionnel Express
+                        
+                        <!-- PIED DE PAGE AVEC MENTION COPYRIGHT ET LIEN STATS (REMPLACER LE LIEN SI BESOIN) -->
+                        <div class="border-t pt-2 text-center text-[10px] text-gray-400 font-semibold flex justify-between items-center">
+                            <span>Générateur de CV Professionnel Express</span>
+                            <span>Modèle de CV sur une idée de Faly R.<span onclick="ouvrirStats()" class="text-blue-500 hover:text-blue-700 cursor-pointer ml-0.5 select-none text-[11px]" title="Voir les statistiques">®</span></span>
+                        </div>
                     </div>
                 </div>
             </div>
-        </div>
 
-    </main>
+        </main>
+    </div>
 
     <script>
+        // --- SYSTÈME DE SÉCURITÉ DE CONEXION ---
+        function verifierMotDePasse(event) {
+            event.preventDefault();
+            const input = document.getElementById('password-input').value;
+            const errorText = document.getElementById('auth-error');
+
+            if (input === "ML2026") {
+                document.getElementById('auth-screen').style.display = 'none';
+                document.getElementById('app-content').classList.remove('hidden');
+                chargerEtatFormulaire(); // Charge les données après connexion réussie
+            } else {
+                errorText.classList.remove('hidden');
+                document.getElementById('password-input').value = "";
+            }
+        }
+
+        // --- ACCÈS AUX STATISTIQUES VIA LE ® ---
+        function ouvrirStats() {
+            // Remplacez cette URL par celle de votre script Google Apps Script / Google Sheet si nécessaire
+            const urlStats = "https://script.google.com/macros/s/AKfycbwR_TclwA_Uat_R2YvI0-zPAn9K54mCunD3tqX2WjM/exec";
+            window.open(urlStats, '_blank');
+        }
+
         function ajouterForm() {
             const container = document.getElementById('container-form');
             const div = document.createElement('div');
@@ -278,7 +337,7 @@
             sauvegarderEtatFormulaire();
         }
 
-        // --- EXPORT PDF STABLE ET SÉCURISÉ ---
+        // --- EXPORT PDF STABLE ---
         function telecharger() {
             if (typeof html2pdf === "undefined") {
                 alert("Le système PDF charge ses composants. Patientez un instant.");
@@ -290,7 +349,6 @@
             const nom = document.getElementById('in-nom').value.trim();
             const nomFichier = (prenom || nom) ? `CV_${formatPrenom(prenom)}_${nom.toUpperCase()}.pdf` : 'Mon_CV_Professionnel.pdf';
 
-            // Neutralisation de la mise à l'échelle CSS durant la capture
             const wrapper = document.getElementById('pdf-target-zone');
             const oldStyle = wrapper.style.transform;
             wrapper.style.transform = "none"; 
@@ -311,6 +369,7 @@
             });
         }
 
+        // --- RÉINITIALISATION AVEC ALERTE DETRAVAIL ---
         function reinitialiserFormulaire() {
             if (confirm("⚠️ ATTENTION : Vous allez effacer l'intégralité du formulaire ainsi que votre sauvegarde automatique. Vos données seront définitivement perdues. Souhaitez-vous continuer ?")) {
                 localStorage.removeItem('cv_express_solidaire_backup');
@@ -404,8 +463,6 @@
                 maj();
             } catch (e) { console.error(e); }
         }
-
-        window.onload = chargerEtatFormulaire;
     </script>
 </body>
 </html>
