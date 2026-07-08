@@ -2,66 +2,172 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <title>Je créé mon CV express</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-</head>
-<body class="bg-gray-100 p-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Formulaire de Profil</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f9f9f9;
+        }
 
-    <div id="login-page" class="max-w-md mx-auto bg-white p-6 rounded shadow">
-        <h1 class="text-xl font-bold mb-4">Accès CV Express</h1>
-        <p class="mb-4">Connectez-vous à l'aide du code qui vous a été communiqué.</p>
-        <input type="password" id="password" class="border p-2 w-full mb-4" placeholder="Code secret">
-        <button onclick="checkLogin()" class="bg-blue-600 text-white w-full py-2 rounded">Valider</button>
-        <p class="mt-4 text-sm text-gray-500">Un problème de connexion ? Contactez-nous à faly.contact@gmail.com</p>
-    </div>
+        .form-container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            box-sizing: border-box; /* Évite que le conteneur ne dépasse sur mobile */
+        }
 
-    <div id="app" class="hidden flex gap-8">
-        <div class="w-1/2 bg-white p-6 rounded shadow overflow-y-auto h-[90vh]">
-            <h1 class="text-2xl font-bold mb-1">Je créé mon CV express</h1>
-            <p class="text-sm text-gray-600 mb-6">Remplissez les informations à gauche, l'aperçu se met à jour en temps réel.</p>
+        /* CORRECTION ET BLINDAGE : Évite à 100% que les titres soient coupés */
+        .section-title {
+            font-size: 1.25rem;
+            color: #333;
+            border-bottom: 2px solid #007BFF;
+            padding-bottom: 5px;
+            margin-top: 30px;
+            margin-bottom: 15px;
             
-            <div class="space-y-4">
-                <input type="text" placeholder="Prénom" oninput="this.value = this.value.charAt(0).toUpperCase() + this.value.slice(1).toLowerCase(); updateCV()" class="border p-2 w-full">
-                <input type="text" placeholder="NOM" oninput="this.value = this.value.toUpperCase(); updateCV()" class="border p-2 w-full">
-                <input type="text" id="job" placeholder="Métier/Projet visé" oninput="updateCV()" class="border p-2 w-full">
-                </div>
+            /* Sécurités pour forcer l'affichage entier (PC et Mobile) */
+            display: block !important;
+            width: 100% !important;
+            white-space: normal !important; 
+            word-wrap: break-word !important;
+            overflow: visible !important;
+            height: auto !important;
+        }
 
-            <button onclick="downloadPDF()" class="mt-6 bg-green-600 text-white w-full py-2 rounded">Télécharger en PDF (A4)</button>
-            <button onclick="resetForm()" class="mt-2 text-red-500 w-full text-sm">Réinitialiser (Données non enregistrées)</button>
-        </div>
+        .form-group {
+            margin-bottom: 15px;
+        }
 
-        <div id="cv-preview" class="w-1/2 bg-white p-8 shadow-lg min-h-[1122px] border">
-            <h2 id="display-name" class="text-3xl font-bold"></h2>
-            <p id="display-job" class="text-xl text-gray-700"></p>
-        </div>
-    </div>
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
 
-    <script>
-        function checkLogin() {
-            if(document.getElementById('password').value === 'ML2026') {
-                document.getElementById('login-page').classList.add('hidden');
-                document.getElementById('app').classList.remove('hidden');
-            } else {
-                alert('Code incorrect');
+        input[type="text"], textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+            font-size: 16px; /* Taille idéale pour éviter le zoom automatique sur iPhone */
+        }
+
+        /* Style pour la phrase de prévention */
+        .info-note {
+            font-size: 0.9rem;
+            color: #555;
+            background-color: #e9f7fe;
+            border-left: 4px solid #007BFF;
+            padding: 12px;
+            margin-top: 25px;
+            margin-bottom: 15px;
+            border-radius: 4px;
+            line-height: 1.4;
+        }
+
+        /* Zone des boutons */
+        .button-group {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+        }
+
+        .btn {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 0.95rem;
+        }
+
+        .btn-submit {
+            background-color: #007BFF;
+            color: white;
+        }
+
+        .btn-submit:hover {
+            background-color: #0056b3;
+        }
+
+        /* Style du bouton Réinitialiser */
+        .btn-reset {
+            background-color: #6c757d;
+            color: white;
+        }
+
+        .btn-reset:hover {
+            background-color: #5a6268;
+        }
+
+        /* AJUSTEMENT CORRECTIF SPÉCIFIQUE POUR SMARTPHONES */
+        @media (max-width: 480px) {
+            body {
+                margin: 10px; /* Réduit la marge extérieure pour gagner de la place */
+            }
+            .form-container {
+                padding: 15px; /* Optimise l'espace interne */
+            }
+            .section-title {
+                font-size: 1.15rem; /* Ajuste finement la taille pour les petits écrans */
+            }
+            .button-group {
+                flex-direction: column-reverse; /* Empile les boutons verticalement */
+                gap: 8px;
+            }
+            .btn {
+                width: 100%; /* Les boutons prennent toute la largeur sur mobile */
+                padding: 14px; /* Zone de clic plus confortable */
             }
         }
+    </style>
+</head>
+<body>
 
-        function updateCV() {
-            document.getElementById('display-name').innerText = document.querySelector('input[placeholder="Prénom"]').value + ' ' + document.querySelector('input[placeholder="NOM"]').value;
-            document.getElementById('display-job').innerText = document.getElementById('job').value;
-        }
+<div class="form-container">
+    <form id="profileForm">
+        
+        <h2 class="section-title">Formations & Diplômes</h2>
+        <div class="form-group">
+            <label for="education">Vos formations, diplômes et écoles :</label>
+            <input type="text" id="education" name="education" placeholder="ex: Master Informatique, Université...">
+        </div>
 
-        function downloadPDF() {
-            const element = document.getElementById('cv-preview');
-            html2pdf().from(element).save('Mon_CV.pdf');
-        }
+        <h2 class="section-title">Expériences professionnelles</h2>
+        <div class="form-group">
+            <label for="experience">Résumé de vos expériences :</label>
+            <textarea id="experience" name="experience" rows="4" placeholder="Décrivez vos anciens postes..."></textarea>
+        </div>
 
-        function resetForm() {
-            if(confirm('Tout effacer ?')) {
-                location.reload();
-            }
-        }
-    </script>
+        <h2 class="section-title">Compétences techniques</h2>
+        <div class="form-group">
+            <label for="skills">Vos compétences (séparées par des virgules) :</label>
+            <input type="text" id="skills" name="skills" placeholder="ex: HTML, CSS, JavaScript...">
+        </div>
+
+        <h2 class="section-title">Compétences linguistiques</h2>
+        <div class="form-group">
+            <label for="languages">Langues maîtrisées et niveau :</label>
+            <input type="text" id="languages" name="languages" placeholder="ex: Anglais (Courant), Espagnol (B2)...">
+        </div>
+
+        <div class="info-note">
+            ℹ️ <strong>Information :</strong> En cliquant sur "Enregistrer les modifications", les données saisies ci-dessus seront automatiquement sauvegardées et mises à jour dans votre profil.
+        </div>
+
+        <div class="button-group">
+            <button type="reset" class="btn btn-reset">Réinitialiser</button>
+            <button type="submit" class="btn btn-submit">Enregistrer les modifications</button>
+        </div>
+
+    </form>
+</div>
+
 </body>
 </html>
