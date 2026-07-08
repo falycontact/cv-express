@@ -18,20 +18,25 @@
             padding: 20px;
             border-radius: 8px;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            box-sizing: border-box; /* Évite que le conteneur ne dépasse sur mobile */
         }
 
-        /* CORRECTION : Ajustement pour éviter que les titres soient coupés */
+        /* CORRECTION ET BLINDAGE : Évite à 100% que les titres soient coupés */
         .section-title {
-            font-size: 1.2rem;
+            font-size: 1.25rem;
             color: #333;
             border-bottom: 2px solid #007BFF;
             padding-bottom: 5px;
-            margin-top: 25px;
+            margin-top: 30px;
             margin-bottom: 15px;
-            /* Sécurités pour que le texte s'affiche entièrement */
-            white-space: normal; 
-            word-wrap: break-word;
-            overflow: visible;
+            
+            /* Sécurités pour forcer l'affichage entier (PC et Mobile) */
+            display: block !important;
+            width: 100% !important;
+            white-space: normal !important; 
+            word-wrap: break-word !important;
+            overflow: visible !important;
+            height: auto !important;
         }
 
         .form-group {
@@ -46,10 +51,11 @@
 
         input[type="text"], textarea {
             width: 100%;
-            padding: 8px;
+            padding: 10px;
             border: 1px solid #ccc;
             border-radius: 4px;
             box-sizing: border-box;
+            font-size: 16px; /* Taille idéale pour éviter le zoom automatique sur iPhone */
         }
 
         /* Style pour la phrase de prévention */
@@ -58,10 +64,11 @@
             color: #555;
             background-color: #e9f7fe;
             border-left: 4px solid #007BFF;
-            padding: 10px;
+            padding: 12px;
             margin-top: 25px;
             margin-bottom: 15px;
             border-radius: 4px;
+            line-height: 1.4;
         }
 
         /* Zone des boutons */
@@ -72,11 +79,12 @@
         }
 
         .btn {
-            padding: 10px 20px;
+            padding: 12px 20px;
             border: none;
             border-radius: 4px;
             cursor: pointer;
             font-weight: bold;
+            font-size: 0.95rem;
         }
 
         .btn-submit {
@@ -88,7 +96,7 @@
             background-color: #0056b3;
         }
 
-        /* Style du nouveau bouton Réinitialiser */
+        /* Style du bouton Réinitialiser */
         .btn-reset {
             background-color: #6c757d;
             color: white;
@@ -97,6 +105,27 @@
         .btn-reset:hover {
             background-color: #5a6268;
         }
+
+        /* AJUSTEMENT CORRECTIF SPÉCIFIQUE POUR SMARTPHONES */
+        @media (max-width: 480px) {
+            body {
+                margin: 10px; /* Réduit la marge extérieure pour gagner de la place */
+            }
+            .form-container {
+                padding: 15px; /* Optimise l'espace interne */
+            }
+            .section-title {
+                font-size: 1.15rem; /* Ajuste finement la taille pour les petits écrans */
+            }
+            .button-group {
+                flex-direction: column-reverse; /* Empile les boutons verticalement */
+                gap: 8px;
+            }
+            .btn {
+                width: 100%; /* Les boutons prennent toute la largeur sur mobile */
+                padding: 14px; /* Zone de clic plus confortable */
+            }
+        }
     </style>
 </head>
 <body>
@@ -104,10 +133,10 @@
 <div class="form-container">
     <form id="profileForm">
         
-        <h2 class="section-title">Compétences techniques</h2>
+        <h2 class="section-title">Formations & Diplômes</h2>
         <div class="form-group">
-            <label for="skills">Vos compétences (séparées par des virgules) :</label>
-            <input type="text" id="skills" name="skills" placeholder="ex: HTML, CSS, JavaScript...">
+            <label for="education">Vos formations, diplômes et écoles :</label>
+            <input type="text" id="education" name="education" placeholder="ex: Master Informatique, Université...">
         </div>
 
         <h2 class="section-title">Expériences professionnelles</h2>
@@ -116,8 +145,20 @@
             <textarea id="experience" name="experience" rows="4" placeholder="Décrivez vos anciens postes..."></textarea>
         </div>
 
+        <h2 class="section-title">Compétences techniques</h2>
+        <div class="form-group">
+            <label for="skills">Vos compétences (séparées par des virgules) :</label>
+            <input type="text" id="skills" name="skills" placeholder="ex: HTML, CSS, JavaScript...">
+        </div>
+
+        <h2 class="section-title">Compétences linguistiques</h2>
+        <div class="form-group">
+            <label for="languages">Langues maîtrisées et niveau :</label>
+            <input type="text" id="languages" name="languages" placeholder="ex: Anglais (Courant), Espagnol (B2)...">
+        </div>
+
         <div class="info-note">
-            ℹ️ <strong>Information :</strong> En cliquant sur "Enregistrer", les données saisies ci-dessus seront automatiquement sauvegardées et mises à jour dans votre profil.
+            ℹ️ <strong>Information :</strong> En cliquant sur "Enregistrer les modifications", les données saisies ci-dessus seront automatiquement sauvegardées et mises à jour dans votre profil.
         </div>
 
         <div class="button-group">
