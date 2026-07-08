@@ -3,604 +3,736 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Générateur de CV - Mission Locale</title>
-    <!-- Tailwind CSS -->
+    <title>Mon CV express</title>
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
-    <!-- FontAwesome pour les icônes -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- html2pdf.js -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght=300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        .drag-hover { border: 2px dashed #4f46e5; background-color: #f5f3ff; }
-        @media print {
-            body { background: white; color: black; }
+        body { font-family: 'Inter', sans-serif; }
+        
+        /* Contraintes strictes pour forcer l'adaptation parfaite au format A4 réglementaire */
+        .cv-strict-a4 {
+            width: 210mm;
+            min-height: 297mm;
+            max-height: 297mm;
+            padding: 20mm;
+            box-sizing: border-box;
+            background-color: #ffffff;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Ajustement de l'aperçu pour les petits écrans */
+        .preview-scale-container {
+            overflow-x: auto;
         }
     </style>
 </head>
-<body class="bg-slate-50 font-sans min-h-screen text-slate-800 antialiased pb-12">
+<body class="bg-slate-50 text-slate-800 min-h-screen pb-12">
 
-    <!-- ÉCRAN DE CONNEXION -->
-    <div id="login-screen" class="fixed inset-0 bg-gradient-to-tr from-indigo-600 to-violet-500 z-50 flex items-center justify-center p-4">
-        <div class="bg-white rounded-2xl shadow-xl p-6 w-full max-w-sm text-center">
-            <div class="w-16 h-16 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl">
-                <i class="fa-solid fa-id-card"></i>
+    <div id="authOverlay" class="fixed inset-0 bg-slate-900 flex items-center justify-center z-50 p-4">
+        <div class="bg-white p-8 rounded-2xl shadow-xl max-w-md w-full text-center border border-slate-100">
+            <div class="w-16 h-16 bg-teal-50 text-teal-600 rounded-full flex items-center justify-center text-2xl mx-auto mb-4">
+                🔒
             </div>
-            <h1 class="text-xl font-bold text-slate-900 mb-2">Mon CV Mission Locale</h1>
-            <p class="text-xs text-slate-500 mb-6">Saisissez le code d'accès de votre conseiller pour commencer.</p>
+            <h2 class="text-xl font-bold text-slate-900 mb-2">Espace Protégé</h2>
+            <p class="text-slate-500 text-sm mb-6">Veuillez saisir le code d'accès fourni par votre conseiller pour utiliser le générateur de CV.</p>
             
-            <div class="mb-4">
-                <input type="password" id="access-code" placeholder="Code d'accès" 
-                    class="w-full px-4 py-3 border border-slate-200 rounded-xl text-center font-mono text-lg tracking-widest focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                <p id="login-error" class="text-red-500 text-xs mt-2 hidden">Code d'accès incorrect.</p>
-            </div>
+            <form onsubmit="checkAuth(event)" class="space-y-4">
+                <div>
+                    <input type="password" id="accessCodeInput" class="w-full p-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-500 bg-slate-50/50 text-center text-lg font-semibold tracking-widest uppercase" placeholder="••••••••" required>
+                </div>
+                <div id="authError" class="text-rose-600 text-xs font-medium hidden">
+                    ❌ Code d'accès incorrect. Réessayez.
+                </div>
+                <button type="submit" class="w-full py-3 bg-teal-600 hover:bg-teal-700 text-white font-semibold rounded-xl shadow-sm transition cursor-pointer">
+                    Valider et Entrer
+                </button>
+            </form>
             
-            <button onclick="checkCode()" class="w-full bg-indigo-600 text-white font-semibold py-3 rounded-xl shadow-md hover:bg-indigo-700 active:scale-[0.98] transition-all">
-                Se connecter
-            </button>
+            <p class="text-xs text-slate-500 mt-5 pt-4 border-t border-slate-100">
+                💡 Un problème pour vous connecter ?<br>Contactez nous à <a href="mailto:faly.contact@gmail.com" class="text-teal-600 font-medium hover:underline">faly.contact@gmail.com</a>
+            </p>
+            
+            <p class="text-[10px] text-slate-400 mt-6 tracking-wide uppercase">Mon CV express — Idée originale de Faly R.®</p>
         </div>
     </div>
 
-    <!-- APPLICATION PRINCIPALE -->
-    <div id="app-content" class="hidden max-w-lg mx-auto px-4 pt-6">
-        
-        <!-- HEADER -->
-        <header class="flex items-center justify-between mb-6 bg-white p-4 rounded-xl shadow-xs">
-            <div>
-                <h1 class="text-lg font-bold text-slate-900 flex items-center gap-2">
-                    <span class="w-3 h-3 bg-emerald-500 rounded-full inline-block animate-pulse"></span>
-                    Créateur de CV
-                </h1>
-                <p class="text-xs text-slate-500">Vos données restent dans votre téléphone.</p>
+    <div id="appContent" class="hidden">
+        <header class="bg-gradient-to-r from-teal-600 to-emerald-600 text-white shadow-md mb-8">
+            <div class="max-w-7xl mx-auto px-4 py-6 flex flex-col sm:flex-row justify-between items-center gap-4">
+                <div>
+                    <h1 class="text-2xl font-bold tracking-tight">Mon CV express 🚀</h1>
+                    <p class="text-teal-100 text-xs sm:text-sm mt-1">Modèle créé sur une idée de Faly R.®</p>
+                </div>
+                <div class="flex items-center gap-2 bg-white/10 px-3 py-1.5 rounded-full text-xs font-medium">
+                    <span class="w-2 h-2 rounded-full bg-emerald-300 animate-pulse"></span>
+                    Données 100% locales & privées (Zéro RGPD)
+                </div>
             </div>
-            <button onclick="resetForm()" class="text-xs font-semibold text-red-500 bg-red-50 hover:bg-red-100 px-3 py-2 rounded-lg transition-colors flex items-center gap-1">
-                <i class="fa-solid fa-trash-can"></i> Réinitialiser
-            </button>
         </header>
 
-        <!-- FORMULAIRE PRINCIPAL -->
-        <form id="cv-form" onsubmit="event.preventDefault();" class="space-y-4">
+        <main class="max-w-7xl mx-auto px-4 grid grid-cols-1 lg:grid-cols-2 gap-8">
             
-            <!-- INFOS PERSONNELLES (Fixe en haut) -->
-            <div class="bg-white p-4 rounded-xl shadow-xs border border-slate-100">
-                <h2 class="text-sm font-bold text-slate-900 uppercase tracking-wider mb-3 flex items-center gap-2 text-indigo-600">
-                    <i class="fa-solid fa-user"></i> Informations personnelles
+            <div class="space-y-6">
+                <div class="flex flex-col sm:flex-row justify-between items-center gap-4 bg-white p-4 rounded-xl shadow-xs border border-slate-100">
+                    <button type="button" onclick="generatePDF()" class="w-full sm:w-auto px-6 py-3 bg-teal-600 hover:bg-teal-700 text-white font-semibold rounded-lg shadow-sm transition flex flex-col items-center justify-center line-tight cursor-pointer">
+                        <span class="text-base">🖨️ Enregistrer mon CV en PDF (A4)</span>
+                        <span class="text-[10px] text-teal-100 font-normal">Ajustement parfait • Qualité Vectorielle</span>
+                    </button>
+                    <button type="button" onclick="resetForm()" class="w-full sm:w-auto px-4 py-2 text-rose-600 hover:bg-rose-50 border border-rose-200 font-medium rounded-lg transition flex items-center justify-center gap-2 cursor-pointer">
+                        🗑️ Réinitialiser
+                    </button>
+                </div>
+
+                <form id="cvForm" oninput="updateAll()" class="space-y-6">
+                    
+                    <section class="bg-white p-6 rounded-xl shadow-xs border border-slate-100">
+                        <div class="flex items-center gap-3 border-b border-slate-100 pb-3 mb-4">
+                            <span class="text-xl">👤</span>
+                            <h2 class="text-lg font-bold text-slate-900">Informations Personnelles</h2>
+                        </div>
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">Intitulé de poste recherché</label>
+                                <input type="text" id="info_poste" class="w-full p-2.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 bg-slate-50/50" placeholder="Ex: Vendeur en prêt-à-porter, Agent logistique...">
+                            </div>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">Nom</label>
+                                    <input type="text" id="info_nom" onchange="formatNom(this)" class="w-full p-2.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 bg-slate-50/50" placeholder="Ex: MARTIN">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">Prénom</label>
+                                    <input type="text" id="info_prenom" onchange="formatPrenom(this)" class="w-full p-2.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 bg-slate-50/50" placeholder="Ex: Lucas">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">Téléphone</label>
+                                    <input type="tel" id="info_telephone" class="w-full p-2.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 bg-slate-50/50" placeholder="Ex: 06 12 34 56 78">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">Adresse E-mail</label>
+                                    <input type="email" id="info_email" class="w-full p-2.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 bg-slate-50/50" placeholder="Ex: lucas.martin@email.fr">
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <section class="bg-white p-6 rounded-xl shadow-xs border border-slate-100">
+                        <div class="flex items-center gap-3 border-b border-slate-100 pb-3 mb-4">
+                            <span class="text-xl">✨</span>
+                            <h2 class="text-lg font-bold text-slate-900">Phrase d'accroche impactante</h2>
+                        </div>
+                        <div>
+                            <textarea id="info_accroche" rows="3" class="w-full p-2.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 bg-slate-50/50 text-sm" placeholder="Ex: Jeune motivé et dynamique, je souhaite mettre mes compétences relationnelles au service de votre magasin..."></textarea>
+                        </div>
+                    </section>
+
+                    <div id="dynamicSectionsContainer" class="space-y-6"></div>
+
+                </form>
+            </div>
+
+            <div class="lg:sticky lg:top-6 self-start">
+                <h2 class="text-sm font-bold text-slate-500 uppercase tracking-wider mb-3 flex items-center gap-2">
+                    <span>👁️</span> Aperçu instantané (Rendu Réel Page A4)
                 </h2>
-                <div class="grid grid-cols-2 gap-3">
-                    <div class="col-span-2">
-                        <label class="block text-xs font-medium text-slate-500 mb-1">NOM</label>
-                        <input type="text" id="info-nom" oninput="handleNomInput(this)" placeholder="Ex: MARTIN" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                    </div>
-                    <div class="col-span-2">
-                        <label class="block text-xs font-medium text-slate-500 mb-1">Prénom</label>
-                        <input type="text" id="info-prenom" oninput="handlePrenomInput(this)" placeholder="Ex: Lucas" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                    </div>
-                    <div>
-                        <label class="block text-xs font-medium text-slate-500 mb-1">Téléphone</label>
-                        <input type="tel" id="info-tel" placeholder="06 00 00 00 00" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                    </div>
-                    <div>
-                        <label class="block text-xs font-medium text-slate-500 mb-1">Adresse e-mail</label>
-                        <input type="email" id="info-email" placeholder="lucas@mail.com" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                    </div>
-                </div>
-            </div>
-
-            <!-- CONTENEUR DES RUBRIQUES INTERVERTIBLES -->
-            <div id="sections-container" class="space-y-4">
                 
-                <!-- RUBRIQUE FORMATIONS -->
-                <div data-section-id="formations" class="bg-white p-4 rounded-xl shadow-xs border border-slate-100 section-block transition-all duration-200">
-                    <div class="flex items-center justify-between mb-3 border-b border-slate-100 pb-2">
-                        <h2 class="text-sm font-bold text-slate-900 uppercase tracking-wider flex items-center gap-2 text-indigo-600">
-                            <i class="fa-solid fa-graduation-cap"></i> Formations & Diplômes
-                        </h2>
-                        <div class="flex items-center gap-1 text-slate-400">
-                            <button onclick="moveSection('formations', 'up')" type="button" class="p-1 hover:text-slate-700 hover:bg-slate-100 rounded" title="Monter"><i class="fa-solid fa-chevron-up text-xs"></i></button>
-                            <button onclick="moveSection('formations', 'down')" type="button" class="p-1 hover:text-slate-700 hover:bg-slate-100 rounded" title="Descendre"><i class="fa-solid fa-chevron-down text-xs"></i></button>
+                <div class="preview-scale-container bg-slate-300 p-4 rounded-xl border border-slate-200 shadow-inner flex justify-center">
+                    <div id="cvLivePreview" class="cv-strict-a4 shadow-2xl text-slate-800 flex flex-col justify-between">
+                        <div>
+                            <div class="border-b-4 border-teal-600 pb-4 mb-5 flex justify-between items-end">
+                                <div>
+                                    <h1 id="live_fullname" class="text-2xl font-bold tracking-tight text-slate-900 uppercase">JEANNE CODE</h1>
+                                    <p id="live_jobtitle" class="text-teal-600 font-semibold text-md mt-0.5">Intitulé du poste</p>
+                                </div>
+                                <div class="text-right text-[11px] text-slate-600 space-y-0.5">
+                                    <p id="live_phone">📞 06 00 00 00 00</p>
+                                    <p id="live_email">✉️ mail@exemple.fr</p>
+                                </div>
+                            </div>
+
+                            <div id="live_accroche_area" class="mb-5 text-[11px] text-slate-700 italic bg-slate-50 p-3 rounded border-l-2 border-teal-500 hidden"></div>
+
+                            <div id="live_sections_area" class="space-y-5"></div>
+                        </div>
+
+                        <div class="text-right text-[9px] text-slate-300 italic pt-2 border-t border-slate-100 mt-auto">
+                            Modèle créé sur une idée de Faly R.®
                         </div>
                     </div>
-                    <div id="list-formations" class="space-y-3"></div>
-                    <button type="button" onclick="addFormation()" class="mt-3 w-full py-2 bg-slate-50 hover:bg-slate-100 text-indigo-600 text-xs font-semibold rounded-lg border border-dashed border-indigo-200 flex items-center justify-center gap-1 transition-colors">
-                        <i class="fa-solid fa-plus"></i> Ajouter une formation
-                    </button>
-                </div>
-
-                <!-- RUBRIQUE EXPÉRIENCES -->
-                <div data-section-id="experiences" class="bg-white p-4 rounded-xl shadow-xs border border-slate-100 section-block transition-all duration-200">
-                    <div class="flex items-center justify-between mb-3 border-b border-slate-100 pb-2">
-                        <h2 class="text-sm font-bold text-slate-900 uppercase tracking-wider flex items-center gap-2 text-indigo-600">
-                            <i class="fa-solid fa-briefcase"></i> Expériences Professionnelles
-                        </h2>
-                        <div class="flex items-center gap-1 text-slate-400">
-                            <button onclick="moveSection('experiences', 'up')" type="button" class="p-1 hover:text-slate-700 hover:bg-slate-100 rounded" title="Monter"><i class="fa-solid fa-chevron-up text-xs"></i></button>
-                            <button onclick="moveSection('experiences', 'down')" type="button" class="p-1 hover:text-slate-700 hover:bg-slate-100 rounded" title="Descendre"><i class="fa-solid fa-chevron-down text-xs"></i></button>
-                        </div>
-                    </div>
-                    <div id="list-experiences" class="space-y-4"></div>
-                    <button type="button" onclick="addExperience()" class="mt-3 w-full py-2 bg-slate-50 hover:bg-slate-100 text-indigo-600 text-xs font-semibold rounded-lg border border-dashed border-indigo-200 flex items-center justify-center gap-1 transition-colors">
-                        <i class="fa-solid fa-plus"></i> Ajouter une expérience
-                    </button>
-                </div>
-
-                <!-- RUBRIQUE COMPÉTENCES TECHNIQUES -->
-                <div data-section-id="competences-tech" class="bg-white p-4 rounded-xl shadow-xs border border-slate-100 section-block transition-all duration-200">
-                    <div class="flex items-center justify-between mb-3 border-b border-slate-100 pb-2">
-                        <h2 class="text-sm font-bold text-slate-900 uppercase tracking-wider flex items-center gap-2 text-indigo-600">
-                            <i class="fa-solid fa-gears"></i> Compétences Techniques
-                        </h2>
-                        <div class="flex items-center gap-1 text-slate-400">
-                            <button onclick="moveSection('competences-tech', 'up')" type="button" class="p-1 hover:text-slate-700 hover:bg-slate-100 rounded" title="Monter"><i class="fa-solid fa-chevron-up text-xs"></i></button>
-                            <button onclick="moveSection('competences-tech', 'down')" type="button" class="p-1 hover:text-slate-700 hover:bg-slate-100 rounded" title="Descendre"><i class="fa-solid fa-chevron-down text-xs"></i></button>
-                        </div>
-                    </div>
-                    <div id="list-competences-tech" class="space-y-2"></div>
-                    <button type="button" onclick="addCompetenceTech()" class="mt-3 w-full py-2 bg-slate-50 hover:bg-slate-100 text-indigo-600 text-xs font-semibold rounded-lg border border-dashed border-indigo-200 flex items-center justify-center gap-1 transition-colors">
-                        <i class="fa-solid fa-plus"></i> Ajouter une compétence tech
-                    </button>
-                </div>
-
-                <!-- RUBRIQUE LANGUES -->
-                <div data-section-id="langues" class="bg-white p-4 rounded-xl shadow-xs border border-slate-100 section-block transition-all duration-200">
-                    <div class="flex items-center justify-between mb-3 border-b border-slate-100 pb-2">
-                        <h2 class="text-sm font-bold text-slate-900 uppercase tracking-wider flex items-center gap-2 text-indigo-600">
-                            <i class="fa-solid fa-language"></i> Compétences Linguistiques
-                        </h2>
-                        <div class="flex items-center gap-1 text-slate-400">
-                            <button onclick="moveSection('langues', 'up')" type="button" class="p-1 hover:text-slate-700 hover:bg-slate-100 rounded" title="Monter"><i class="fa-solid fa-chevron-up text-xs"></i></button>
-                            <button onclick="moveSection('langues', 'down')" type="button" class="p-1 hover:text-slate-700 hover:bg-slate-100 rounded" title="Descendre"><i class="fa-solid fa-chevron-down text-xs"></i></button>
-                        </div>
-                    </div>
-                    <div id="list-langues" class="space-y-2"></div>
-                    <button type="button" onclick="addLangue()" class="mt-3 w-full py-2 bg-slate-50 hover:bg-slate-100 text-indigo-600 text-xs font-semibold rounded-lg border border-dashed border-indigo-200 flex items-center justify-center gap-1 transition-colors">
-                        <i class="fa-solid fa-plus"></i> Ajouter une langue
-                    </button>
-                </div>
-
-            </div>
-
-            <!-- BOUTON D'EXPORT -->
-            <div class="pt-2">
-                <button type="button" onclick="generatePDF()" class="w-full py-4 bg-indigo-600 text-white font-bold rounded-xl shadow-md hover:bg-indigo-700 active:scale-[0.99] transition-all flex items-center justify-center gap-2 text-base">
-                    <i class="fa-solid fa-file-pdf text-lg"></i> Générer mon CV en PDF
-                </button>
-            </div>
-
-        </form>
-    </div>
-
-    <!-- ÉLÉMENT CACHÉ POUR LE RENDU DU CV PDF -->
-    <div id="cv-pdf-template" class="hidden">
-        <div style="font-family: 'Helvetica Neue', Arial, sans-serif; padding: 30px; color: #334155; line-height: 1.5; font-size: 13px; background-color: #fff;">
-            <!-- Entête -->
-            <div style="border-bottom: 2px solid #4f46e5; padding-bottom: 15px; margin-bottom: 20px;">
-                <h1 id="pdf-fullname" style="font-size: 26px; font-weight: bold; color: #1e293b; margin: 0; text-transform: uppercase; letter-spacing: 0.5px;"></h1>
-                <div style="margin-top: 8px; color: #475569; font-size: 13px;">
-                    <span id="pdf-tel" style="margin-right: 15px;"></span>
-                    <span id="pdf-email"></span>
                 </div>
             </div>
-            
-            <!-- Zone dynamique triée -->
-            <div id="pdf-dynamic-sections" style="display: flex; flex-direction: column; gap: 20px;"></div>
-        </div>
+        </main>
     </div>
 
     <script>
-        // CONFIGURATION
-        const CORRECT_CODE = "ML2026";
+        // ==========================================================================
+        // CONFIGURATION ET SÉCURITÉ DU MOT DE PASSE (SANS HACHAGE - DIRECT)
+        // ==========================================================================
         
-        // CHARGEMENT INITIAL & EVENEMENTS SAVING
-        document.addEventListener("DOMContentLoaded", () => {
-            // Vérifier si déjà authentifié dans la session actuelle
-            if (sessionStorage.getItem("ml_auth") === "true") {
-                document.getElementById("login-screen").classList.add("hidden");
-                document.getElementById("app-content").classList.remove("hidden");
-            }
-            
-            // Charger les données sauvegardées
-            loadFormData();
-            
-            // Attacher des écouteurs pour la sauvegarde automatique globale sur les inputs standards
-            document.getElementById("cv-form").addEventListener("input", debounce(saveFormData, 500));
-        });
+        // MODIFIEZ LE MOT DE PASSE ENTRE LES GUILLEMETS CHAQUE MOIS ICI :
+        const PASSWORD_DU_MOIS = "FR072026";
 
-        // SECURITE - CODE D'ACCES
-        function checkCode() {
-            const codeInput = document.getElementById("access-code").value;
-            if (codeInput === CORRECT_CODE) {
-                sessionStorage.setItem("ml_auth", "true");
-                document.getElementById("login-screen").classList.add("hidden");
-                document.getElementById("app-content").classList.remove("hidden");
+        // Vérification lors de la soumission de l'écran de verrouillage
+        function checkAuth(event) {
+            if(event) event.preventDefault();
+            const inputField = document.getElementById("accessCodeInput");
+            const errorLabel = document.getElementById("authError");
+            
+            // On transforme en majuscule pour tolérer la saisie en minuscules par les jeunes
+            const cleanedInput = inputField.value.trim().toUpperCase(); 
+
+            if (cleanedInput === PASSWORD_DU_MOIS.toUpperCase()) {
+                // Sauvegarde du jeton pour éviter de bloquer l'utilisateur s'il rafraîchit (valable 24h)
+                const expiryTime = new Date().getTime() + (24 * 60 * 60 * 1000); 
+                localStorage.setItem("cv_app_simple_auth", expiryTime);
+                
+                // On affiche l'application
+                document.getElementById("authOverlay").classList.add("hidden");
+                document.getElementById("appContent").classList.remove("hidden");
+                initApp();
             } else {
-                const err = document.getElementById("login-error");
-                err.classList.remove("hidden");
-                err.classList.add("animate-shake");
+                errorLabel.classList.remove("hidden");
+                inputField.value = "";
+                inputField.focus();
             }
         }
 
-        // FORMATAGE TEMPS RÉEL DES INPUTS
-        function handleNomInput(input) {
-            input.value = input.value.toUpperCase();
+        // Vérification automatique au chargement de la page
+        function checkExistingAuth() {
+            const token = localStorage.getItem("cv_app_simple_auth");
+            if (token) {
+                const now = new Date().getTime();
+                if (now < parseInt(token)) {
+                    document.getElementById("authOverlay").classList.add("hidden");
+                    document.getElementById("appContent").classList.remove("hidden");
+                    initApp();
+                    return;
+                }
+            }
+            document.getElementById("authOverlay").classList.remove("hidden");
         }
 
-        function handlePrenomInput(input) {
-            let val = input.value;
+        // Initialisation globale de l'application
+        function initApp() {
+            if (localStorage.getItem("cv_section_order_v2")) {
+                sectionOrder = JSON.parse(localStorage.getItem("cv_section_order_v2"));
+            }
+            renderSections();
+            loadSavedData();
+            updateLivePreview();
+        }
+
+        // Lancement du protocole dès que le document est prêt
+        document.addEventListener("DOMContentLoaded", checkExistingAuth);
+
+
+        // ==========================================================================
+        // LOGIQUE MÉTIER ET MOTEUR DU GÉNÉRATEUR DE CV
+        // ==========================================================================
+        let sectionOrder = ['formations', 'experiences', 'competences', 'langues', 'interets'];
+
+        const sectionTitles = {
+            formations: { title: "Formations & Diplômes", icon: "🎓" },
+            experiences: { title: "Expériences Professionnelles", icon: "💼" },
+            competences: { title: "Compétences Techniques", icon: "🛠️" },
+            langues: { title: "Compétences Linguistiques", icon: "🗣️" },
+            interets: { title: "Centres d’Intérêts", icon: "⭐" }
+        };
+
+        function formatNom(input) {
+            input.value = input.value.trim().toUpperCase();
+            updateAll();
+        }
+
+        function formatPrenom(input) {
+            let val = input.value.trim();
             if (val.length > 0) {
-                input.value = val.charAt(0).toUpperCase() + val.slice(1);
+                input.value = val.charAt(0).toUpperCase() + val.slice(1).toLowerCase();
+            }
+            updateAll();
+        }
+
+        function moveSection(index, direction) {
+            const newIndex = index + direction;
+            if (newIndex >= 0 && newIndex < sectionOrder.length) {
+                const temp = sectionOrder[index];
+                sectionOrder[index] = sectionOrder[newIndex];
+                sectionOrder[newIndex] = temp;
+                localStorage.setItem("cv_section_order_v2", JSON.stringify(sectionOrder));
+                
+                const currentData = captureFormData();
+                renderSections();
+                restoreFormData(currentData);
+                updateAll();
             }
         }
 
-        function handleMissionsInput(textarea) {
-            // Optionnel : on gère la transformation ou on laisse faire l'export natif avec retour à la ligne
-            saveFormData();
+        function renderSections() {
+            const container = document.getElementById("dynamicSectionsContainer");
+            if (!container) return;
+            container.innerHTML = "";
+
+            sectionOrder.forEach((sectionId, index) => {
+                const secConfig = sectionTitles[sectionId];
+                const sectionBlock = document.createElement("section");
+                sectionBlock.className = "bg-white p-6 rounded-xl shadow-xs border border-slate-100 relative";
+                sectionBlock.setAttribute("data-section-id", sectionId);
+
+                let headerHTML = `
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-100 pb-3 mb-4 gap-2">
+                        <div class="flex items-center gap-3">
+                            <span class="text-xl">${secConfig.icon}</span>
+                            <h2 class="text-lg font-bold text-slate-900">${secConfig.title}</h2>
+                        </div>
+                        <div class="flex items-center gap-1 self-end sm:self-auto">
+                            <button type="button" onclick="moveSection(${index}, -1)" ${index === 0 ? 'disabled' : ''} class="p-1.5 px-2.5 text-xs font-semibold rounded bg-slate-100 hover:bg-slate-200 disabled:opacity-30 disabled:hover:bg-slate-100 cursor-pointer transition">▲</button>
+                            <button type="button" onclick="moveSection(${index}, 1)" ${index === sectionOrder.length - 1 ? 'disabled' : ''} class="p-1.5 px-2.5 text-xs font-semibold rounded bg-slate-100 hover:bg-slate-200 disabled:opacity-30 disabled:hover:bg-slate-100 cursor-pointer transition">▼</button>
+                        </div>
+                    </div>
+                    <div id="items_container_${sectionId}" class="space-y-4"></div>
+                    <button type="button" onclick="addItem('${sectionId}')" class="mt-4 px-3 py-2 text-xs font-medium text-teal-700 bg-teal-50 hover:bg-teal-100 rounded-lg transition cursor-pointer flex items-center gap-1">
+                        ➕ Ajouter une ligne
+                    </button>
+                `;
+
+                sectionBlock.innerHTML = headerHTML;
+                container.appendChild(sectionBlock);
+                addItem(sectionId, true);
+            });
         }
 
-        // GESTION DE L'ORDRE DES RUBRIQUES
-        function moveSection(id, direction) {
-            const container = document.getElementById("sections-container");
-            const sections = Array.from(container.querySelectorAll('[data-section-id]'));
-            const index = sections.findIndex(sec => sec.getAttribute('data-section-id') === id);
-            
-            if (direction === 'up' && index > 0) {
-                container.insertBefore(sections[index], sections[index - 1]);
-            } else if (direction === 'down' && index < sections.length - 1) {
-                container.insertBefore(sections[index + 1], sections[index]);
+        function addItem(sectionId, isInit = false) {
+            const container = document.getElementById(`items_container_${sectionId}`);
+            if (!container || (isInit && container.children.length > 0)) return;
+
+            const itemDiv = document.createElement("div");
+            itemDiv.className = "p-4 bg-slate-50 rounded-lg border border-slate-200/60 relative pt-8 sm:pt-4";
+
+            let inputsHTML = "";
+
+            if (sectionId === "formations") {
+                inputsHTML = `
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                        <input type="text" placeholder="Intitulé de formation" class="p-2 border border-slate-200 rounded bg-white text-sm focus:ring-1 focus:ring-teal-500 field-diplome">
+                        <input type="text" placeholder="Lieu / Établissement" class="p-2 border border-slate-200 rounded bg-white text-sm focus:ring-1 focus:ring-teal-500 field-lieu">
+                        <input type="text" placeholder="Période" class="p-2 border border-slate-200 rounded bg-white text-sm focus:ring-1 focus:ring-teal-500 field-periode">
+                    </div>
+                `;
+            } else if (sectionId === "experiences") {
+                inputsHTML = `
+                    <div class="space-y-3">
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                            <input type="text" placeholder="Intitulé du poste" class="p-2 border border-slate-200 rounded bg-white text-sm focus:ring-1 focus:ring-teal-500 field-poste">
+                            <input type="text" placeholder="Entreprise / Ville" class="p-2 border border-slate-200 rounded bg-white text-sm focus:ring-1 focus:ring-teal-500 field-entreprise">
+                            <input type="text" placeholder="Période" class="p-2 border border-slate-200 rounded bg-white text-sm focus:ring-1 focus:ring-teal-500 field-periode">
+                        </div>
+                        <textarea placeholder="Missions (Une mission par ligne)" rows="2" class="w-full p-2 border border-slate-200 rounded bg-white text-sm focus:ring-1 focus:ring-teal-500 field-missions"></textarea>
+                    </div>
+                `;
+            } else if (sectionId === "competences") {
+                inputsHTML = `
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <input type="text" placeholder="Compétence" class="p-2 border border-slate-200 rounded bg-white text-sm focus:ring-1 focus:ring-teal-500 field-competence">
+                        <select class="p-2 border border-slate-200 rounded bg-white text-sm focus:ring-1 focus:ring-teal-500 field-niveau">
+                            <option value="Initiation">Initiation</option>
+                            <option value="Débutant">Débutant</option>
+                            <option value="Compétences professionnelles limitées">Compétences professionnelles limitées</option>
+                            <option value="Compétences professionnelles complètes">Compétences professionnelles complètes</option>
+                            <option value="Expert">Expert</option>
+                        </select>
+                    </div>
+                `;
+            } else if (sectionId === "langues") {
+                inputsHTML = `
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <input type="text" placeholder="Langue" class="p-2 border border-slate-200 rounded bg-white text-sm focus:ring-1 focus:ring-teal-500 field-langue">
+                        <select class="p-2 border border-slate-200 rounded bg-white text-sm focus:ring-1 focus:ring-teal-500 field-niveau">
+                            <option value="Initiation">Initiation</option>
+                            <option value="Débutant">Débutant</option>
+                            <option value="Niveau scolaire">Niveau scolaire</option>
+                            <option value="Compétences professionnelles limitées">Compétences professionnelles limitées</option>
+                            <option value="Compétences professionnelles complètes">Compétences professionnelles complètes</option>
+                            <option value="Bilingue">Bilingue</option>
+                            <option value="Langue maternelle">Langue maternelle</option>
+                        </select>
+                    </div>
+                `;
+            } else if (sectionId === "interets") {
+                inputsHTML = `
+                    <div class="space-y-2">
+                        <input type="text" placeholder="Centre d’intérêt" class="w-full p-2 border border-slate-200 rounded bg-white text-sm focus:ring-1 focus:ring-teal-500 field-interet">
+                        <textarea placeholder="Description courte (Une idée par ligne)" rows="2" class="w-full p-2 border border-slate-200 rounded bg-white text-sm focus:ring-1 focus:ring-teal-500 field-description"></textarea>
+                    </div>
+                `;
             }
-            saveFormData();
-        }
 
-        // LOGIQUE D'AJOUT DYNAMIQUE DE CHAMPS
-        function createUniqueId() { return 'id_' + Math.random().toString(36).substr(2, 9); }
-
-        function addFormation(data = {}) {
-            const id = data.id || createUniqueId();
-            const html = `
-                <div id="${id}" class="bg-slate-50 p-3 rounded-lg border border-slate-200 relative group">
-                    <button type="button" onclick="document.getElementById('${id}').remove(); saveFormData();" class="absolute top-2 right-2 text-slate-400 hover:text-red-500 transition-colors">
-                        <i class="fa-solid fa-xmark"></i>
-                    </button>
-                    <div class="space-y-2 mt-2">
-                        <input type="text" placeholder="Intitulé de formation ou diplôme" value="${data.intitule || ''}" class="w-full p-2 bg-white border border-slate-200 rounded text-xs focus:ring-1 focus:ring-indigo-500 form-item-formation-intitule">
-                        <input type="text" placeholder="Nom de l'établissement, ville (département, pays)" value="${data.etablissement || ''}" class="w-full p-2 bg-white border border-slate-200 rounded text-xs focus:ring-1 focus:ring-indigo-500 form-item-formation-etab">
-                        <input type="text" placeholder="Période (ex : 2020-2021)" value="${data.periode || ''}" class="w-full p-2 bg-white border border-slate-200 rounded text-xs focus:ring-1 focus:ring-indigo-500 form-item-formation-periode">
-                    </div>
-                </div>
-            `;
-            document.getElementById("list-formations").insertAdjacentHTML('beforeend', html);
-        }
-
-        function addExperience(data = {}) {
-            const id = data.id || createUniqueId();
-            const html = `
-                <div id="${id}" class="bg-slate-50 p-3 rounded-lg border border-slate-200 relative group">
-                    <button type="button" onclick="document.getElementById('${id}').remove(); saveFormData();" class="absolute top-2 right-2 text-slate-400 hover:text-red-500 transition-colors">
-                        <i class="fa-solid fa-xmark"></i>
-                    </button>
-                    <div class="space-y-2 mt-2">
-                        <input type="text" placeholder="Intitulé du poste" value="${data.poste || ''}" class="w-full p-2 bg-white border border-slate-200 rounded text-xs focus:ring-1 focus:ring-indigo-500 form-item-exp-poste">
-                        <input type="text" placeholder="Nom de l'entreprise, ville (département, pays)" value="${data.entreprise || ''}" class="w-full p-2 bg-white border border-slate-200 rounded text-xs focus:ring-1 focus:ring-indigo-500 form-item-exp-entreprise">
-                        <input type="text" placeholder="Période (ex : 2020-2021)" value="${data.periode || ''}" class="w-full p-2 bg-white border border-slate-200 rounded text-xs focus:ring-1 focus:ring-indigo-500 form-item-exp-periode">
-                        <textarea placeholder="Missions accomplies (une mission par ligne)" rows="3" class="w-full p-2 bg-white border border-slate-200 rounded text-xs focus:ring-1 focus:ring-indigo-500 form-item-exp-missions" oninput="handleMissionsInput(this)">${data.missions || ''}</textarea>
-                    </div>
-                </div>
-            `;
-            document.getElementById("list-experiences").insertAdjacentHTML('beforeend', html);
-        }
-
-        function addCompetenceTech(data = {}) {
-            const id = data.id || createUniqueId();
-            const levels = ["Initiation", "Compétences professionnelles limitées", "Compétences professionnelles complètes", "Expert"];
-            let options = levels.map(l => `<option value="${l}" ${data.niveau === l ? 'selected' : ''}>${l}</option>`).join('');
-            
-            const html = `
-                <div id="${id}" class="grid grid-cols-12 gap-2 items-center bg-slate-50 p-2 rounded-lg border border-slate-200">
-                    <input type="text" placeholder="Ex: Excel, Accueil client..." value="${data.nom || ''}" class="col-span-6 p-2 bg-white border border-slate-200 rounded text-xs focus:ring-1 focus:ring-indigo-500 form-item-tech-nom">
-                    <select class="col-span-5 p-2 bg-white border border-slate-200 rounded text-xs focus:ring-1 focus:ring-indigo-500 form-item-tech-niveau">
-                        ${options}
-                    </select>
-                    <button type="button" onclick="document.getElementById('${id}').remove(); saveFormData();" class="col-span-1 text-slate-400 hover:text-red-500 text-center">
-                        <i class="fa-solid fa-trash"></i>
-                    </button>
-                </div>
-            `;
-            document.getElementById("list-competences-tech").insertAdjacentHTML('beforeend', html);
-        }
-
-        function addLangue(data = {}) {
-            const id = data.id || createUniqueId();
-            const levels = ["Initiation", "Compétences professionnelles limitées", "Compétences professionnelles complètes", "Bilingue", "Langue maternelle"];
-            let options = levels.map(l => `<option value="${l}" ${data.niveau === l ? 'selected' : ''}>${l}</option>`).join('');
-            
-            const html = `
-                <div id="${id}" class="grid grid-cols-12 gap-2 items-center bg-slate-50 p-2 rounded-lg border border-slate-200">
-                    <input type="text" placeholder="Ex: Anglais, Espagnol..." value="${data.nom || ''}" class="col-span-6 p-2 bg-white border border-slate-200 rounded text-xs focus:ring-1 focus:ring-indigo-500 form-item-langue-nom">
-                    <select class="col-span-5 p-2 bg-white border border-slate-200 rounded text-xs focus:ring-1 focus:ring-indigo-500 form-item-langue-niveau">
-                        ${options}
-                    </select>
-                    <button type="button" onclick="document.getElementById('${id}').remove(); saveFormData();" class="col-span-1 text-slate-400 hover:text-red-500 text-center">
-                        <i class="fa-solid fa-trash"></i>
-                    </button>
-                </div>
-            `;
-            document.getElementById("list-langues").insertAdjacentHTML('beforeend', html);
-        }
-
-        // PERSISTENCE - SAVE & LOAD LOCALSTORAGE
-        function saveFormData() {
-            const data = {
-                nom: document.getElementById("info-nom").value,
-                prenom: document.getElementById("info-prenom").value,
-                tel: document.getElementById("info-tel").value,
-                email: document.getElementById("info-email").value,
-                sectionOrder: Array.from(document.getElementById("sections-container").querySelectorAll('[data-section-id]')).map(s => s.getAttribute('data-section-id')),
-                formations: [],
-                experiences: [],
-                competencesTech: [],
-                langues: []
+            const deleteBtn = document.createElement("button");
+            deleteBtn.type = "button";
+            deleteBtn.innerHTML = "🗑️";
+            deleteBtn.className = "absolute top-2 right-2 text-xs opacity-50 hover:opacity-100 cursor-pointer p-1";
+            deleteBtn.onclick = () => {
+                itemDiv.remove();
+                updateAll();
             };
 
-            // Formations
-            document.querySelectorAll("#list-formations > div").forEach(el => {
-                data.formations.push({
-                    intitule: el.querySelector(".form-item-formation-intitule").value,
-                    etablissement: el.querySelector(".form-item-formation-etab").value,
-                    periode: el.querySelector(".form-item-formation-periode").value
-                });
-            });
-
-            // Expériences
-            document.querySelectorAll("#list-experiences > div").forEach(el => {
-                data.experiences.push({
-                    poste: el.querySelector(".form-item-exp-poste").value,
-                    entreprise: el.querySelector(".form-item-exp-entreprise").value,
-                    periode: el.querySelector(".form-item-exp-periode").value,
-                    missions: el.querySelector(".form-item-exp-missions").value
-                });
-            });
-
-            // Tech
-            document.querySelectorAll("#list-competences-tech > div").forEach(el => {
-                data.competencesTech.push({
-                    nom: el.querySelector(".form-item-tech-nom").value,
-                    niveau: el.querySelector(".form-item-tech-niveau").value
-                });
-            });
-
-            // Langues
-            document.querySelectorAll("#list-langues > div").forEach(el => {
-                data.langues.push({
-                    nom: el.querySelector(".form-item-langue-nom").value,
-                    niveau: el.querySelector(".form-item-langue-niveau").value
-                });
-            });
-
-            localStorage.setItem("ml_cv_data", JSON.stringify(data));
+            itemDiv.innerHTML = inputsHTML;
+            itemDiv.appendChild(deleteBtn);
+            container.appendChild(itemDiv);
+            
+            if (!isInit) updateAll();
         }
 
-        function loadFormData() {
-            const raw = localStorage.getItem("ml_cv_data");
-            if (!raw) {
-                // Ajouter des lignes vides par défaut pour guider l'utilisateur
-                addFormation();
-                addExperience();
-                addCompetenceTech();
-                addLangue();
-                return;
+        function captureFormData() {
+            const data = {
+                personal: {
+                    poste: document.getElementById("info_poste")?.value || "",
+                    nom: document.getElementById("info_nom")?.value || "",
+                    prenom: document.getElementById("info_prenom")?.value || "",
+                    telephone: document.getElementById("info_telephone")?.value || "",
+                    email: document.getElementById("info_email")?.value || "",
+                    accroche: document.getElementById("info_accroche")?.value || ""
+                },
+                sections: {}
+            };
+
+            sectionOrder.forEach(secId => {
+                data.sections[secId] = [];
+                const container = document.getElementById(`items_container_${secId}`);
+                if (!container) return;
+
+                Array.from(container.children).forEach(itemBlock => {
+                    let itemData = {};
+                    if (secId === "formations") {
+                        itemData = {
+                            diplome: itemBlock.querySelector(".field-diplome")?.value || "",
+                            lieu: itemBlock.querySelector(".field-lieu")?.value || "",
+                            periode: itemBlock.querySelector(".field-periode")?.value || ""
+                        };
+                    } else if (secId === "experiences") {
+                        itemData = {
+                            poste: itemBlock.querySelector(".field-poste")?.value || "",
+                            entreprise: itemBlock.querySelector(".field-entreprise")?.value || "",
+                            periode: itemBlock.querySelector(".field-periode")?.value || "",
+                            missions: itemBlock.querySelector(".field-missions")?.value || ""
+                        };
+                    } else if (secId === "competences") {
+                        itemData = {
+                            competence: itemBlock.querySelector(".field-competence")?.value || "",
+                            niveau: itemBlock.querySelector(".field-niveau")?.value || ""
+                        };
+                    } else if (secId === "langues") {
+                        itemData = {
+                            langue: itemBlock.querySelector(".field-langue")?.value || "",
+                            niveau: itemBlock.querySelector(".field-niveau")?.value || ""
+                        };
+                    } else if (secId === "interets") {
+                        itemData = {
+                            interet: itemBlock.querySelector(".field-interet")?.value || "",
+                            description: itemBlock.querySelector(".field-description")?.value || ""
+                        };
+                    }
+                    data.sections[secId].push(itemData);
+                });
+            });
+
+            return data;
+        }
+
+        function restoreFormData(data) {
+            if (!data) return;
+            
+            if (data.personal) {
+                if(document.getElementById("info_poste")) document.getElementById("info_poste").value = data.personal.poste || "";
+                if(document.getElementById("info_nom")) document.getElementById("info_nom").value = data.personal.nom || "";
+                if(document.getElementById("info_prenom")) document.getElementById("info_prenom").value = data.personal.prenom || "";
+                if(document.getElementById("info_telephone")) document.getElementById("info_telephone").value = data.personal.telephone || "";
+                if(document.getElementById("info_email")) document.getElementById("info_email").value = data.personal.email || "";
+                if(document.getElementById("info_accroche")) document.getElementById("info_accroche").value = data.personal.accroche || "";
             }
 
-            const data = JSON.parse(raw);
-            document.getElementById("info-nom").value = data.nom || "";
-            document.getElementById("info-prenom").value = data.prenom || "";
-            document.getElementById("info-tel").value = data.tel || "";
-            document.getElementById("info-email").value = data.email || "";
+            if (data.sections) {
+                Object.keys(data.sections).forEach(secId => {
+                    const container = document.getElementById(`items_container_${secId}`);
+                    if (!container) return;
+                    container.innerHTML = ""; 
 
-            // Ordonner les rubriques selon la sauvegarde
-            if (data.sectionOrder) {
-                const container = document.getElementById("sections-container");
-                data.sectionOrder.forEach(secId => {
-                    const block = container.querySelector(`[data-section-id="${secId}"]`);
-                    if (block) container.appendChild(block);
+                    data.sections[secId].forEach(itemData => {
+                        addItem(secId, false);
+                        const lastItem = container.lastChild;
+
+                        if (secId === "formations") {
+                            if (lastItem.querySelector(".field-diplome")) lastItem.querySelector(".field-diplome").value = itemData.diplome || "";
+                            if (lastItem.querySelector(".field-lieu")) lastItem.querySelector(".field-lieu").value = itemData.lieu || "";
+                            if (lastItem.querySelector(".field-periode")) lastItem.querySelector(".field-periode").value = itemData.periode || "";
+                        } else if (secId === "experiences") {
+                            if (lastItem.querySelector(".field-poste")) lastItem.querySelector(".field-poste").value = itemData.poste || "";
+                            if (lastItem.querySelector(".field-entreprise")) lastItem.querySelector(".field-entreprise").value = itemData.entreprise || "";
+                            if (lastItem.querySelector(".field-periode")) lastItem.querySelector(".field-periode").value = itemData.periode || "";
+                            if (lastItem.querySelector(".field-missions")) lastItem.querySelector(".field-missions").value = itemData.missions || "";
+                        } else if (secId === "competences") {
+                            if (lastItem.querySelector(".field-competence")) lastItem.querySelector(".field-competence").value = itemData.competence || "";
+                            if (lastItem.querySelector(".field-niveau")) lastItem.querySelector(".field-niveau").value = itemData.niveau || "";
+                        } else if (secId === "langues") {
+                            if (lastItem.querySelector(".field-langue")) lastItem.querySelector(".field-langue").value = itemData.langue || "";
+                            if (lastItem.querySelector(".field-niveau")) lastItem.querySelector(".field-niveau").value = itemData.niveau || "";
+                        } else if (secId === "interets") {
+                            if (lastItem.querySelector(".field-interet")) lastItem.querySelector(".field-interet").value = itemData.interet || "";
+                            if (lastItem.querySelector(".field-description")) lastItem.querySelector(".field-description").value = itemData.description || "";
+                        }
+                    });
                 });
             }
+        }
 
-            // Remplir les éléments dynamiques
-            if (data.formations && data.formations.length > 0) data.formations.forEach(f => addFormation(f));
-            else addFormation();
+        function updateAll() {
+            const data = captureFormData();
+            localStorage.setItem("cv_app_data_v2", JSON.stringify(data));
+            updateLivePreview(data);
+        }
 
-            if (data.experiences && data.experiences.length > 0) data.experiences.forEach(e => addExperience(e));
-            else addExperience();
-
-            if (data.competencesTech && data.competencesTech.length > 0) data.competencesTech.forEach(c => addCompetenceTech(c));
-            else addCompetenceTech();
-
-            if (data.langues && data.langues.length > 0) data.langues.forEach(l => addLangue(l));
-            else addLangue();
+        function loadSavedData() {
+            const saved = localStorage.getItem("cv_app_data_v2");
+            if (saved) {
+                restoreFormData(JSON.parse(saved));
+            }
         }
 
         function resetForm() {
-            if (confirm("Êtes-vous sûr de vouloir tout effacer ? Cette action videra entièrement le formulaire et supprimera votre sauvegarde locale.")) {
-                localStorage.removeItem("ml_cv_data");
-                document.getElementById("list-formations").innerHTML = "";
-                document.getElementById("list-experiences").innerHTML = "";
-                document.getElementById("list-competences-tech").innerHTML = "";
-                document.getElementById("list-langues").innerHTML = "";
-                document.getElementById("cv-form").reset();
-                addFormation();
-                addExperience();
-                addCompetenceTech();
-                addLangue();
-                window.scrollTo({ top: 0, behavior: 'smooth' });
+            if (confirm("⚠️ Es-tu sûr de vouloir tout effacer ?")) {
+                localStorage.removeItem("cv_app_data_v2");
+                localStorage.removeItem("cv_section_order_v2");
+                sectionOrder = ['formations', 'experiences', 'competences', 'langues', 'interets'];
+                document.getElementById("cvForm").reset();
+                renderSections();
+                updateAll();
             }
         }
 
-        // RENDU ET GENERATION DU PDF VIA HTML2PDF
-        function generatePDF() {
-            // Mettre à jour l'état civil dans le template
-            const nom = document.getElementById("info-nom").value.toUpperCase();
-            const prenom = document.getElementById("info-prenom").value;
-            document.getElementById("pdf-fullname").innerText = `${prenom} ${nom}`.trim() || "MON CV";
-            document.getElementById("pdf-tel").innerText = document.getElementById("info-tel").value ? "📞 " + document.getElementById("info-tel").value : "";
-            document.getElementById("pdf-email").innerText = document.getElementById("info-email").value ? "✉️ " + document.getElementById("info-email").value : "";
+        function updateLivePreview(data) {
+            if (!data) data = captureFormData();
 
-            const pdfDynamicContainer = document.getElementById("pdf-dynamic-sections");
-            pdfDynamicContainer.innerHTML = ""; // Clear ancien rendu
+            const fn = document.getElementById("live_fullname");
+            const jt = document.getElementById("live_jobtitle");
+            const ph = document.getElementById("live_phone");
+            const em = document.getElementById("live_email");
 
-            // Récupérer l'ordre actuel des sections du formulaire
-            const sectionOrder = Array.from(document.getElementById("sections-container").querySelectorAll('[data-section-id]')).map(s => s.getAttribute('data-section-id'));
+            if(fn) fn.innerText = (data.personal.prenom || data.personal.nom) ? `${data.personal.prenom} ${data.personal.nom}` : "PRÉNOM NOM";
+            if(jt) jt.innerText = data.personal.poste || "Intitulé du poste recherché";
+            if(ph) ph.innerText = data.personal.telephone ? `📞 ${data.personal.telephone}` : "📞 Téléphone";
+            if(em) em.innerText = data.personal.email ? `✉️ ${data.personal.email}` : "✉️ Adresse E-mail";
+
+            const accrocheArea = document.getElementById("live_accroche_area");
+            if(accrocheArea) {
+                if (data.personal.accroche && data.personal.accroche.trim() !== "") {
+                    accrocheArea.innerText = data.personal.accroche;
+                    accrocheArea.classList.remove("hidden");
+                } else {
+                    accrocheArea.classList.add("hidden");
+                }
+            }
+
+            const liveSectionsArea = document.getElementById("live_sections_area");
+            if(!liveSectionsArea) return;
+            liveSectionsArea.innerHTML = "";
 
             sectionOrder.forEach(secId => {
-                if (secId === "formations") {
-                    const rows = document.querySelectorAll("#list-formations > div");
-                    let hasContent = false;
-                    let htmlBlock = `<div style="margin-bottom: 5px;"><h2 style="font-size: 15px; text-transform: uppercase; color: #4f46e5; border-bottom: 1px solid #e2e8f0; padding-bottom: 3px; margin-bottom: 10px; font-weight: bold;">Formations & Diplômes</h2>`;
-                    
-                    rows.forEach(row => {
-                        const intitule = row.querySelector(".form-item-formation-intitule").value;
-                        const etab = row.querySelector(".form-item-formation-etab").value;
-                        const periode = row.querySelector(".form-item-formation-periode").value;
-                        
-                        if (intitule || etab || periode) {
-                            hasContent = true;
-                            htmlBlock += `
-                                <div style="margin-bottom: 12px;">
-                                    <table style="width: 100%; border-collapse: collapse;">
-                                        <tr>
-                                            <td style="font-weight: bold; color: #1e293b; font-size: 13px;">${intitule || 'Intitulé non renseigné'}</td>
-                                            <td style="text-align: right; color: #64748b; font-size: 12px; font-style: italic; width: 120px;">${periode || ''}</td>
-                                        </tr>
-                                    </table>
-                                    <div style="color: #475569; font-size: 12px; margin-top: 2px;">${etab || ''}</div>
+                const items = data.sections[secId] || [];
+                let validItemsCount = 0;
+
+                const secDiv = document.createElement("div");
+                secDiv.className = "mb-3";
+
+                let titleHTML = `<h3 class="text-[11px] font-bold text-teal-700 border-b border-teal-200 uppercase tracking-wide pb-0.5 mb-1.5">${sectionTitles[secId].title}</h3>`;
+                let contentHTML = `<div class="space-y-2">`;
+
+                items.forEach(item => {
+                    if (secId === "formations" && (item.diplome || item.lieu)) {
+                        validItemsCount++;
+                        contentHTML += `
+                            <div class="flex justify-between items-start text-[10.5px]">
+                                <div>
+                                    <strong class="text-slate-900">${item.diplome || "Diplôme"}</strong>
+                                    <p class="text-slate-600 text-[10px]">${item.lieu || "Établissement"}</p>
                                 </div>
-                            `;
+                                <div class="text-slate-400 text-[10px] whitespace-nowrap ml-4">${item.periode}</div>
+                            </div>
+                        `;
+                    } else if (secId === "experiences" && (item.poste || item.entreprise)) {
+                        validItemsCount++;
+                        let pucesHTML = "";
+                        if (item.missions) {
+                            const lignes = item.missions.split('\n').filter(l => l.trim() !== "");
+                            pucesHTML = `<ul class="list-disc list-inside text-slate-600 mt-0.5 space-y-0.5 pl-1 text-[9.5px]">`;
+                            lignes.forEach(l => { pucesHTML += `<li>${l}</li>`; });
+                            pucesHTML += `</ul>`;
                         }
-                    });
-                    htmlBlock += `</div>`;
-                    if (hasContent) pdfDynamicContainer.insertAdjacentHTML('beforeend', htmlBlock);
-
-                } else if (secId === "experiences") {
-                    const rows = document.querySelectorAll("#list-experiences > div");
-                    let hasContent = false;
-                    let htmlBlock = `<div style="margin-bottom: 5px;"><h2 style="font-size: 15px; text-transform: uppercase; color: #4f46e5; border-bottom: 1px solid #e2e8f0; padding-bottom: 3px; margin-bottom: 10px; font-weight: bold;">Expériences Professionnelles</h2>`;
-                    
-                    rows.forEach(row => {
-                        const poste = row.querySelector(".form-item-exp-poste").value;
-                        const entreprise = row.querySelector(".form-item-exp-entreprise").value;
-                        const periode = row.querySelector(".form-item-exp-periode").value;
-                        const missionsText = row.querySelector(".form-item-exp-missions").value;
-                        
-                        if (poste || entreprise || periode || missionsText) {
-                            hasContent = true;
-                            
-                            // Génération des puces pour les missions
-                            let listItemsHtml = "";
-                            if (missionsText.trim()) {
-                                const lines = missionsText.split('
-');
-                                lines.forEach(line => {
-                                    if (line.trim()) {
-                                        listItemsHtml += `<li style="margin-bottom: 3px; padding-left: 2px;">${line.trim()}</li>`;
-                                    }
-                                });
-                            }
-
-                            htmlBlock += `
-                                <div style="margin-bottom: 15px;">
-                                    <table style="width: 100%; border-collapse: collapse;">
-                                        <tr>
-                                            <td style="font-weight: bold; color: #1e293b; font-size: 13px;">${poste || 'Poste non renseigné'}</td>
-                                            <td style="text-align: right; color: #64748b; font-size: 12px; font-style: italic; width: 120px;">${periode || ''}</td>
-                                        </tr>
-                                    </table>
-                                    <div style="color: #475569; font-size: 12px; margin-top: 2px; font-weight: 500;">${entreprise || ''}</div>
-                                    ${listItemsHtml ? `<ul style="margin: 6px 0 0 0; padding-left: 18px; color: #475569; font-size: 12px; list-style-type: square;">${listItemsHtml}</ul>` : ''}
+                        contentHTML += `
+                            <div class="text-[10.5px]">
+                                <div class="flex justify-between items-start">
+                                    <div>
+                                        <strong class="text-slate-900">${item.poste || "Poste occupé"}</strong>
+                                        <span class="text-slate-500 text-[10px]"> — ${item.entreprise || "Entreprise"}</span>
+                                    </div>
+                                    <div class="text-slate-400 text-[10px] whitespace-nowrap ml-4">${item.periode}</div>
                                 </div>
-                            `;
+                                ${pucesHTML}
+                            </div>
+                        `;
+                    } else if (secId === "competences" && item.competence) {
+                        validItemsCount++;
+                        contentHTML += `
+                            <div class="flex justify-between items-center text-[10.5px]">
+                                <span class="text-slate-900 font-medium">${item.competence}</span>
+                                <span class="bg-slate-100 text-slate-700 px-2 py-0.5 rounded text-[9px] font-medium border border-slate-200/50">${item.niveau}</span>
+                            </div>
+                        `;
+                    } else if (secId === "langues" && item.langue) {
+                        validItemsCount++;
+                        contentHTML += `
+                            <div class="flex justify-between items-center text-[10.5px]">
+                                <span class="text-slate-900 font-medium">${item.langue}</span>
+                                <span class="bg-teal-50 text-teal-700 px-2 py-0.5 rounded text-[9px] font-medium border border-teal-100">${item.niveau}</span>
+                            </div>
+                        `;
+                    } else if (secId === "interets" && item.interet) {
+                        validItemsCount++;
+                        let pucesHTML = "";
+                        if (item.description) {
+                            const lignes = item.description.split('\n').filter(l => l.trim() !== "");
+                            pucesHTML = `<ul class="list-disc list-inside text-slate-600 mt-0.5 space-y-0.5 pl-1 text-[9.5px]">`;
+                            lignes.forEach(l => { pucesHTML += `<li>${l}</li>`; });
+                            pucesHTML += `</ul>`;
                         }
-                    });
-                    htmlBlock += `</div>`;
-                    if (hasContent) pdfDynamicContainer.insertAdjacentHTML('beforeend', htmlBlock);
+                        contentHTML += `
+                            <div class="text-[10.5px]">
+                                <strong class="text-slate-900">${item.interet}</strong>
+                                ${pucesHTML}
+                            </div>
+                        `;
+                    }
+                });
 
-                } else if (secId === "competences-tech") {
-                    const rows = document.querySelectorAll("#list-competences-tech > div");
-                    let hasContent = false;
-                    let htmlBlock = `<div style="margin-bottom: 5px;"><h2 style="font-size: 15px; text-transform: uppercase; color: #4f46e5; border-bottom: 1px solid #e2e8f0; padding-bottom: 3px; margin-bottom: 10px; font-weight: bold;">Compétences Techniques</h2>`;
-                    htmlBlock += `<table style="width: 100%; border-collapse: collapse;">`;
-                    
-                    rows.forEach(row => {
-                        const nomTech = row.querySelector(".form-item-tech-nom").value;
-                        const niveauTech = row.querySelector(".form-item-tech-niveau").value;
-                        
-                        if (nomTech) {
-                            hasContent = true;
-                            htmlBlock += `
-                                <tr style="border-bottom: 1px solid #f1f5f9;">
-                                    <td style="padding: 5px 0; font-weight: 500; color: #1e293b; font-size: 12px;">${nomTech}</td>
-                                    <td style="padding: 5px 0; text-align: right; color: #64748b; font-size: 12px; font-style: italic;">${niveauTech}</td>
-                                </tr>
-                            `;
-                        }
-                    });
-                    htmlBlock += `</table></div>`;
-                    if (hasContent) pdfDynamicContainer.insertAdjacentHTML('beforeend', htmlBlock);
+                contentHTML += `</div>`;
+                secDiv.innerHTML = titleHTML + contentHTML;
 
-                } else if (secId === "langues") {
-                    const rows = document.querySelectorAll("#list-langues > div");
-                    let hasContent = false;
-                    let htmlBlock = `<div style="margin-bottom: 5px;"><h2 style="font-size: 15px; text-transform: uppercase; color: #4f46e5; border-bottom: 1px solid #e2e8f0; padding-bottom: 3px; margin-bottom: 10px; font-weight: bold;">Compétences Linguistiques</h2>`;
-                    htmlBlock += `<table style="width: 100%; border-collapse: collapse;">`;
-                    
-                    rows.forEach(row => {
-                        const nomLangue = row.querySelector(".form-item-langue-nom").value;
-                        const niveauLangue = row.querySelector(".form-item-langue-niveau").value;
-                        
-                        if (nomLangue) {
-                            hasContent = true;
-                            htmlBlock += `
-                                <tr style="border-bottom: 1px solid #f1f5f9;">
-                                    <td style="padding: 5px 0; font-weight: 500; color: #1e293b; font-size: 12px;">${nomLangue}</td>
-                                    <td style="padding: 5px 0; text-align: right; color: #64748b; font-size: 12px; font-style: italic;">${niveauLangue}</td>
-                                </tr>
-                            `;
-                        }
-                    });
-                    htmlBlock += `</table></div>`;
-                    if (hasContent) pdfDynamicContainer.insertAdjacentHTML('beforeend', htmlBlock);
+                if (validItemsCount > 0) {
+                    liveSectionsArea.appendChild(secDiv);
                 }
-            });
-
-            // Lancer le téléchargement html2pdf
-            const element = document.getElementById('cv-pdf-template');
-            element.classList.remove('hidden'); // Temporairement visible pour la capture
-            
-            const filenameStr = prenom && nom ? `CV_${prenom}_${nom}.pdf` : 'Mon_CV_Mission_Locale.pdf';
-            
-            const opt = {
-                margin:       10,
-                filename:     filenameStr,
-                image:        { type: 'jpeg', quality: 0.98 },
-                html2canvas:  { scale: 2, useCORS: true },
-                jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
-            };
-
-            html2pdf().set(opt).from(element).save().then(() => {
-                element.classList.add('hidden'); // Re-cacher après capture
-            }).catch(err => {
-                console.error("Erreur génération PDF:", err);
-                element.classList.add('hidden');
             });
         }
 
-        // UTILITAIRE : Limiter le nombre d'écritures disques (Debounce)
-        function debounce(func, wait) {
-            let timeout;
-            return function executedFunction(...args) {
-                const later = () => {
-                    clearTimeout(timeout);
-                    func(...args);
-                };
-                clearTimeout(timeout);
-                timeout = setTimeout(later, wait);
-            };
+        function generatePDF() {
+            const originalContent = document.getElementById("cvLivePreview").innerHTML;
+            const data = captureFormData();
+            const fileName = `CV_${data.personal.prenom || 'Jeune'}_${data.personal.nom || 'Express'}`;
+
+            const iframe = document.createElement('iframe');
+            iframe.style.position = 'fixed';
+            iframe.style.right = '0';
+            iframe.style.bottom = '0';
+            iframe.style.width = '0';
+            iframe.style.height = '0';
+            iframe.style.border = '0';
+            document.body.appendChild(iframe);
+
+            const pri = iframe.contentWindow;
+
+            pri.document.open();
+            pri.document.write(`
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <title>${fileName}</title>
+                    <style>
+                        body {
+                            font-family: 'Inter', sans-serif;
+                            margin: 0;
+                            padding: 0;
+                            background-color: #ffffff;
+                            -webkit-print-color-adjust: exact !important;
+                            print-color-adjust: exact !important;
+                        }
+                        .cv-strict-a4 {
+                            width: 210mm;
+                            height: 297mm;
+                            padding: 20mm;
+                            box-sizing: border-box;
+                            background-color: #ffffff;
+                            display: flex;
+                            flex-direction: column;
+                            justify-content: space-between;
+                        }
+                        .border-b-4 { border-bottom: 4px solid #0d9488; }
+                        .border-b { border-bottom: 1px solid #e2e8f0; }
+                        .border-teal-200 { border-color: #99f6e4; }
+                        .pb-4 { padding-bottom: 1rem; }
+                        .mb-5 { margin-bottom: 1.25rem; }
+                        .mb-3 { margin-bottom: 0.75rem; }
+                        .mt-auto { margin-top: auto; }
+                        .flex { display: flex; }
+                        .justify-between { justify-content: space-between; }
+                        .items-end { align-items: flex-end; }
+                        .items-start { align-items: flex-start; }
+                        .items-center { align-items: center; }
+                        .text-right { text-align: right; }
+                        .text-2xl { font-size: 1.5rem; font-weight: 700; }
+                        .text-teal-600 { color: #0d9488; }
+                        .text-teal-700 { color: #0f766e; }
+                        .text-slate-900 { color: #0f172a; }
+                        .text-slate-700 { color: #334155; }
+                        .text-slate-600 { color: #475569; }
+                        .text-slate-500 { color: #64748b; }
+                        .text-slate-400 { color: #94a3b8; }
+                        .text-slate-300 { color: #cbd5e1; }
+                        .text-[11px] { font-size: 11px; }
+                        .text-[10.5px] { font-size: 10.5px; }
+                        .text-[10px] { font-size: 10px; }
+                        .text-[9.5px] { font-size: 9.5px; }
+                        .text-[9px] { font-size: 9px; }
+                        .uppercase { text-transform: uppercase; }
+                        .font-bold { font-weight: 700; }
+                        .font-semibold { font-weight: 600; }
+                        .font-medium { font-weight: 500; }
+                        .italic { font-style: italic; }
+                        .bg-slate-50 { background-color: #f8fafc; }
+                        .bg-slate-100 { background-color: #f1f5f9; }
+                        .bg-teal-50 { background-color: #f0fdfa; }
+                        .p-3 { padding: 0.75rem; }
+                        .px-2 { padding-left: 0.5rem; padding-right: 0.5rem; }
+                        .py-0.5 { padding-top: 0.125rem; padding-bottom: 0.125rem; }
+                        .rounded { rounded: 0.25rem; }
+                        .border-l-2 { border-left: 2px solid #14b8a6; }
+                        .space-y-0.5 > * + * { margin-top: 0.125rem; }
+                        .space-y-2 > * + * { margin-top: 0.5rem; }
+                        .space-y-5 > * + * { margin-top: 1.25rem; }
+                        .mt-0.5 { margin-top: 0.125rem; }
+                        .ml-4 { margin-left: 1rem; }
+                        .pl-1 { padding-left: 0.25rem; }
+                        .whitespace-nowrap { white-space: nowrap; }
+                        ul { margin: 0; padding-left: 15px; }
+                        .hidden { display: none !important; }
+
+                        @page {
+                            size: A4 portrait;
+                            margin: 0;
+                        }
+                    </style>
+                </head>
+                <body>
+                    <div class="cv-strict-a4">
+                        ${originalContent}
+                    </div>
+                </body>
+                </html>
+            `);
+            pri.document.close();
+
+            setTimeout(() => {
+                pri.focus();
+                pri.print();
+                setTimeout(() => { iframe.remove(); }, 1000);
+            }, 300);
         }
     </script>
 </body>
