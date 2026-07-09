@@ -174,11 +174,11 @@
         const PASSWORD_DU_MOIS = "FR072026";
         
         // RENSEIGNEZ VOS CLÉS SUPABASE ICI POUR LE SUIVI :
-        const SUPABASE_URL = "https://mlbjvzadwjbdaaenfeae.supabase.co/rest/v1/";
+        const SUPABASE_URL = "https://mlbjvzadwjbdaaenfeae.supabase.co";
         const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1sYmp2emFkd2piZGFhZW5mZWFlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODMzNDk2MzgsImV4cCI6MjA5ODkyNTYzOH0.EC3kal19wHH35OnTll2rYnxmQyqzlOghxPdjkPdas5w";
         
         let supabaseClient = null;
-        if(SUPABASE_URL !== "VOTRE_URL_SUPABASE_ICI") {
+        if(SUPABASE_URL !== "https://mlbjvzadwjbdaaenfeae.supabase.co") {
             supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
         }
 
@@ -333,9 +333,23 @@
             } else if (sectionId === "experiences") {
                 inputsHTML = `<div class="space-y-3"><div class="grid grid-cols-1 md:grid-cols-3 gap-3"><input type="text" placeholder="Poste" class="p-2 border border-slate-200 rounded text-sm field-poste"><input type="text" placeholder="Entreprise" class="p-2 border border-slate-200 rounded text-sm field-entreprise"><input type="text" placeholder="Période" class="p-2 border border-slate-200 rounded text-sm field-periode"></div><textarea placeholder="Missions (Une par ligne)" rows="2" class="w-full p-2 border border-slate-200 rounded text-sm field-missions"></textarea></div>`;
             } else if (sectionId === "competences") {
-                inputsHTML = `<div class="grid grid-cols-1 sm:grid-cols-2 gap-3"><input type="text" placeholder="Compétence" class="p-2 border border-slate-200 rounded text-sm field-competence"><select class="p-2 border border-slate-200 rounded text-sm field-niveau"><option value="Débutant">Débutant</option><option value="Intermédiaire">Intermédiaire</option><option value="Expert">Expert</option></select></div>`;
+                inputsHTML = `<div class="grid grid-cols-1 sm:grid-cols-2 gap-3"><input type="text" placeholder="Compétence" class="p-2 border border-slate-200 rounded text-sm field-competence"><select class="p-2 border border-slate-200 rounded text-sm field-niveau">
+                    <option value="Initiation">Initiation</option>
+                    <option value="Débutant">Débutant</option>
+                    <option value="Compétences professionnelles limitées">Compétences professionnelles limitées</option>
+                    <option value="Compétences professionnelles complètes">Compétences professionnelles complètes</option>
+                    <option value="Expert">Expert</option>
+                </select></div>`;
             } else if (sectionId === "langues") {
-                inputsHTML = `<div class="grid grid-cols-1 sm:grid-cols-2 gap-3"><input type="text" placeholder="Langue" class="p-2 border border-slate-200 rounded text-sm field-langue"><select class="p-2 border border-slate-200 rounded text-sm field-niveau"><option value="Bilingue">Bilingue</option><option value="Intermédiaire">Intermédiaire</option></select></div>`;
+                inputsHTML = `<div class="grid grid-cols-1 sm:grid-cols-2 gap-3"><input type="text" placeholder="Langue" class="p-2 border border-slate-200 rounded text-sm field-langue"><select class="p-2 border border-slate-200 rounded text-sm field-niveau">
+                    <option value="Initiation">Initiation</option>
+                    <option value="Débutant">Débutant</option>
+                    <option value="Niveau scolaire">Niveau scolaire</option>
+                    <option value="Compétences professionnelles limitées">Compétences professionnelles limitées</option>
+                    <option value="Compétences professionnelles complètes">Compétences professionnelles complètes</option>
+                    <option value="Bilingue">Bilingue</option>
+                    <option value="Langue maternelle">Langue maternelle</option>
+                </select></div>`;
             } else if (sectionId === "interets") {
                 inputsHTML = `<div class="space-y-2"><input type="text" placeholder="Intérêt" class="w-full p-2 border border-slate-200 rounded text-sm field-interet"><textarea placeholder="Description" rows="2" class="w-full p-2 border border-slate-200 rounded text-sm field-description"></textarea></div>`;
             }
@@ -392,20 +406,29 @@
         function loadSavedData() { const saved = localStorage.getItem("cv_app_data_v2"); if (saved) restoreFormData(JSON.parse(saved)); }
         function resetForm() { if (confirm("⚠️ Tout effacer ?")) { localStorage.removeItem("cv_app_data_v2"); document.getElementById("cvForm").reset(); renderSections(); updateAll(); } }
 
-        function updateLivePreview(data) {
+function updateLivePreview(data) {
             if (!data) data = captureFormData();
             document.getElementById("live_fullname").innerText = `${data.personal.prenom} ${data.personal.nom}`.trim() || "PRÉNOM NOM";
             document.getElementById("live_jobtitle").innerText = data.personal.poste || "Intitulé du poste";
             document.getElementById("live_phone").innerText = `📞 ${data.personal.telephone || '06...'}`;
             document.getElementById("live_email").innerText = `✉️ ${data.personal.email || 'mail...'}`;
             const acc = document.getElementById("live_accroche_area"); if(data.personal.accroche) { acc.innerText = data.personal.accroche; acc.classList.remove("hidden"); } else acc.classList.add("hidden");
+            
             const area = document.getElementById("live_sections_area"); area.innerHTML = "";
             sectionOrder.forEach(secId => {
                 const items = data.sections[secId] || []; let count = 0;
                 let html = `<h3 class="text-[11px] font-bold text-teal-700 border-b border-teal-200 uppercase tracking-wide pb-0.5 mb-1.5">${sectionTitles[secId].title}</h3><div class="space-y-2">`;
                 items.forEach(item => {
                     if (secId === "formations" && item.diplome) { count++; html += `<div class="flex justify-between text-[10.5px]"><div><strong>${item.diplome}</strong><p class="text-[10px]">${item.lieu}</p></div><div class="text-[10px]">${item.periode}</div></div>`; }
-                    else if (secId === "experiences" && item.poste) { count++; html += `<div class="text-[10.5px]"><div class="flex justify-between"><div><strong>${item.poste}</strong> — ${item.entreprise}</div><div class="text-[10px]">${item.periode}</div></div></div>`; }
+                    else if (secId === "experiences" && item.poste) { 
+                        count++; 
+                        // Génération automatique des puces pour les missions
+                        const missionsList = (item.missions || '').split('\n').filter(m => m.trim() !== '').map(m => `<li class="ml-4">${m.trim()}</li>`).join('');
+                        html += `<div class="text-[10.5px] mb-3">
+                            <div class="flex justify-between font-bold"><span>${item.poste} — ${item.entreprise}</span><span>${item.periode}</span></div>
+                            <ul class="list-disc mt-1">${missionsList}</ul>
+                        </div>`; 
+                    }
                     else if (secId === "competences" && item.competence) { count++; html += `<div class="flex justify-between text-[10.5px]"><span>${item.competence}</span><span class="bg-slate-100 text-[9px] px-2 py-0.5">${item.niveau}</span></div>`; }
                     else if (secId === "langues" && item.langue) { count++; html += `<div class="flex justify-between text-[10.5px]"><span>${item.langue}</span><span class="bg-teal-50 text-[9px] px-2 py-0.5">${item.niveau}</span></div>`; }
                     else if (secId === "interets" && item.interet) { count++; html += `<div class="text-[10.5px]"><strong>${item.interet}</strong></div>`; }
