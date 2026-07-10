@@ -7,124 +7,123 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;900&display=swap" rel="stylesheet">
+    <link rel="manifest" href="data:application/json;base64,ewogICJuYW1lIjogIk1vbiBDViBleHByZXNzIiwKICAic2hvcnRfbmFtZSI6ICJDViBFeHByZXNzIiwKICAic3RhcnRfdXJsIjogIi4iLAogICJkaXNwbGF5IjogInN0YW5kYWxvbmUiLAogICJiYWNrZ3JvdW5kX2NvbG9yIjogIiNmM2Y0ZjYiLAogICJ0aGVtZV9jb2xvciI6ICIjNDY4MmI0Igp9">
     <style>
         body { font-family: 'Inter', sans-serif; }
         @media print { .no-print { display: none; } }
         
-        /* Conteneur pour forcer le rendu strict A4 à l'écran et en impression */
-        .cv-a4-page {
+        /* Conteneur pour forcer le rendu strict A4 sur 1 page lors du print */
+        .cv-page-a4 {
             width: 210mm;
             height: 297mm;
             min-height: 297mm;
             max-height: 297mm;
             background: white;
-            padding: 15mm 12mm;
-            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
-            position: relative;
+            padding: 15mm 15mm;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
             box-sizing: border-box;
             overflow: hidden;
+            page-break-inside: avoid;
+            page-break-after: always;
         }
-
-        /* Hack CSS intelligent pour l'affichage adaptatif sur mobile (A4 proportionnel) */
-        @media (max-width: 1024px) {
-            .cv-scaler {
-                transform: scale(0.65);
-                transform-origin: top center;
-            }
-            .cv-scaler-wrapper {
-                height: 200mm;
-            }
+        
+        /* Ajustement fluide pour que l'aperçu tienne dans l'écran PC */
+        .preview-scale {
+            transform: scale(0.55);
+            transform-origin: top center;
         }
-        @media (max-width: 640px) {
-            .cv-scaler {
-                transform: scale(0.42);
-                transform-origin: top center;
-            }
-            .cv-scaler-wrapper {
-                height: 130mm;
-            }
+        @media (min-width: 1280px) {
+            .preview-scale { transform: scale(0.72); }
+        }
+        @media (min-width: 1400px) {
+            .preview-scale { transform: scale(0.82); }
         }
     </style>
 </head>
-<body class="bg-slate-100 text-slate-800 min-h-screen flex flex-col">
+<body class="bg-slate-100 text-slate-800 min-h-screen flex flex-col antialiased">
 
     <div id="login-screen" class="fixed inset-0 bg-slate-900 z-50 flex flex-col items-center justify-center p-4">
-        <div class="bg-white p-8 rounded-2xl shadow-2xl max-w-md w-full text-center space-y-6 border border-slate-200">
-            <div>
-                <span class="inline-block bg-amber-100 text-amber-700 font-semibold text-xs px-3 py-1 rounded-full uppercase tracking-wider mb-2">🔒 Espace protégé</span>
-                <h2 class="text-2xl font-bold text-slate-900">Connexion requise</h2>
-                <p class="text-xs text-slate-500 mt-2 leading-relaxed">
+        <div class="bg-white p-8 rounded-2xl shadow-2xl max-w-md w-full border border-slate-200 text-center space-y-6">
+            <div class="space-y-2">
+                <h1 class="text-2xl font-black text-slate-900 tracking-tight uppercase">Espace protégé</h1>
+                <p class="text-sm text-slate-500 font-medium">
                     Veuillez saisir le code d'accès fourni par votre contact pour accéder à votre outil de création de CV express.
                 </p>
             </div>
 
-            <div class="space-y-3 text-left">
-                <label class="block text-xs font-bold text-slate-600 uppercase">Code d'accès</label>
+            <div class="space-y-4">
                 <div class="relative">
-                    <input type="password" id="access-code-input" placeholder="Entrez le code ici..." class="w-full p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-violet-500 focus:outline-none text-sm transition font-mono tracking-widest pr-10">
-                    <button onclick="togglePasswordVisibility()" class="absolute right-3 top-3.5 text-slate-400 hover:text-slate-600 transition text-sm">
-                        👁️
+                    <input type="password" id="access-code" placeholder="Entrez le code d'accès..." 
+                        class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-violet-500 focus:outline-none text-center font-mono font-bold tracking-widest text-lg">
+                    <button onclick="togglePasswordVisibility()" class="absolute right-3 top-3.5 text-slate-400 hover:text-slate-600">
+                        <svg id="eye-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178Z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+                        </svg>
                     </button>
                 </div>
-                <div id="login-error" class="text-rose-500 text-xs font-medium hidden">❌ Code d'accès incorrect. Veuillez réessayer.</div>
+                
+                <button onclick="verifierCode()" class="w-full bg-violet-600 hover:bg-violet-700 text-white font-bold py-3 px-4 rounded-xl shadow-md shadow-violet-200 transition-all">
+                    Connexion
+                </button>
             </div>
 
-            <button onclick="verifierCode()" class="w-full bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white font-semibold py-3 rounded-xl shadow-md transition transform active:scale-95">
-                Connexion
-            </button>
-
-            <div class="border-t pt-4 text-xs text-slate-400 space-y-2">
-                <p>Un problème pour vous connecter ?<br>Contactez nous à <a href="mailto:faly.contact@gmail.com" class="text-violet-600 underline font-medium">faly.contact@gmail.com</a></p>
-                <p class="text-[10px] pt-2 border-t border-slate-100 italic">Mon CV express - Idée originale de Faly R.®</p>
+            <div class="text-xs text-slate-400 font-medium pt-2 border-t border-slate-100">
+                <p class="text-slate-500 font-semibold mb-1">Un problème pour vous connecter ?</p>
+                <p>Contactez nous à <a href="mailto:faly.contact@gmail.com" class="text-violet-600 underline">faly.contact@gmail.com</a></p>
             </div>
+            
+            <p class="text-[10px] text-slate-400 font-medium tracking-tight">Mon CV express - Idée originale de Faly R.®</p>
         </div>
     </div>
 
-
-    <div id="app-content" class="hidden flex-col min-h-screen">
+    <div id="app-screen" class="hidden flex-col min-h-screen">
         
         <header class="bg-gradient-to-r from-violet-600 to-indigo-600 text-white p-5 shadow-md no-print">
             <div class="max-w-[1600px] mx-auto flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div>
-                    <h1 class="text-3xl font-black tracking-tight">Mon CV express</h1>
-                    <p class="text-indigo-100 text-xs mt-1">
-                        Modèle créé sur une idée de <span class="font-bold cursor-pointer underline hover:text-white" onclick="toggleStats()">Faly R.®</span>
+                    <h1 class="text-2xl font-black tracking-tight">Mon CV express</h1>
+                    <p class="text-indigo-100 text-xs mt-0.5">
+                        Modèle créé sur une idée de <span class="font-semibold cursor-pointer underline" onclick="toggleStats()">Faly R.®</span>
                     </p>
                 </div>
                 <div class="bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl p-3 max-w-md text-xs text-indigo-50">
-                    <span class="font-bold block mb-0.5">🔒 Sécurité & Confidentialité :</span>
-                    Vos données restent stockées exclusivement dans votre téléphone. Conforme au RGPD.
+                    <span class="font-bold block mb-0.5">🔒 Données locales & privées :</span>
+                    Vos informations restent stockées exclusivement dans votre téléphone. Conformité RGPD totale.
                 </div>
             </div>
         </header>
 
-        <main class="flex-1 max-w-[1600px] w-full mx-auto p-4 lg:p-6 grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+        <main class="flex-1 max-w-[1600px] w-full mx-auto p-4 lg:p-6 grid grid-cols-1 lg:grid-cols-12 gap-6 items-start overflow-hidden">
             
-            <section class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200/60 space-y-6 no-print lg:max-h-[82vh] lg:overflow-y-auto pr-3">
+            <section class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 space-y-6 no-print lg:col-span-5 lg:max-h-[calc(100vh-160px)] lg:overflow-y-auto">
                 
                 <div class="space-y-4">
                     <h2 class="text-lg font-bold text-slate-900 border-b pb-2 flex items-center gap-2 text-violet-600">
-                        <span class="p-1 bg-violet-100 rounded-md text-sm">👤</span> 1/ Informations Personnelles
+                        <span class="p-1 bg-violet-100 rounded-md text-sm">👤</span> 1. Informations Personnelles
                     </h2>
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <div class="sm:col-span-2">
-                            <label class="block text-[11px] font-bold text-slate-600 uppercase mb-1">Intitulé du poste recherché</label>
-                            <input type="text" id="input-poste-visé" oninput="formatPosteVise(this); updateCV();" placeholder="Ex: Vendeur en magasin" class="w-full p-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-violet-500 focus:outline-none text-sm transition">
+                            <label class="block text-[11px] font-bold text-slate-500 uppercase mb-1">Intitulé du poste visé</label>
+                            <input type="text" id="input-poste-vise" oninput="formatTitre(this); updateCV();" placeholder="Ex: Vendeur conseil en magasin" class="w-full p-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-violet-500 focus:outline-none text-sm transition">
                         </div>
                         <div>
-                            <label class="block text-[11px] font-bold text-slate-600 uppercase mb-1">Nom</label>
+                            <label class="block text-[11px] font-bold text-slate-500 uppercase mb-1">Nom</label>
                             <input type="text" id="input-nom" oninput="formatNom(this); updateCV();" placeholder="DUPONT" class="w-full p-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-violet-500 focus:outline-none text-sm transition">
                         </div>
                         <div>
-                            <label class="block text-[11px] font-bold text-slate-600 uppercase mb-1">Prénom</label>
+                            <label class="block text-[11px] font-bold text-slate-500 uppercase mb-1">Prénom</label>
                             <input type="text" id="input-prenom" oninput="formatPrenom(this); updateCV();" placeholder="Jean" class="w-full p-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-violet-500 focus:outline-none text-sm transition">
                         </div>
                         <div>
-                            <label class="block text-[11px] font-bold text-slate-600 uppercase mb-1">Téléphone</label>
+                            <label class="block text-[11px] font-bold text-slate-500 uppercase mb-1">Téléphone</label>
                             <input type="tel" id="input-telephone" oninput="updateCV();" placeholder="06 12 34 56 78" class="w-full p-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-violet-500 focus:outline-none text-sm transition">
                         </div>
                         <div>
-                            <label class="block text-[11px] font-bold text-slate-600 uppercase mb-1">Adresse E-mail</label>
+                            <label class="block text-[11px] font-bold text-slate-500 uppercase mb-1">Adresse E-mail</label>
                             <input type="email" id="input-email" oninput="updateCV();" placeholder="jean.dupont@email.com" class="w-full p-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-violet-500 focus:outline-none text-sm transition">
                         </div>
                     </div>
@@ -132,20 +131,19 @@
 
                 <div class="space-y-4">
                     <h2 class="text-lg font-bold text-slate-900 border-b pb-2 flex items-center gap-2 text-violet-600">
-                        <span class="p-1 bg-violet-100 rounded-md text-sm">💡</span> 2/ Phrase d'accroche impactante
+                        <span class="p-1 bg-violet-100 rounded-md text-sm">💡</span> 2. Phrase d'accroche
                     </h2>
                     <div>
-                        <label class="block text-[11px] font-bold text-slate-600 uppercase mb-1">Votre projet professionnel ou pitch</label>
-                        <textarea id="input-accroche" oninput="formatAccroche(this); updateCV();" rows="2" placeholder="Jeune dynamique cherchant à intégrer le secteur de la logistique..." class="w-full p-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-violet-500 focus:outline-none text-sm transition"></textarea>
+                        <label class="block text-[11px] font-bold text-slate-500 uppercase mb-1">Votre projet professionnel / Pitch</label>
+                        <textarea id="input-accroche" oninput="formatTitre(this); updateCV();" rows="2" placeholder="Jeune dynamique intégrant un parcours d'insertion..." class="w-full p-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-violet-500 focus:outline-none text-sm transition"></textarea>
                     </div>
                 </div>
 
-                <div class="space-y-5" id="rubriques-container">
-                    </div>
+                <div class="space-y-5" id="rubriques-container"></div>
 
                 <div class="pt-4 border-t flex flex-col sm:flex-row gap-3">
                     <button onclick="genererPDF()" class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 px-4 rounded-xl shadow-md transition flex items-center justify-center gap-2 text-sm">
-                        📥 Générer mon CV en PDF
+                        📥 Générer mon CV en PDF (A4)
                     </button>
                     <button onclick="reinitialiserFormulaire()" class="bg-rose-50 hover:bg-rose-100 text-rose-600 font-semibold py-3 px-4 rounded-xl transition text-xs">
                         🔄 Réinitialiser le formulaire
@@ -153,33 +151,31 @@
                 </div>
             </section>
 
-            <section class="flex flex-col items-center bg-slate-300/40 p-4 rounded-2xl border border-slate-200 lg:max-h-[82vh] lg:overflow-y-auto">
-                <div class="text-center mb-3 no-print w-full">
-                    <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wider">Aperçu en temps réel (A4 proportionnel)</h3>
-                </div>
+            <section class="lg:col-span-7 flex flex-col items-center bg-slate-300 rounded-2xl p-4 overflow-hidden h-full lg:max-h-[calc(100vh-160px)]">
+                <span class="text-xs font-bold text-slate-600 uppercase tracking-wider mb-2 select-none">Aperçu en temps réel (A4 proportionnel)</span>
                 
-                <div class="cv-scaler-wrapper w-full flex justify-center">
-                    <div class="cv-scaler">
-                        <div id="cv-document" class="cv-a4-page flex flex-col justify-between">
+                <div class="w-full flex justify-center items-start overflow-y-auto overflow-x-auto flex-1 p-2">
+                    <div class="preview-scale">
+                        <div id="cv-document" class="cv-page-a4">
                             
-                            <div class="space-y-5">
-                                <div class="border-b-2 border-violet-600 pb-3 flex justify-between items-start">
-                                    <div>
-                                        <h1 class="text-2xl font-black tracking-wide text-slate-900"><span id="cv-prenom"></span> <span id="cv-nom"></span></h1>
-                                        <h2 id="cv-poste-preview" class="text-sm font-bold text-violet-600 uppercase mt-0.5 tracking-wide"></h2>
-                                        <p id="cv-accroche-preview" class="text-[11px] italic text-slate-600 mt-2 max-w-xl font-medium leading-relaxed"></p>
+                            <div id="cv-content" class="space-y-5 flex-1">
+                                <div class="border-b-[3px] border-violet-600 pb-3 flex justify-between items-start">
+                                    <div class="space-y-1">
+                                        <h1 class="text-2xl font-black tracking-tight text-slate-900"><span id="cv-prenom">Prénom</span> <span id="cv-nom">NOM</span></h1>
+                                        <h2 id="cv-poste-preview" class="text-sm font-bold text-violet-600 uppercase tracking-wide"></h2>
+                                        <p id="cv-accroche-preview" class="text-[11px] italic text-slate-600 max-w-[500px] font-medium leading-relaxed pt-1"></p>
                                     </div>
-                                    <div class="text-right text-[10px] space-y-0.5 text-slate-500 font-medium">
+                                    <div class="text-right text-[10px] space-y-0.5 text-slate-500 font-semibold pt-1">
                                         <p id="cv-phone-preview"></p>
                                         <p id="cv-email-preview"></p>
                                     </div>
                                 </div>
 
-                                <div id="cv-blocks-render" class="space-y-4"></div>
+                                <div id="cv-blocks-render" class="space-y-5"></div>
                             </div>
 
-                            <footer class="text-center text-[9px] text-slate-400 border-t border-slate-100 pt-2">
-                                Modèle créé sur une idée de <span class="font-semibold cursor-pointer text-slate-500" onclick="toggleStats()">Faly R.®</span>
+                            <footer class="text-center text-[9px] text-slate-400 border-t pt-2 mt-4 select-none">
+                                Modèle créé sur une idée de <span class="font-semibold cursor-pointer underline" onclick="toggleStats()">Faly R.®</span>
                             </footer>
                         </div>
                     </div>
@@ -188,32 +184,30 @@
         </main>
     </div>
 
-    <script>
-        const SUPABASE_URL = "https://mlbjvzadwjbdaaenfeae.supabase.co/rest/v1/stats";
-        const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1sYmp2emFkd2piZGFhZW5mZWFlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODMzNDk2MzgsImV4cCI6MjA5ODkyNTYzOH0.EC3kal19wHH35OnTll2rYnxmQyqzlOghxPdjkPdas5w";
-        const CODE_VALIDATION = "FR072026";
-    </script>
-
     <div id="stats-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden flex items-center justify-center p-4 z-50 no-print">
-        <div class="bg-white p-6 rounded-2xl shadow-xl max-w-sm w-full border border-slate-200">
-            <h3 class="text-md font-bold text-slate-900 mb-4 flex items-center gap-2">
-                📈 Statistiques d'utilisation (Supabase)
+        <div class="bg-white p-6 rounded-2xl shadow-xl max-w-sm w-full border border-slate-100 text-center space-y-4">
+            <h3 class="text-lg font-bold text-slate-900 flex items-center justify-center gap-2">
+                📈 Suivi des Statistiques
             </h3>
-            <div class="grid grid-cols-2 gap-4 mb-5">
-                <div class="bg-violet-50 p-4 rounded-xl text-center">
-                    <span class="block text-2xl font-black text-violet-600" id="stat-connexions">...</span>
-                    <span class="text-[11px] text-slate-500 font-semibold">Connexions</span>
+            
+            <div class="grid grid-cols-2 gap-3">
+                <div class="bg-violet-50 p-3 rounded-xl">
+                    <span class="block text-xl font-black text-violet-600" id="stat-connexions">0</span>
+                    <span class="text-[10px] text-slate-500 font-bold uppercase">Connexions</span>
                 </div>
-                <div class="bg-emerald-50 p-4 rounded-xl text-center">
-                    <span class="block text-2xl font-black text-emerald-600" id="stat-telechargements">...</span>
-                    <span class="text-[11px] text-slate-500 font-semibold">PDF Téléchargés</span>
+                <div class="bg-emerald-50 p-3 rounded-xl">
+                    <span class="block text-xl font-black text-emerald-600" id="stat-telechargements">0</span>
+                    <span class="text-[10px] text-slate-500 font-bold uppercase">PDF Téléchargés</span>
                 </div>
             </div>
-            <div class="space-y-2">
-                <button onclick="reinitialiserStatsServeur()" class="w-full bg-rose-50 hover:bg-rose-100 text-rose-600 text-xs font-bold py-2 rounded-lg transition">
-                    ⚠️ Réinitialiser les compteurs
+
+            <p class="text-[11px] text-slate-400 italic">Ces données sont synchronisées en local et sauvegardées à distance sur Supabase.</p>
+            
+            <div class="pt-2 space-y-2">
+                <button onclick="clearStatsCounters()" class="w-full bg-rose-50 hover:bg-rose-100 text-rose-600 text-xs font-bold py-2 rounded-lg transition">
+                    🗑️ Réinitialiser les statistiques (à zéro)
                 </button>
-                <button onclick="toggleStats()" class="w-full bg-slate-800 hover:bg-slate-900 text-white text-xs font-medium py-2.5 rounded-lg transition">
+                <button onclick="toggleStats()" class="w-full bg-slate-800 hover:bg-slate-900 text-white text-xs font-semibold py-2 rounded-lg transition">
                     Fermer la fenêtre
                 </button>
             </div>
@@ -221,6 +215,11 @@
     </div>
 
     <script>
+        // CONFIGURATION APPLICATIVE IMPÉRATIVE
+        const MOT_DE_PASSE_CORRECT = "FR072026";
+        const SUPABASE_URL = "https://mlbjvzadwjbdaaenfeae.supabase.co/rest/v1/statistiques";
+        const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1sYmp2emFkd2piZGFhZW5mZWFlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODMzNDk2MzgsImV4cCI6MjA5ODkyNTYzOH0.EC3kal19wHH35OnTll2rYnxmQyqzlOghxPdjkPdas5w";
+
         let structureRubriques = ['formations', 'experiences', 'competences', 'langues', 'interets'];
         
         let dataStore = {
@@ -231,95 +230,66 @@
             interets: [{nom: '', description: ''}]
         };
 
-        // ÉCRAN DE CONNEXION CONTROLE
+        // CONTROLE SECURITE ACCÈS
         function togglePasswordVisibility() {
-            const input = document.getElementById('access-code-input');
+            const input = document.getElementById('access-code');
             input.type = input.type === 'password' ? 'text' : 'password';
         }
 
         function verifierCode() {
-            const saisie = document.getElementById('access-code-input').value;
-            if (saisie === CODE_VALIDATION) {
+            const codeEntre = document.getElementById('access-code').value;
+            if (codeEntre === MOT_DE_PASSE_CORRECT) {
                 document.getElementById('login-screen').classList.add('hidden');
-                document.getElementById('app-content').classList.remove('hidden');
-                document.getElementById('app-content').classList.add('flex');
+                document.getElementById('app-screen').classList.remove('hidden');
+                document.getElementById('app-screen').classList.add('flex');
                 
-                // Envoi de la stat de connexion
-                envoyerStatSupabase('connexion');
+                logStatToSupabase("connexion");
+                gererCompteursLocaux("connexion");
                 chargerDonneesLocales();
                 initApp();
             } else {
-                document.getElementById('login-error').classList.remove('hidden');
+                alert("❌ Code d'accès invalide. Veuillez réessayer ou contacter votre conseiller.");
             }
         }
 
-        function initApp() {
-            renderFormulaireRubriques();
-            updateCV();
-            recupererStatsSupabase();
+        // SUPABASE INTERACTION (ZÉRO IMPACT SI ERREUR RESEAU)
+        function logStatToSupabase(typeAction) {
+            fetch(SUPABASE_URL, {
+                method: 'POST',
+                headers: {
+                    'apikey': SUPABASE_KEY,
+                    'Authorization': `Bearer ${SUPABASE_KEY}`,
+                    'Content-Type': 'application/json',
+                    'Prefer': 'return=minimal'
+                },
+                body: JSON.stringify({
+                    type: typeAction,
+                    timestamp: new Date().toISOString()
+                })
+            }).catch(err => console.log("Supabase Sync hors-ligne ou non configuré"));
         }
 
-        // --- FORMATAGES REQUIS ---
-        function formatNom(el) { el.value = el.value.toUpperCase(); }
-        function formatPrenom(el) { 
-            if(el.value.length > 0) el.value = el.value.charAt(0).toUpperCase() + el.value.slice(1).toLowerCase();
-        }
-        function formatPosteVise(el) {
-            if(el.value.length > 0) el.value = el.value.charAt(0).toUpperCase() + el.value.slice(1).toLowerCase();
-        }
-        function formatAccroche(el) {
-            if(el.value.length > 0) el.value = el.value.charAt(0).toUpperCase() + el.value.slice(1);
-        }
-
-        // --- SYNCHRONISATION SUPABASE ---
-        async function envoyerStatSupabase(typeAction) {
-            // Sauvegarde locale de secours
-            let localKey = typeAction === 'connexion' ? 'faly_local_conn' : 'faly_local_dl';
-            localStorage.setItem(localKey, parseInt(localStorage.getItem(localKey) || '0') + 1);
-
-            try {
-                await fetch(SUPABASE_URL, {
-                    method: 'POST',
-                    headers: {
-                        'apikey': SUPABASE_KEY,
-                        'Authorization': `Bearer ${SUPABASE_KEY}`,
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ action: typeAction })
-                });
-            } catch (e) { console.log("Mode local actif (Supabase non connecté)"); }
-            recupererStatsSupabase();
-        }
-
-        async function recupererStatsSupabase() {
-            try {
-                const res = await fetch(`${SUPABASE_URL}?select=action`, {
-                    headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` }
-                });
-                const data = await res.json();
-                
-                let countConn = data.filter(i => i.action === 'connexion').length;
-                let countDl = data.filter(i => i.action === 'telechargement').length;
-
-                document.getElementById('stat-connexions').innerText = countConn || localStorage.getItem('faly_local_conn') || 1;
-                document.getElementById('stat-telechargements').innerText = countDl || localStorage.getItem('faly_local_dl') || 0;
-            } catch (e) {
-                document.getElementById('stat-connexions').innerText = localStorage.getItem('faly_local_conn') || 1;
-                document.getElementById('stat-telechargements').innerText = localStorage.getItem('faly_local_dl') || 0;
+        function gererCompteursLocaux(action) {
+            if(action === "connexion") {
+                let c = parseInt(localStorage.getItem('faly_con') || '0') + 1;
+                localStorage.setItem('faly_con', c);
+            } else if(action === "download") {
+                let d = parseInt(localStorage.getItem('faly_dl') || '0') + 1;
+                localStorage.setItem('faly_dl', d);
             }
+            refreshStatsDisplay();
         }
 
-        async function reinitialiserStatsServeur() {
-            if (confirm("Voulez-vous vraiment vider toutes les statistiques enregistrées sur Supabase ?")) {
-                try {
-                    await fetch(`${SUPABASE_URL}?action=in.(connexion,telechargement)`, {
-                        method: 'DELETE',
-                        headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` }
-                    });
-                } catch(e) {}
-                localStorage.setItem('faly_local_conn', '0');
-                localStorage.setItem('faly_local_dl', '0');
-                recupererStatsSupabase();
+        function refreshStatsDisplay() {
+            document.getElementById('stat-connexions').innerText = localStorage.getItem('faly_con') || '0';
+            document.getElementById('stat-telechargements').innerText = localStorage.getItem('faly_dl') || '0';
+        }
+
+        function clearStatsCounters() {
+            if(confirm("Confirmez-vous la remise à zéro complète de vos compteurs statistiques locaux ?")) {
+                localStorage.setItem('faly_con', '0');
+                localStorage.setItem('faly_dl', '0');
+                refreshStatsDisplay();
             }
         }
 
@@ -327,372 +297,348 @@
             document.getElementById('stats-modal').classList.toggle('hidden');
         }
 
-        // --- ENREGISTREMENTS LOCAL STORAGE JEUNES ---
+        // APPLICATION LOGIQUE INITIALISATION
+        function initApp() {
+            renderFormulaireRubriques();
+            updateCV();
+        }
+
+        // TEXT CONVERTERS
+        function formatNom(el) { el.value = el.value.toUpperCase(); }
+        function formatPrenom(el) { 
+            if(el.value.length > 0) el.value = el.value.charAt(0).toUpperCase() + el.value.slice(1).toLowerCase();
+        }
+        function formatTitre(el) {
+            if(el.value.length > 0) el.value = el.value.charAt(0).toUpperCase() + el.value.slice(1);
+        }
+
+        // SAVE & LOAD FORM LOCAL DATA
         function sauvegarderDonnees() {
-            localStorage.setItem('cv_v2_structure', JSON.stringify(structureRubriques));
-            localStorage.setItem('cv_v2_data_items', JSON.stringify(dataStore));
-            localStorage.setItem('cv_v2_postevise', document.getElementById('input-poste-visé').value);
-            localStorage.setItem('cv_v2_nom', document.getElementById('input-nom').value);
-            localStorage.setItem('cv_v2_prenom', document.getElementById('input-prenom').value);
-            localStorage.setItem('cv_v2_phone', document.getElementById('input-telephone').value);
-            localStorage.setItem('cv_v2_email', document.getElementById('input-email').value);
-            localStorage.setItem('cv_v2_accroche', document.getElementById('input-accroche').value);
+            localStorage.setItem('cv_struct_v2', JSON.stringify(structureRubriques));
+            localStorage.setItem('cv_data_v2', JSON.stringify(dataStore));
+            localStorage.setItem('cv_i_poste', document.getElementById('input-poste-vise').value);
+            localStorage.setItem('cv_i_nom', document.getElementById('input-nom').value);
+            localStorage.setItem('cv_i_prenom', document.getElementById('input-prenom').value);
+            localStorage.setItem('cv_i_tel', document.getElementById('input-telephone').value);
+            localStorage.setItem('cv_i_mail', document.getElementById('input-email').value);
+            localStorage.setItem('cv_i_acc', document.getElementById('input-accroche').value);
         }
 
         function chargerDonneesLocales() {
-            if(localStorage.getItem('cv_v2_structure')) structureRubriques = JSON.parse(localStorage.getItem('cv_v2_structure'));
-            if(localStorage.getItem('cv_v2_data_items')) dataStore = JSON.parse(localStorage.getItem('cv_v2_data_items'));
+            if(localStorage.getItem('cv_struct_v2')) structureRubriques = JSON.parse(localStorage.getItem('cv_struct_v2'));
+            if(localStorage.getItem('cv_data_v2')) dataStore = JSON.parse(localStorage.getItem('cv_data_v2'));
             
-            if(document.getElementById('input-poste-visé')) {
-                document.getElementById('input-poste-visé').value = localStorage.getItem('cv_v2_postevise') || '';
-                document.getElementById('input-nom').value = localStorage.getItem('cv_v2_nom') || '';
-                document.getElementById('input-prenom').value = localStorage.getItem('cv_v2_prenom') || '';
-                document.getElementById('input-telephone').value = localStorage.getItem('cv_v2_phone') || '';
-                document.getElementById('input-email').value = localStorage.getItem('cv_v2_email') || '';
-                document.getElementById('input-accroche').value = localStorage.getItem('cv_v2_accroche') || '';
-            }
+            document.getElementById('input-poste-vise').value = localStorage.getItem('cv_i_poste') || '';
+            document.getElementById('input-nom').value = localStorage.getItem('cv_i_nom') || '';
+            document.getElementById('input-prenom').value = localStorage.getItem('cv_i_prenom') || '';
+            document.getElementById('input-telephone').value = localStorage.getItem('cv_i_tel') || '';
+            document.getElementById('input-email').value = localStorage.getItem('cv_i_mail') || '';
+            document.getElementById('input-accroche').value = localStorage.getItem('cv_i_acc') || '';
+            refreshStatsDisplay();
         }
 
         function reinitialiserFormulaire() {
-            if(confirm("⚠️ Attention : Êtes-vous sûr de vouloir effacer tout le formulaire ? Vos modifications locales seront perdues.")) {
-                let conn = localStorage.getItem('faly_local_conn');
-                let dl = localStorage.getItem('faly_local_dl');
+            if(confirm("⚠️ Avertissement : Voulez-vous vider tous les champs du formulaire ?")) {
+                let conBefore = localStorage.getItem('faly_con');
+                let dlBefore = localStorage.getItem('faly_dl');
                 localStorage.clear();
-                localStorage.setItem('faly_local_conn', conn);
-                localStorage.setItem('faly_local_dl', dl);
+                if(conBefore) localStorage.setItem('faly_con', conBefore);
+                if(dlBefore) localStorage.setItem('faly_dl', dlBefore);
                 location.reload();
             }
         }
 
-        // --- GESTION DYNAMIQUE DES LIGNES ET BLOCS ---
+        // GESTION BLOCS STRUCTURAUX
         function permuterRubrique(index, direction) {
             let cible = index + direction;
             if(cible >= 0 && cible < structureRubriques.length) {
-                let temp = structureRubriques[index];
+                let tmp = structureRubriques[index];
                 structureRubriques[index] = structureRubriques[cible];
-                structureRubriques[cible] = temp;
+                structureRubriques[cible] = tmp;
                 sauvegarderDonnees();
                 initApp();
             }
         }
 
-        function ajouterLigne(rubrique) {
-            let templates = {
+        function ajouterLigne(rub) {
+            let tpl = {
                 formations: {diplome: '', ecole: '', periode: ''},
                 experiences: {poste: '', entreprise: '', periode: '', missions: ''},
                 competences: {nom: '', niveau: 'Débutant'},
                 langues: {nom: '', niveau: 'Niveau scolaire'},
                 interets: {nom: '', description: ''}
             };
-            dataStore[rubrique].push({...templates[rubrique]});
+            dataStore[rub].push({...tpl[rub]});
             sauvegarderDonnees();
             initApp();
         }
 
-        function supprimerLigne(rubrique, index) {
-            if(dataStore[rubrique].length > 1) {
-                dataStore[rubrique].splice(index, 1);
+        function supprimerLigne(rub, index) {
+            if(dataStore[rub].length > 1) {
+                dataStore[rub].splice(index, 1);
             } else {
-                // Si c'est la seule ligne, on la vide simplement
-                Object.keys(dataStore[rubrique][0]).forEach(k => dataStore[rubrique][0][k] = k==='niveau'?'Débutant':'');
+                // reset de l'unique ligne restante au lieu de vider
+                let keys = Object.keys(dataStore[rub][0]);
+                keys.forEach(k => dataStore[rub][0][k] = k === 'niveau' ? (rub==='langues'?'Niveau scolaire':'Débutant') : '');
             }
             sauvegarderDonnees();
             initApp();
         }
 
-        function permuterLigne(rubrique, index, direction) {
+        function permuterLigne(rub, index, direction) {
             let cible = index + direction;
-            if(cible >= 0 && cible < dataStore[rubrique].length) {
-                let temp = dataStore[rubrique][index];
-                dataStore[rubrique][index] = dataStore[rubrique][cible];
-                dataStore[rubrique][cible] = temp;
+            if(cible >= 0 && cible < dataStore[rub].length) {
+                let tmp = dataStore[rub][index];
+                dataStore[rub][index] = dataStore[rub][cible];
+                dataStore[rub][cible] = tmp;
                 sauvegarderDonnees();
                 initApp();
             }
         }
 
-        function modifierChamp(rubrique, index, champ, valeur) {
-            dataStore[rubrique][index][champ] = valeur;
+        function modifierChamp(rub, index, champ, val) {
+            dataStore[rub][index][champ] = val;
             sauvegarderDonnees();
             updateCV();
         }
 
-        // RENDU HTML DES CHAMPS FORMULAIRES
+        // GENERATION INTERFACE DYNAMIQUE (FORMULAIRE)
         function renderFormulaireRubriques() {
             const container = document.getElementById('rubriques-container');
             container.innerHTML = '';
 
-            structureRubriques.forEach((rubriqueKey, idx) => {
-                let sectionHtml = '';
-                let headerBlock = `
-                    <div class="flex justify-between items-center bg-slate-100 p-2 rounded-lg mb-2">
-                        <span class="font-bold text-[11px] text-slate-700 uppercase tracking-wider">📦 Position Rubrique : ${rubriqueKey}</span>
+            structureRubriques.forEach((key, idx) => {
+                let html = `<div class="border border-slate-200 rounded-xl p-4 space-y-3 bg-white shadow-xs">
+                    <div class="flex justify-between items-center bg-slate-50 p-2 rounded-lg border">
+                        <span class="font-bold text-xs text-slate-600 uppercase tracking-wide">📦 Ordre de placement : ${key}</span>
                         <div class="flex gap-1">
-                            <button onclick="permuterRubrique(${idx}, -1)" class="px-2 py-0.5 text-xs bg-white rounded shadow text-slate-600 hover:bg-slate-50">▲</button>
-                            <button onclick="permuterRubrique(${idx}, 1)" class="px-2 py-0.5 text-xs bg-white rounded shadow text-slate-600 hover:bg-slate-50">▼</button>
+                            <button onclick="permuterRubrique(${idx}, -1)" class="px-2 py-0.5 text-xs bg-white border rounded shadow-xs">▲</button>
+                            <button onclick="permuterRubrique(${idx}, 1)" class="px-2 py-0.5 text-xs bg-white border rounded shadow-xs">▼</button>
                         </div>
                     </div>`;
 
-                if(rubriqueKey === 'formations') {
-                    sectionHtml += `<div class="border border-slate-200 rounded-xl p-4 space-y-3 bg-white shadow-xs">
-                        ${headerBlock} <h3 class="text-sm font-bold text-slate-800">Formations & Diplômes</h3>
-                        <div class="space-y-3">`;
+                if(key === 'formations') {
+                    html += `<h3 class="font-bold text-sm text-slate-800">Formations & Diplômes</h3><div class="space-y-3">`;
                     dataStore.formations.forEach((item, index) => {
-                        sectionHtml += `
-                            <div class="p-3 bg-slate-50/60 rounded-lg border border-slate-200/60 space-y-2 relative">
-                                <div class="flex justify-between items-center text-xs text-slate-500 font-bold mb-1">
-                                    <span>Ligne #${index+1}</span>
-                                    <div class="flex gap-1">
-                                        <button onclick="permuterLigne('formations', ${index}, -1)" class="px-1.5 py-0.5 bg-white border rounded">▲</button>
-                                        <button onclick="permuterLigne('formations', ${index}, 1)" class="px-1.5 py-0.5 bg-white border rounded">▼</button>
-                                        <button onclick="supprimerLigne('formations', ${index})" class="px-1.5 py-0.5 bg-rose-50 text-rose-600 border rounded hover:bg-rose-100">🗑️</button>
-                                    </div>
+                        html += `<div class="p-3 bg-slate-50/50 rounded-lg border space-y-2 relative">
+                            <div class="flex justify-between items-center text-[10px] font-bold text-slate-400">
+                                <span># Ligne ${index+1}</span>
+                                <div class="flex gap-1">
+                                    <button onclick="permuterLigne('formations', ${index}, -1)" class="px-1 border bg-white">▲</button>
+                                    <button onclick="permuterLigne('formations', ${index}, 1)" class="px-1 border bg-white">▼</button>
+                                    <button onclick="supprimerLigne('formations', ${index})" class="px-1 border bg-rose-50 text-rose-600">🗑️</button>
                                 </div>
-                                <input type="text" placeholder="Diplôme" value="${item.diplome}" oninput="modifierChamp('formations', ${index}, 'diplome', this.value)" class="w-full p-2 border border-slate-200 bg-white rounded-lg text-xs">
-                                <input type="text" placeholder="Nom de l'établissement, ville (département, pays)" value="${item.ecole}" oninput="modifierChamp('formations', ${index}, 'ecole', this.value)" class="w-full p-2 border border-slate-200 bg-white rounded-lg text-xs">
-                                <input type="text" placeholder="Période (ex: 2020-2021)" value="${item.periode}" oninput="modifierChamp('formations', ${index}, 'periode', this.value)" class="w-full p-2 border border-slate-200 bg-white rounded-lg text-xs">
-                            </div>`;
+                            </div>
+                            <input type="text" placeholder="Diplôme obtenu" value="${item.diplome}" oninput="modifierChamp('formations', ${index}, 'diplome', this.value)" class="w-full p-2 border bg-white rounded text-xs">
+                            <input type="text" placeholder="Établissement, Ville (Département)" value="${item.ecole}" oninput="modifierChamp('formations', ${index}, 'ecole', this.value)" class="w-full p-2 border bg-white rounded text-xs">
+                            <input type="text" placeholder="Période (ex: 2020-2021)" value="${item.periode}" oninput="modifierChamp('formations', ${index}, 'periode', this.value)" class="w-full p-2 border bg-white rounded text-xs">
+                        </div>`;
                     });
-                    sectionHtml += `</div><button onclick="ajouterLigne('formations')" class="w-full py-1.5 bg-violet-50 text-violet-600 rounded-lg text-xs font-bold hover:bg-violet-100">+ Ajouter une ligne formation</button></div>`;
+                    html += `</div><button onclick="ajouterLigne('formations')" class="w-full py-1.5 bg-violet-50 text-violet-600 rounded font-semibold text-xs">+ Ajouter une ligne</button>`;
                 }
 
-                else if(rubriqueKey === 'experiences') {
-                    sectionHtml += `<div class="border border-slate-200 rounded-xl p-4 space-y-3 bg-white shadow-xs">
-                        ${headerBlock} <h3 class="text-sm font-bold text-slate-800">Expériences professionnelles</h3>
-                        <div class="space-y-3">`;
+                else if(key === 'experiences') {
+                    html += `<h3 class="font-bold text-sm text-slate-800">Expériences professionnelles</h3><div class="space-y-3">`;
                     dataStore.experiences.forEach((item, index) => {
-                        sectionHtml += `
-                            <div class="p-3 bg-slate-50/60 rounded-lg border border-slate-200/60 space-y-2">
-                                <div class="flex justify-between items-center text-xs text-slate-500 font-bold mb-1">
-                                    <span>Ligne #${index+1}</span>
-                                    <div class="flex gap-1">
-                                        <button onclick="permuterLigne('experiences', ${index}, -1)" class="px-1.5 py-0.5 bg-white border rounded">▲</button>
-                                        <button onclick="permuterLigne('experiences', ${index}, 1)" class="px-1.5 py-0.5 bg-white border rounded">▼</button>
-                                        <button onclick="supprimerLigne('experiences', ${index})" class="px-1.5 py-0.5 bg-rose-50 text-rose-600 border rounded hover:bg-rose-100">🗑️</button>
-                                    </div>
+                        html += `<div class="p-3 bg-slate-50/50 rounded-lg border space-y-2 relative">
+                            <div class="flex justify-between items-center text-[10px] font-bold text-slate-400">
+                                <span># Ligne ${index+1}</span>
+                                <div class="flex gap-1">
+                                    <button onclick="permuterLigne('experiences', ${index}, -1)" class="px-1 border bg-white">▲</button>
+                                    <button onclick="permuterLigne('experiences', ${index}, 1)" class="px-1 border bg-white">▼</button>
+                                    <button onclick="supprimerLigne('experiences', ${index})" class="px-1 border bg-rose-50 text-rose-600">🗑️</button>
                                 </div>
-                                <input type="text" placeholder="Intitulé du poste" value="${item.poste}" oninput="modifierChamp('experiences', ${index}, 'poste', this.value)" class="w-full p-2 border border-slate-200 bg-white rounded-lg text-xs">
-                                <input type="text" placeholder="Nom de l'entreprise, ville (département, pays)" value="${item.entreprise}" oninput="modifierChamp('experiences', ${index}, 'entreprise', this.value)" class="w-full p-2 border border-slate-200 bg-white rounded-lg text-xs">
-                                <input type="text" placeholder="Période (ex: 2020-2021)" value="${item.periode}" oninput="modifierChamp('experiences', ${index}, 'periode', this.value)" class="w-full p-2 border border-slate-200 bg-white rounded-lg text-xs">
-                                <textarea placeholder="Missions (un retour à la ligne crée une puce automatiquement)" oninput="modifierChamp('experiences', ${index}, 'missions', this.value)" rows="2" class="w-full p-2 border border-slate-200 bg-white rounded-lg text-xs">${item.missions}</textarea>
-                            </div>`;
+                            </div>
+                            <input type="text" placeholder="Intitulé du poste" value="${item.poste}" oninput="modifierChamp('experiences', ${index}, 'poste', this.value)" class="w-full p-2 border bg-white rounded text-xs">
+                            <input type="text" placeholder="Entreprise, Ville (Département)" value="${item.entreprise}" oninput="modifierChamp('experiences', ${index}, 'entreprise', this.value)" class="w-full p-2 border bg-white rounded text-xs">
+                            <input type="text" placeholder="Période (ex: 2022)" value="${item.periode}" oninput="modifierChamp('experiences', ${index}, 'periode', this.value)" class="w-full p-2 border bg-white rounded text-xs">
+                            <textarea placeholder="Missions (Saut de ligne = puce automatique)" oninput="modifierChamp('experiences', ${index}, 'missions', this.value)" rows="2" class="w-full p-2 border bg-white rounded text-xs">${item.missions}</textarea>
+                        </div>`;
                     });
-                    sectionHtml += `</div><button onclick="ajouterLigne('experiences')" class="w-full py-1.5 bg-violet-50 text-violet-600 rounded-lg text-xs font-bold hover:bg-violet-100">+ Ajouter une ligne expérience</button></div>`;
+                    html += `</div><button onclick="ajouterLigne('experiences')" class="w-full py-1.5 bg-violet-50 text-violet-600 rounded font-semibold text-xs">+ Ajouter une ligne</button>`;
                 }
 
-                else if(rubriqueKey === 'competences') {
-                    sectionHtml += `<div class="border border-slate-200 rounded-xl p-4 space-y-3 bg-white shadow-xs">
-                        ${headerBlock} <h3 class="text-sm font-bold text-slate-800">Compétences techniques</h3>
-                        <div class="space-y-3">`;
+                else if(key === 'competences') {
+                    html += `<h3 class="font-bold text-sm text-slate-800">Compétences techniques</h3><div class="space-y-3">`;
                     dataStore.competences.forEach((item, index) => {
-                        sectionHtml += `
-                            <div class="p-3 bg-slate-50/50 rounded-lg border border-slate-200/60 space-y-2">
-                                <div class="flex justify-between items-center text-xs text-slate-500 font-bold mb-1">
-                                    <span>Ligne #${index+1}</span>
-                                    <div class="flex gap-1">
-                                        <button onclick="permuterLigne('competences', ${index}, -1)" class="px-1.5 py-0.5 bg-white border rounded">▲</button>
-                                        <button onclick="permuterLigne('competences', ${index}, 1)" class="px-1.5 py-0.5 bg-white border rounded">▼</button>
-                                        <button onclick="supprimerLigne('competences', ${index})" class="px-1.5 py-0.5 bg-rose-50 text-rose-600 border rounded hover:bg-rose-100">🗑️</button>
-                                    </div>
+                        html += `<div class="p-3 bg-slate-50/50 rounded-lg border space-y-2">
+                            <div class="flex justify-between items-center text-[10px] font-bold text-slate-400">
+                                <span># Ligne ${index+1}</span>
+                                <div class="flex gap-1">
+                                    <button onclick="permuterLigne('competences', ${index}, -1)" class="px-1 border bg-white">▲</button>
+                                    <button onclick="permuterLigne('competences', ${index}, 1)" class="px-1 border bg-white">▼</button>
+                                    <button onclick="supprimerLigne('competences', ${index})" class="px-1 border bg-rose-50 text-rose-600">🗑️</button>
                                 </div>
-                                <input type="text" placeholder="Nom de la compétence" value="${item.nom}" oninput="modifierChamp('competences', ${index}, 'nom', this.value)" class="w-full p-2 border border-slate-200 bg-white rounded-lg text-xs">
-                                <select onchange="modifierChamp('competences', ${index}, 'niveau', this.value)" class="w-full p-2 border border-slate-200 bg-white rounded-lg text-xs">
-                                    <option ${item.niveau === 'Initiation' ? 'selected':''}>Initiation</option>
-                                    <option ${item.niveau === 'Débutant' ? 'selected':''}>Débutant</option>
-                                    <option ${item.niveau === 'Compétences professionnelles limitées' ? 'selected':''}>Compétences professionnelles limitées</option>
-                                    <option ${item.niveau === 'Compétences professionnelles complètes' ? 'selected':''}>Compétences professionnelles complètes</option>
-                                    <option ${item.niveau === 'Expert' ? 'selected':''}>Expert</option>
-                                </select>
-                            </div>`;
+                            </div>
+                            <input type="text" placeholder="Compétence technique" value="${item.nom}" oninput="modifierChamp('competences', ${index}, 'nom', this.value)" class="w-full p-2 border bg-white rounded text-xs">
+                            <select onchange="modifierChamp('competences', ${index}, 'niveau', this.value)" class="w-full p-2 border bg-white rounded text-xs">
+                                <option ${item.niveau==='Initiation'?'selected':''}>Initiation</option>
+                                <option ${item.niveau==='Débutant'?'selected':''}>Débutant</option>
+                                <option ${item.niveau==='Compétences professionnelles limitées'?'selected':''}>Compétences professionnelles limitées</option>
+                                <option ${item.niveau==='Compétences professionnelles complètes'?'selected':''}>Compétences professionnelles complètes</option>
+                                <option ${item.niveau==='Expert'?'selected':''}>Expert</option>
+                            </select>
+                        </div>`;
                     });
-                    sectionHtml += `</div><button onclick="ajouterLigne('competences')" class="w-full py-1.5 bg-violet-50 text-violet-600 rounded-lg text-xs font-bold hover:bg-violet-100">+ Ajouter une compétence</button></div>`;
+                    html += `</div><button onclick="ajouterLigne('competences')" class="w-full py-1.5 bg-violet-50 text-violet-600 rounded font-semibold text-xs">+ Ajouter une ligne</button>`;
                 }
 
-                else if(rubriqueKey === 'langues') {
-                    sectionHtml += `<div class="border border-slate-200 rounded-xl p-4 space-y-3 bg-white shadow-xs">
-                        ${headerBlock} <h3 class="text-sm font-bold text-slate-800">Compétences linguistiques</h3>
-                        <div class="space-y-3">`;
+                else if(key === 'langues') {
+                    html += `<h3 class="font-bold text-sm text-slate-800">Compétences linguistiques</h3><div class="space-y-3">`;
                     dataStore.langues.forEach((item, index) => {
-                        sectionHtml += `
-                            <div class="p-3 bg-slate-50/50 rounded-lg border border-slate-200/60 space-y-2">
-                                <div class="flex justify-between items-center text-xs text-slate-500 font-bold mb-1">
-                                    <span>Ligne #${index+1}</span>
-                                    <div class="flex gap-1">
-                                        <button onclick="permuterLigne('langues', ${index}, -1)" class="px-1.5 py-0.5 bg-white border rounded">▲</button>
-                                        <button onclick="permuterLigne('langues', ${index}, 1)" class="px-1.5 py-0.5 bg-white border rounded">▼</button>
-                                        <button onclick="supprimerLigne('langues', ${index})" class="px-1.5 py-0.5 bg-rose-50 text-rose-600 border rounded hover:bg-rose-100">🗑️</button>
-                                    </div>
+                        html += `<div class="p-3 bg-slate-50/50 rounded-lg border space-y-2">
+                            <div class="flex justify-between items-center text-[10px] font-bold text-slate-400">
+                                <span># Ligne ${index+1}</span>
+                                <div class="flex gap-1">
+                                    <button onclick="permuterLigne('langues', ${index}, -1)" class="px-1 border bg-white">▲</button>
+                                    <button onclick="permuterLigne('langues', ${index}, 1)" class="px-1 border bg-white">▼</button>
+                                    <button onclick="supprimerLigne('langues', ${index})" class="px-1 border bg-rose-50 text-rose-600">🗑️</button>
                                 </div>
-                                <input type="text" placeholder="Langue" value="${item.nom}" oninput="modifierChamp('langues', ${index}, 'nom', this.value)" class="w-full p-2 border border-slate-200 bg-white rounded-lg text-xs">
-                                <select onchange="modifierChamp('langues', ${index}, 'niveau', this.value)" class="w-full p-2 border border-slate-200 bg-white rounded-lg text-xs">
-                                    <option ${item.niveau === 'Initiation' ? 'selected':''}>Initiation</option>
-                                    <option ${item.niveau === 'Débutant' ? 'selected':''}>Débutant</option>
-                                    <option ${item.niveau === 'Niveau scolaire' ? 'selected':''}>Niveau scolaire</option>
-                                    <option ${item.niveau === 'Compétences professionnelles limitées' ? 'selected':''}>Compétences professionnelles limitées</option>
-                                    <option ${item.niveau === 'Compétences professionnelles complètes' ? 'selected':''}>Compétences professionnelles complètes</option>
-                                    <option ${item.niveau === 'Bilingue' ? 'selected':''}>Bilingue</option>
-                                    <option ${item.niveau === 'Langue maternelle' ? 'selected':''}>Langue maternelle</option>
-                                </select>
-                            </div>`;
+                            </div>
+                            <input type="text" placeholder="Langue" value="${item.nom}" oninput="modifierChamp('langues', ${index}, 'nom', this.value)" class="w-full p-2 border bg-white rounded text-xs">
+                            <select onchange="modifierChamp('langues', ${index}, 'niveau', this.value)" class="w-full p-2 border bg-white rounded text-xs">
+                                <option ${item.niveau==='Initiation'?'selected':''}>Initiation</option>
+                                <option ${item.niveau==='Débutant'?'selected':''}>Débutant</option>
+                                <option ${item.niveau==='Niveau scolaire'?'selected':''}>Niveau scolaire</option>
+                                <option ${item.niveau==='Compétences professionnelles limitées'?'selected':''}>Compétences professionnelles limitées</option>
+                                <option ${item.niveau==='Compétences professionnelles complètes'?'selected':''}>Compétences professionnelles complètes</option>
+                                <option ${item.niveau==='Bilingue'?'selected':''}>Bilingue</option>
+                                <option ${item.niveau==='Langue maternelle'?'selected':''}>Langue maternelle</option>
+                            </select>
+                        </div>`;
                     });
-                    sectionHtml += `</div><button onclick="ajouterLigne('langues')" class="w-full py-1.5 bg-violet-50 text-violet-600 rounded-lg text-xs font-bold hover:bg-violet-100">+ Ajouter une langue</button></div>`;
+                    html += `</div><button onclick="ajouterLigne('langues')" class="w-full py-1.5 bg-violet-50 text-violet-600 rounded font-semibold text-xs">+ Ajouter une ligne</button>`;
                 }
 
-                else if(rubriqueKey === 'interets') {
-                    sectionHtml += `<div class="border border-slate-200 rounded-xl p-4 space-y-3 bg-white shadow-xs">
-                        ${headerBlock} <h3 class="text-sm font-bold text-slate-800">Centres d'intérêts</h3>
-                        <div class="space-y-3">`;
+                else if(key === 'interets') {
+                    html += `<h3 class="font-bold text-sm text-slate-800">Centres d'intérêts</h3><div class="space-y-3">`;
                     dataStore.interets.forEach((item, index) => {
-                        sectionHtml += `
-                            <div class="p-3 bg-slate-50/50 rounded-lg border border-slate-200/60 space-y-2">
-                                <div class="flex justify-between items-center text-xs text-slate-500 font-bold mb-1">
-                                    <span>Ligne #${index+1}</span>
-                                    <div class="flex gap-1">
-                                        <button onclick="permuterLigne('interets', ${index}, -1)" class="px-1.5 py-0.5 bg-white border rounded">▲</button>
-                                        <button onclick="permuterLigne('interets', ${index}, 1)" class="px-1.5 py-0.5 bg-white border rounded">▼</button>
-                                        <button onclick="supprimerLigne('interets', ${index})" class="px-1.5 py-0.5 bg-rose-50 text-rose-600 border rounded hover:bg-rose-100">🗑️</button>
-                                    </div>
+                        html += `<div class="p-3 bg-slate-50/50 rounded-lg border space-y-2">
+                            <div class="flex justify-between items-center text-[10px] font-bold text-slate-400">
+                                <span># Ligne ${index+1}</span>
+                                <div class="flex gap-1">
+                                    <button onclick="permuterLigne('interets', ${index}, -1)" class="px-1 border bg-white">▲</button>
+                                    <button onclick="permuterLigne('interets', ${index}, 1)" class="px-1 border bg-white">▼</button>
+                                    <button onclick="supprimerLigne('interets', ${index})" class="px-1 border bg-rose-50 text-rose-600">🗑️</button>
                                 </div>
-                                <input type="text" placeholder="Activité / Loisir" value="${item.nom}" oninput="modifierChamp('interets', ${index}, 'nom', this.value)" class="w-full p-2 border border-slate-200 bg-white rounded-lg text-xs">
-                                <textarea placeholder="Description (un retour d'une ligne génère automatiquement une puce)" oninput="modifierChamp('interets', ${index}, 'description', this.value)" rows="2" class="w-full p-2 border border-slate-200 bg-white rounded-lg text-xs">${item.description}</textarea>
-                            </div>`;
+                            </div>
+                            <input type="text" placeholder="Loisir / Intérêt" value="${item.nom}" oninput="modifierChamp('interets', ${index}, 'nom', this.value)" class="w-full p-2 border border-slate-200 bg-white rounded text-xs">
+                            <textarea placeholder="Description courte (Saut de ligne = puces)" oninput="modifierChamp('interets', ${index}, 'description', this.value)" rows="1" class="w-full p-2 border border-slate-200 bg-white rounded text-xs">${item.description}</textarea>
+                        </div>`;
                     });
-                    sectionHtml += `</div><button onclick="ajouterLigne('interets')" class="w-full py-1.5 bg-violet-50 text-violet-600 rounded-lg text-xs font-bold hover:bg-violet-100">+ Ajouter un centre d'intérêt</button></div>`;
+                    html += `</div><button onclick="ajouterLigne('interets')" class="w-full py-1.5 bg-violet-50 text-violet-600 rounded font-semibold text-xs">+ Ajouter une ligne</button>`;
                 }
 
-                container.innerHTML += sectionHtml;
+                html += `</div>`;
+                container.innerHTML += html;
             });
         }
 
-        function genererListePuces(text) {
-            if (!text || text.trim() === "") return "";
-            let puces = text.split('\n').filter(line => line.trim() !== "");
-            return `<ul class="list-disc pl-4 mt-0.5 text-slate-600 text-[10px] space-y-0.5">` + 
-                   puces.map(p => `<li>${p}</li>`).join('') + `</ul>`;
+        // RENDU DE L'APERÇU GRAPHIQUE DU CV A4
+        function renderBulletPoints(str) {
+            if(!str || str.trim() === '') return '';
+            let lines = str.split('\n').filter(l => l.trim() !== '');
+            return `<ul class="list-disc pl-3 text-[10px] text-slate-600 space-y-0.5 mt-0.5">` + lines.map(l => `<li>${l}</li>`).join('') + `</ul>`;
         }
 
-        // SYNCHRONISATION EN TEMPS RÉEL VERS L'APERÇU A4
         function updateCV() {
-            if(!document.getElementById('input-nom')) return;
-
             document.getElementById('cv-nom').innerText = document.getElementById('input-nom').value || 'NOM';
             document.getElementById('cv-prenom').innerText = document.getElementById('input-prenom').value || 'Prénom';
-            document.getElementById('cv-poste-preview').innerText = document.getElementById('input-poste-visé').value || 'POSTE RECHERCHÉ';
+            document.getElementById('cv-poste-preview').innerText = document.getElementById('input-poste-vise').value || 'INTITULÉ DE POSTE RECHERCHÉ';
+            document.getElementById('cv-accroche-preview').innerText = document.getElementById('input-accroche').value || '';
             document.getElementById('cv-phone-preview').innerText = document.getElementById('input-telephone').value ? '📞 ' + document.getElementById('input-telephone').value : '';
             document.getElementById('cv-email-preview').innerText = document.getElementById('input-email').value ? '✉️ ' + document.getElementById('input-email').value : '';
-            document.getElementById('cv-accroche-preview').innerText = document.getElementById('input-accroche').value || '';
 
             const renderZone = document.getElementById('cv-blocks-render');
             renderZone.innerHTML = '';
 
-            structureRubriques.forEach(rubriqueKey => {
-                let blockHtml = '';
+            structureRubriques.forEach(key => {
+                let code = '';
 
-                if (rubriqueKey === 'formations' && dataStore.formations.some(i => i.diplome || i.ecole)) {
-                    blockHtml += `<div class="space-y-1">
-                        <h3 class="text-[11px] font-bold text-violet-600 uppercase tracking-wider border-b pb-0.5">Formations & Diplômes</h3>
-                        <div class="space-y-1.5">`;
-                    dataStore.formations.forEach(item => {
-                        if(item.diplome || item.ecole) {
-                            blockHtml += `<div class="flex justify-between items-start text-[10px]">
-                                <div>
-                                    <span class="font-bold text-slate-800">${item.diplome}</span>
-                                    <span class="text-slate-500 block">${item.ecole}</span>
-                                </div>
-                                <span class="text-slate-400 font-semibold text-[9px] whitespace-nowrap">${item.periode}</span>
+                if(key === 'formations' && dataStore.formations.some(i => i.diplome || i.ecole)) {
+                    code += `<div class="space-y-1"><h3 class="text-[11px] font-black text-violet-600 uppercase tracking-wider border-b border-slate-200 pb-0.5">Formations & Diplômes</h3><div class="space-y-1.5">`;
+                    dataStore.formations.forEach(i => {
+                        if(i.diplome || i.ecole) {
+                            code += `<div class="flex justify-between items-start text-[10px] leading-tight">
+                                <div><span class="font-bold text-slate-800">${i.diplome}</span><span class="text-slate-500 block">${i.ecole}</span></div>
+                                <span class="text-slate-400 font-bold whitespace-nowrap">${i.periode}</span>
                             </div>`;
                         }
                     });
-                    blockHtml += `</div></div>`;
+                    code += `</div></div>`;
                 }
 
-                else if (rubriqueKey === 'experiences' && dataStore.experiences.some(i => i.poste || i.entreprise)) {
-                    blockHtml += `<div class="space-y-1">
-                        <h3 class="text-[11px] font-bold text-violet-600 uppercase tracking-wider border-b pb-0.5">Expériences Professionnelles</h3>
-                        <div class="space-y-2">`;
-                    dataStore.experiences.forEach(item => {
-                        if(item.poste || item.entreprise) {
-                            let sep = (item.poste && item.entreprise) ? " - " : "";
-                            blockHtml += `<div class="space-y-0.5">
+                else if(key === 'experiences' && dataStore.experiences.some(i => i.poste || i.entreprise)) {
+                    code += `<div class="space-y-1"><h3 class="text-[11px] font-black text-violet-600 uppercase tracking-wider border-b border-slate-200 pb-0.5">Expériences professionnelles</h3><div class="space-y-2">`;
+                    dataStore.experiences.forEach(i => {
+                        if(i.poste || i.entreprise) {
+                            let sep = (i.poste && i.entreprise) ? " - " : "";
+                            code += `<div class="leading-tight">
                                 <div class="flex justify-between items-start text-[10px]">
-                                    <span class="font-bold text-slate-800">${item.poste}${sep}${item.entreprise}</span>
-                                    <span class="text-slate-400 font-semibold text-[9px] whitespace-nowrap">${item.periode}</span>
+                                    <span class="font-bold text-slate-800">${i.poste}${sep}${i.entreprise}</span>
+                                    <span class="text-slate-400 font-bold whitespace-nowrap">${i.periode}</span>
                                 </div>
-                                ${genererListePuces(item.missions)}
+                                ${renderBulletPoints(i.missions)}
                             </div>`;
                         }
                     });
-                    blockHtml += `</div></div>`;
+                    code += `</div></div>`;
                 }
 
-                else if (rubriqueKey === 'competences' && dataStore.competences.some(i => i.nom)) {
-                    blockHtml += `<div class="space-y-1">
-                        <h3 class="text-[11px] font-bold text-violet-600 uppercase tracking-wider border-b pb-0.5">Compétences Techniques</h3>
-                        <div class="grid grid-cols-2 gap-x-4 gap-y-0.5 text-[10px]">`;
-                    dataStore.competences.forEach(item => {
-                        if(item.nom) {
-                            blockHtml += `<div class="flex justify-between border-b border-slate-100 py-0.5">
-                                <span class="font-medium text-slate-700">${item.nom}</span>
-                                <span class="text-violet-500 font-bold italic text-[9px]">${item.niveau}</span>
-                            </div>`;
+                else if(key === 'competences' && dataStore.competences.some(i => i.nom)) {
+                    code += `<div class="space-y-1"><h3 class="text-[11px] font-black text-violet-600 uppercase tracking-wider border-b border-slate-200 pb-0.5">Compétences techniques</h3><div class="grid grid-cols-2 gap-x-4 gap-y-0.5 text-[10px]">`;
+                    dataStore.competences.forEach(i => {
+                        if(i.nom) {
+                            code += `<div class="flex justify-between border-b border-slate-100 py-0.5"><span class="font-medium text-slate-700">${i.nom}</span><span class="text-violet-600 font-bold italic">${i.niveau}</span></div>`;
                         }
                     });
-                    blockHtml += `</div></div>`;
+                    code += `</div></div>`;
                 }
 
-                else if (rubriqueKey === 'langues' && dataStore.langues.some(i => i.nom)) {
-                    blockHtml += `<div class="space-y-1">
-                        <h3 class="text-[11px] font-bold text-violet-600 uppercase tracking-wider border-b pb-0.5">Compétences Linguistiques</h3>
-                        <div class="grid grid-cols-2 gap-x-4 gap-y-0.5 text-[10px]">`;
-                    dataStore.langues.forEach(item => {
-                        if(item.nom) {
-                            blockHtml += `<div class="flex justify-between border-b border-slate-100 py-0.5">
-                                <span class="font-medium text-slate-700">${item.nom}</span>
-                                <span class="text-slate-500 italic text-[9px]">${item.niveau}</span>
-                            </div>`;
+                else if(key === 'langues' && dataStore.langues.some(i => i.nom)) {
+                    code += `<div class="space-y-1"><h3 class="text-[11px] font-black text-violet-600 uppercase tracking-wider border-b border-slate-200 pb-0.5">Compétences linguistiques</h3><div class="grid grid-cols-2 gap-x-4 gap-y-0.5 text-[10px]">`;
+                    dataStore.langues.forEach(i => {
+                        if(i.nom) {
+                            code += `<div class="flex justify-between border-b border-slate-100 py-0.5"><span class="font-medium text-slate-700">${i.nom}</span><span class="text-slate-500 font-medium">${i.niveau}</span></div>`;
                         }
                     });
-                    blockHtml += `</div></div>`;
+                    code += `</div></div>`;
                 }
 
-                else if (rubriqueKey === 'interets' && dataStore.interets.some(i => i.nom)) {
-                    blockHtml += `<div class="space-y-1">
-                        <h3 class="text-[11px] font-bold text-violet-600 uppercase tracking-wider border-b pb-0.5">Centres d'intérêts</h3>
-                        <div class="space-y-1.5">`;
-                    dataStore.interets.forEach(item => {
-                        if(item.nom) {
-                            blockHtml += `<div class="text-[10px]">
-                                <span class="font-bold text-slate-700 block">${item.nom}</span>
-                                ${genererListePuces(item.description)}
-                            </div>`;
+                // RENDU DEMANDÉ : GRILLE ALTERNÉE DROITE / GAUCHE POUR LES CENTRES D'INTÉRÊTS
+                else if(key === 'interets' && dataStore.interets.some(i => i.nom)) {
+                    code += `<div class="space-y-1"><h3 class="text-[11px] font-black text-violet-600 uppercase tracking-wider border-b border-slate-200 pb-0.5">Centres d'intérêts</h3><div class="grid grid-cols-2 gap-x-4 gap-y-2">`;
+                    dataStore.interets.forEach(i => {
+                        if(i.nom) {
+                            code += `<div class="text-[10px] leading-tight"><span class="font-bold text-slate-800 block">${i.nom}</span>${renderBulletPoints(i.description)}</div>`;
                         }
                     });
-                    blockHtml += `</div></div>`;
+                    code += `</div></div>`;
                 }
 
-                renderZone.innerHTML += blockHtml;
+                renderZone.innerHTML += code;
             });
-            
+
             sauvegarderDonnees();
         }
 
-        // EXPORTATION STRICTE PDF SUR 1 PAGE UNIQUE A4
+        // GENERATION LOCALE PDF (PROPRE & FORCE 1 PAGE STRICT)
         function genererPDF() {
             const element = document.getElementById('cv-document');
-            const nom = document.getElementById('input-nom').value || 'CV';
-            const prenom = document.getElementById('input-prenom').value || 'Express';
+            const n = document.getElementById('input-nom').value || 'CV';
+            const p = document.getElementById('input-prenom').value || 'Express';
             
-            const options = {
+            const opt = {
                 margin: 0,
-                filename: `CV_${prenom}_${nom}.pdf`,
-                image: { type: 'jpeg', quality: 1.0 },
-                html2canvas: { scale: 3, useCORS: true, letterRendering: true },
-                jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
-                pagebreak: { mode: 'avoid' } // Empêche le découpage automatique sur deux pages
+                filename: `CV_${p}_${n}.pdf`,
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { scale: 2.5, useCORS: true, letterRendering: true, logging: false },
+                jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
             };
 
-            html2pdf().set(options).from(element).save().then(() => {
-                envoyerStatSupabase('telechargement');
+            html2pdf().set(opt).from(element).save().then(() => {
+                logStatToSupabase("telechargement");
+                gererCompteursLocaux("download");
             });
         }
     </script>
