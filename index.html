@@ -4,454 +4,696 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Mon CV express</title>
-    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght=300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;900&display=swap" rel="stylesheet">
     <style>
         body { font-family: 'Inter', sans-serif; }
-        .cv-strict-a4 {
+        @media print { .no-print { display: none; } }
+        
+        /* Conteneur pour forcer le rendu strict A4 à l'écran et en impression */
+        .cv-a4-page {
             width: 210mm;
+            height: 297mm;
             min-height: 297mm;
             max-height: 297mm;
-            padding: 20mm;
-            box-sizing: border-box;
-            background-color: #ffffff;
+            background: white;
+            padding: 15mm 12mm;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
             position: relative;
+            box-sizing: border-box;
             overflow: hidden;
         }
-        .preview-scale-container { overflow-x: auto; }
+
+        /* Hack CSS intelligent pour l'affichage adaptatif sur mobile (A4 proportionnel) */
+        @media (max-width: 1024px) {
+            .cv-scaler {
+                transform: scale(0.65);
+                transform-origin: top center;
+            }
+            .cv-scaler-wrapper {
+                height: 200mm;
+            }
+        }
+        @media (max-width: 640px) {
+            .cv-scaler {
+                transform: scale(0.42);
+                transform-origin: top center;
+            }
+            .cv-scaler-wrapper {
+                height: 130mm;
+            }
+        }
     </style>
 </head>
-<body class="bg-slate-50 text-slate-800 min-h-screen pb-12">
+<body class="bg-slate-100 text-slate-800 min-h-screen flex flex-col">
 
-    <div id="authOverlay" class="fixed inset-0 bg-slate-900 flex items-center justify-center z-50 p-4">
-        <div class="bg-white p-8 rounded-2xl shadow-xl max-w-md w-full text-center border border-slate-100">
-            <div class="w-16 h-16 bg-teal-50 text-teal-600 rounded-full flex items-center justify-center text-2xl mx-auto mb-4">🔒</div>
-            <h2 class="text-xl font-bold text-slate-900 mb-2">Espace Protégé</h2>
-            <p class="text-slate-500 text-sm mb-6">Veuillez saisir le code d'accès fourni par votre conseiller pour utiliser le générateur de CV.</p>
-            
-            <form onsubmit="checkAuth(event)" class="space-y-4">
-                <div>
-                    <input type="password" id="accessCodeInput" class="w-full p-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-500 bg-slate-50/50 text-center text-lg font-semibold tracking-widest uppercase" placeholder="••••••••" required>
-                </div>
-                <div id="authError" class="text-rose-600 text-xs font-medium hidden">❌ Code d'accès incorrect. Réessayez.</div>
-                <button type="submit" class="w-full py-3 bg-teal-600 hover:bg-teal-700 text-white font-semibold rounded-xl shadow-sm transition cursor-pointer">Valider et Entrer</button>
-            </form>
-            
-            <p class="text-xs text-slate-500 mt-5 pt-4 border-t border-slate-100">
-                💡 Un problème pour vous connecter ?<br>Contactez nous à <a href="mailto:faly.contact@gmail.com" class="text-teal-600 font-medium hover:underline">faly.contact@gmail.com</a>
-            </p>
-            
-            <p class="text-[10px] text-slate-400 mt-6 tracking-wide uppercase">Mon CV express — Idée originale de Faly R.<button onclick="openStatsModal()" class="hover:text-teal-500 cursor-pointer focus:outline-none">®</button></p>
-        </div>
-    </div>
-
-    <div id="statsModal" class="fixed inset-0 bg-slate-950/80 hidden items-center justify-center z-50 p-4">
-        <div class="bg-white p-6 rounded-2xl shadow-2xl max-w-lg w-full max-h-[80vh] flex flex-col">
-            <div class="flex justify-between items-center pb-3 border-b border-slate-100 mb-4">
-                <h3 class="text-lg font-bold text-slate-900">📊 Tableau de bord - Suivi de l'application</h3>
-                <button onclick="closeStatsModal()" class="text-slate-400 hover:text-slate-600 text-xl cursor-pointer">✕</button>
+    <div id="login-screen" class="fixed inset-0 bg-slate-900 z-50 flex flex-col items-center justify-center p-4">
+        <div class="bg-white p-8 rounded-2xl shadow-2xl max-w-md w-full text-center space-y-6 border border-slate-200">
+            <div>
+                <span class="inline-block bg-amber-100 text-amber-700 font-semibold text-xs px-3 py-1 rounded-full uppercase tracking-wider mb-2">🔒 Espace protégé</span>
+                <h2 class="text-2xl font-bold text-slate-900">Connexion requise</h2>
+                <p class="text-xs text-slate-500 mt-2 leading-relaxed">
+                    Veuillez saisir le code d'accès fourni par votre contact pour accéder à votre outil de création de CV express.
+                </p>
             </div>
-            <div class="overflow-y-auto flex-1 space-y-4">
-                <div class="grid grid-cols-2 gap-4">
-                    <div class="bg-teal-50 p-4 rounded-xl border border-teal-100 text-center">
-                        <span class="text-2xl">🔑</span>
-                        <div id="statConnexions" class="text-2xl font-bold text-teal-700 mt-1">...</div>
-                        <div class="text-xs text-teal-600 font-medium uppercase mt-0.5 tracking-wider">Connexions</div>
-                    </div>
-                    <div class="bg-emerald-50 p-4 rounded-xl border border-emerald-100 text-center">
-                        <span class="text-2xl">📥</span>
-                        <div id="statPDF" class="text-2xl font-bold text-emerald-700 mt-1">...</div>
-                        <div class="text-xs text-emerald-600 font-medium uppercase mt-0.5 tracking-wider">Téléchargements PDF</div>
-                    </div>
+
+            <div class="space-y-3 text-left">
+                <label class="block text-xs font-bold text-slate-600 uppercase">Code d'accès</label>
+                <div class="relative">
+                    <input type="password" id="access-code-input" placeholder="Entrez le code ici..." class="w-full p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-violet-500 focus:outline-none text-sm transition font-mono tracking-widest pr-10">
+                    <button onclick="togglePasswordVisibility()" class="absolute right-3 top-3.5 text-slate-400 hover:text-slate-600 transition text-sm">
+                        👁️
+                    </button>
                 </div>
-                <div class="bg-slate-50 p-4 rounded-xl border border-slate-200">
-                    <h4 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Historique récent</h4>
-                    <div id="statsLogList" class="text-xs space-y-1.5 text-slate-600 max-h-40 overflow-y-auto">
-                        Chargement des données...
-                    </div>
-                </div>
+                <div id="login-error" class="text-rose-500 text-xs font-medium hidden">❌ Code d'accès incorrect. Veuillez réessayer.</div>
+            </div>
+
+            <button onclick="verifierCode()" class="w-full bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white font-semibold py-3 rounded-xl shadow-md transition transform active:scale-95">
+                Connexion
+            </button>
+
+            <div class="border-t pt-4 text-xs text-slate-400 space-y-2">
+                <p>Un problème pour vous connecter ?<br>Contactez nous à <a href="mailto:faly.contact@gmail.com" class="text-violet-600 underline font-medium">faly.contact@gmail.com</a></p>
+                <p class="text-[10px] pt-2 border-t border-slate-100 italic">Mon CV express - Idée originale de Faly R.®</p>
             </div>
         </div>
     </div>
 
-    <div id="appContent" class="hidden">
-        <header class="bg-gradient-to-r from-teal-600 to-emerald-600 text-white shadow-md mb-8">
-            <div class="max-w-7xl mx-auto px-4 py-6 flex flex-col sm:flex-row justify-between items-center gap-4">
+
+    <div id="app-content" class="hidden flex-col min-h-screen">
+        
+        <header class="bg-gradient-to-r from-violet-600 to-indigo-600 text-white p-5 shadow-md no-print">
+            <div class="max-w-[1600px] mx-auto flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div>
-                    <h1 class="text-2xl font-bold tracking-tight">Mon CV express 🚀</h1>
-                    <p class="text-teal-100 text-xs sm:text-sm mt-1">Modèle créé sur une idée de Faly R.®</p>
+                    <h1 class="text-3xl font-black tracking-tight">Mon CV express</h1>
+                    <p class="text-indigo-100 text-xs mt-1">
+                        Modèle créé sur une idée de <span class="font-bold cursor-pointer underline hover:text-white" onclick="toggleStats()">Faly R.®</span>
+                    </p>
                 </div>
-                <div class="flex items-center gap-2 bg-white/10 px-3 py-1.5 rounded-full text-xs font-medium">
-                    <span class="w-2 h-2 rounded-full bg-emerald-300 animate-pulse"></span> Données locales & privées
+                <div class="bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl p-3 max-w-md text-xs text-indigo-50">
+                    <span class="font-bold block mb-0.5">🔒 Sécurité & Confidentialité :</span>
+                    Vos données restent stockées exclusivement dans votre téléphone. Conforme au RGPD.
                 </div>
             </div>
         </header>
 
-        <main class="max-w-7xl mx-auto px-4 grid grid-cols-1 lg:grid-cols-2 gap-8">
-            <div class="space-y-6">
-                <div class="flex flex-col sm:flex-row justify-between items-center gap-4 bg-white p-4 rounded-xl shadow-xs border border-slate-100">
-                    <button type="button" onclick="generatePDF()" class="w-full sm:w-auto px-6 py-3 bg-teal-600 hover:bg-teal-700 text-white font-semibold rounded-lg shadow-sm transition flex flex-col items-center justify-center line-tight cursor-pointer">
-                        <span class="text-base">🖨️ Enregistrer mon CV en PDF (A4)</span>
-                        <span class="text-[10px] text-teal-100 font-normal">Ajustement parfait • Qualité Vectorielle</span>
-                    </button>
-                    <button type="button" onclick="resetForm()" class="w-full sm:w-auto px-4 py-2 text-rose-600 hover:bg-rose-50 border border-rose-200 font-medium rounded-lg transition flex items-center justify-center gap-2 cursor-pointer">🗑️ Réinitialiser</button>
-                </div>
-
-                <form id="cvForm" oninput="updateAll()" class="space-y-6">
-                    <section class="bg-white p-6 rounded-xl shadow-xs border border-slate-100">
-                        <div class="flex items-center gap-3 border-b border-slate-100 pb-3 mb-4">
-                            <span class="text-xl">👤</span>
-                            <h2 class="text-lg font-bold text-slate-900">Informations Personnelles</h2>
+        <main class="flex-1 max-w-[1600px] w-full mx-auto p-4 lg:p-6 grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+            
+            <section class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200/60 space-y-6 no-print lg:max-h-[82vh] lg:overflow-y-auto pr-3">
+                
+                <div class="space-y-4">
+                    <h2 class="text-lg font-bold text-slate-900 border-b pb-2 flex items-center gap-2 text-violet-600">
+                        <span class="p-1 bg-violet-100 rounded-md text-sm">👤</span> 1/ Informations Personnelles
+                    </h2>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div class="sm:col-span-2">
+                            <label class="block text-[11px] font-bold text-slate-600 uppercase mb-1">Intitulé du poste recherché</label>
+                            <input type="text" id="input-poste-visé" oninput="formatPosteVise(this); updateCV();" placeholder="Ex: Vendeur en magasin" class="w-full p-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-violet-500 focus:outline-none text-sm transition">
                         </div>
-                        <div class="space-y-4">
-                            <div>
-                                <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">Intitulé de poste recherché</label>
-                                <input type="text" id="info_poste" class="w-full p-2.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 bg-slate-50/50" placeholder="Ex: Vendeur...">
-                            </div>
-                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div>
-                                    <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">Nom</label>
-                                    <input type="text" id="info_nom" onchange="formatNom(this)" class="w-full p-2.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 bg-slate-50/50">
-                                </div>
-                                <div>
-                                    <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">Prénom</label>
-                                    <input type="text" id="info_prenom" onchange="formatPrenom(this)" class="w-full p-2.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 bg-slate-50/50">
-                                </div>
-                                <div>
-                                    <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">Téléphone</label>
-                                    <input type="tel" id="info_telephone" class="w-full p-2.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 bg-slate-50/50">
-                                </div>
-                                <div>
-                                    <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">Adresse E-mail</label>
-                                    <input type="email" id="info_email" class="w-full p-2.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 bg-slate-50/50">
-                                </div>
-                            </div>
-                        </div>
-                    </section>
-                    <section class="bg-white p-6 rounded-xl shadow-xs border border-slate-100">
-                        <div class="flex items-center gap-3 border-b border-slate-100 pb-3 mb-4">
-                            <span class="text-xl">✨</span>
-                            <h2 class="text-lg font-bold text-slate-900">Phrase d'accroche impactante</h2>
-                        </div>
-                        <textarea id="info_accroche" rows="3" class="w-full p-2.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 bg-slate-50/50 text-sm"></textarea>
-                    </section>
-                    <div id="dynamicSectionsContainer" class="space-y-6"></div>
-                </form>
-            </div>
-
-            <div class="lg:sticky lg:top-6 self-start">
-                <h2 class="text-sm font-bold text-slate-500 uppercase tracking-wider mb-3 flex items-center gap-2"><span>👁️</span> Aperçu instantané (Rendu Réel Page A4)</h2>
-                <div class="preview-scale-container bg-slate-300 p-4 rounded-xl border border-slate-200 shadow-inner flex justify-center">
-                    <div id="cvLivePreview" class="cv-strict-a4 shadow-2xl text-slate-800 flex flex-col justify-between">
                         <div>
-                            <div class="border-b-4 border-teal-600 pb-4 mb-5 flex justify-between items-end">
-                                <div>
-                                    <h1 id="live_fullname" class="text-2xl font-bold tracking-tight text-slate-900 uppercase">JEANNE CODE</h1>
-                                    <p id="live_jobtitle" class="text-teal-600 font-semibold text-md mt-0.5">Intitulé du poste</p>
-                                </div>
-                                <div class="text-right text-[11px] text-slate-600 space-y-0.5">
-                                    <p id="live_phone">📞 06 00 00 00 00</p>
-                                    <p id="live_email">✉️ mail@exemple.fr</p>
-                                </div>
-                            </div>
-                            <div id="live_accroche_area" class="mb-5 text-[11px] text-slate-700 italic bg-slate-50 p-3 rounded border-l-2 border-teal-500 hidden"></div>
-                            <div id="live_sections_area" class="space-y-5"></div>
+                            <label class="block text-[11px] font-bold text-slate-600 uppercase mb-1">Nom</label>
+                            <input type="text" id="input-nom" oninput="formatNom(this); updateCV();" placeholder="DUPONT" class="w-full p-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-violet-500 focus:outline-none text-sm transition">
                         </div>
-                        <div class="text-right text-[9px] text-slate-300 italic pt-2 border-t border-slate-100 mt-auto">
-                            Modèle créé sur une idée de Faly R.<button onclick="openStatsModal()" class="hover:text-teal-500 cursor-pointer focus:outline-none">®</button>
+                        <div>
+                            <label class="block text-[11px] font-bold text-slate-600 uppercase mb-1">Prénom</label>
+                            <input type="text" id="input-prenom" oninput="formatPrenom(this); updateCV();" placeholder="Jean" class="w-full p-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-violet-500 focus:outline-none text-sm transition">
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-bold text-slate-600 uppercase mb-1">Téléphone</label>
+                            <input type="tel" id="input-telephone" oninput="updateCV();" placeholder="06 12 34 56 78" class="w-full p-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-violet-500 focus:outline-none text-sm transition">
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-bold text-slate-600 uppercase mb-1">Adresse E-mail</label>
+                            <input type="email" id="input-email" oninput="updateCV();" placeholder="jean.dupont@email.com" class="w-full p-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-violet-500 focus:outline-none text-sm transition">
                         </div>
                     </div>
                 </div>
-            </div>
+
+                <div class="space-y-4">
+                    <h2 class="text-lg font-bold text-slate-900 border-b pb-2 flex items-center gap-2 text-violet-600">
+                        <span class="p-1 bg-violet-100 rounded-md text-sm">💡</span> 2/ Phrase d'accroche impactante
+                    </h2>
+                    <div>
+                        <label class="block text-[11px] font-bold text-slate-600 uppercase mb-1">Votre projet professionnel ou pitch</label>
+                        <textarea id="input-accroche" oninput="formatAccroche(this); updateCV();" rows="2" placeholder="Jeune dynamique cherchant à intégrer le secteur de la logistique..." class="w-full p-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-violet-500 focus:outline-none text-sm transition"></textarea>
+                    </div>
+                </div>
+
+                <div class="space-y-5" id="rubriques-container">
+                    </div>
+
+                <div class="pt-4 border-t flex flex-col sm:flex-row gap-3">
+                    <button onclick="genererPDF()" class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 px-4 rounded-xl shadow-md transition flex items-center justify-center gap-2 text-sm">
+                        📥 Générer mon CV en PDF
+                    </button>
+                    <button onclick="reinitialiserFormulaire()" class="bg-rose-50 hover:bg-rose-100 text-rose-600 font-semibold py-3 px-4 rounded-xl transition text-xs">
+                        🔄 Réinitialiser le formulaire
+                    </button>
+                </div>
+            </section>
+
+            <section class="flex flex-col items-center bg-slate-300/40 p-4 rounded-2xl border border-slate-200 lg:max-h-[82vh] lg:overflow-y-auto">
+                <div class="text-center mb-3 no-print w-full">
+                    <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wider">Aperçu en temps réel (A4 proportionnel)</h3>
+                </div>
+                
+                <div class="cv-scaler-wrapper w-full flex justify-center">
+                    <div class="cv-scaler">
+                        <div id="cv-document" class="cv-a4-page flex flex-col justify-between">
+                            
+                            <div class="space-y-5">
+                                <div class="border-b-2 border-violet-600 pb-3 flex justify-between items-start">
+                                    <div>
+                                        <h1 class="text-2xl font-black tracking-wide text-slate-900"><span id="cv-prenom"></span> <span id="cv-nom"></span></h1>
+                                        <h2 id="cv-poste-preview" class="text-sm font-bold text-violet-600 uppercase mt-0.5 tracking-wide"></h2>
+                                        <p id="cv-accroche-preview" class="text-[11px] italic text-slate-600 mt-2 max-w-xl font-medium leading-relaxed"></p>
+                                    </div>
+                                    <div class="text-right text-[10px] space-y-0.5 text-slate-500 font-medium">
+                                        <p id="cv-phone-preview"></p>
+                                        <p id="cv-email-preview"></p>
+                                    </div>
+                                </div>
+
+                                <div id="cv-blocks-render" class="space-y-4"></div>
+                            </div>
+
+                            <footer class="text-center text-[9px] text-slate-400 border-t border-slate-100 pt-2">
+                                Modèle créé sur une idée de <span class="font-semibold cursor-pointer text-slate-500" onclick="toggleStats()">Faly R.®</span>
+                            </footer>
+                        </div>
+                    </div>
+                </div>
+            </section>
         </main>
     </div>
 
     <script>
-        // ==========================================================================
-        // CONFIGURATION ET CONNEXIONS (SUPABASE & MOT DE PASSE)
-        // ==========================================================================
-        const PASSWORD_DU_MOIS = "FR072026";
-        
-        // RENSEIGNEZ VOS CLÉS SUPABASE ICI POUR LE SUIVI :
-        const SUPABASE_URL = "https://mlbjvzadwjbdaaenfeae.supabase.co";
+        const SUPABASE_URL = "https://mlbjvzadwjbdaaenfeae.supabase.co/rest/v1/stats";
         const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1sYmp2emFkd2piZGFhZW5mZWFlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODMzNDk2MzgsImV4cCI6MjA5ODkyNTYzOH0.EC3kal19wHH35OnTll2rYnxmQyqzlOghxPdjkPdas5w";
+        const CODE_VALIDATION = "FR072026";
+    </script>
+
+    <div id="stats-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden flex items-center justify-center p-4 z-50 no-print">
+        <div class="bg-white p-6 rounded-2xl shadow-xl max-w-sm w-full border border-slate-200">
+            <h3 class="text-md font-bold text-slate-900 mb-4 flex items-center gap-2">
+                📈 Statistiques d'utilisation (Supabase)
+            </h3>
+            <div class="grid grid-cols-2 gap-4 mb-5">
+                <div class="bg-violet-50 p-4 rounded-xl text-center">
+                    <span class="block text-2xl font-black text-violet-600" id="stat-connexions">...</span>
+                    <span class="text-[11px] text-slate-500 font-semibold">Connexions</span>
+                </div>
+                <div class="bg-emerald-50 p-4 rounded-xl text-center">
+                    <span class="block text-2xl font-black text-emerald-600" id="stat-telechargements">...</span>
+                    <span class="text-[11px] text-slate-500 font-semibold">PDF Téléchargés</span>
+                </div>
+            </div>
+            <div class="space-y-2">
+                <button onclick="reinitialiserStatsServeur()" class="w-full bg-rose-50 hover:bg-rose-100 text-rose-600 text-xs font-bold py-2 rounded-lg transition">
+                    ⚠️ Réinitialiser les compteurs
+                </button>
+                <button onclick="toggleStats()" class="w-full bg-slate-800 hover:bg-slate-900 text-white text-xs font-medium py-2.5 rounded-lg transition">
+                    Fermer la fenêtre
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let structureRubriques = ['formations', 'experiences', 'competences', 'langues', 'interets'];
         
-        let supabaseClient = null;
-        if(SUPABASE_URL !== "https://mlbjvzadwjbdaaenfeae.supabase.co") {
-            supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-        }
-
-        // Envoi d'une statistique vers Supabase
-        async function logActionToSupabase(actionName) {
-            if (!supabaseClient) return;
-            try {
-                await supabaseClient.from('logs').insert([{ action: actionName }]);
-            } catch (e) { console.error("Erreur log Supabase:", e); }
-        }
-
-        // Authentification
-        function checkAuth(event) {
-            if(event) event.preventDefault();
-            const inputField = document.getElementById("accessCodeInput");
-            const errorLabel = document.getElementById("authError");
-            const cleanedInput = inputField.value.trim().toUpperCase(); 
-
-            if (cleanedInput === PASSWORD_DU_MOIS.toUpperCase()) {
-                // Pour vos vérifications : désactivation de la mémoire 24h
-                localStorage.removeItem("cv_app_simple_auth");
-                
-                document.getElementById("authOverlay").classList.add("hidden");
-                document.getElementById("appContent").classList.remove("hidden");
-                
-                // Envoi statistique de connexion
-                logActionToSupabase("connexion");
-                
-                initApp();
-            } else {
-                errorLabel.classList.remove("hidden");
-                inputField.value = "";
-                inputField.focus();
-            }
-        }
-
-        function checkExistingAuth() {
-            // Forcé à réclamer le code pour vos tests
-            document.getElementById("authOverlay").classList.remove("hidden");
-        }
-
-        // ==========================================================================
-        // GESTION DU MODAL SECRET DES STATISTIQUES (CLIC SUR ®)
-        // ==========================================================================
-        async function openStatsModal() {
-            document.getElementById("statsModal").style.display = "flex";
-            const logListDiv = document.getElementById("statsLogList");
-            
-            if(!supabaseClient) {
-                logListDiv.innerHTML = "⚠️ Connexion Supabase non configurée (clés manquantes).";
-                return;
-            }
-
-            logListDiv.innerHTML = "Chargement en cours...";
-            
-            try {
-                // Récupération globale
-                const { data, error } = await supabaseClient.from('logs').select('*').order('created_at', { ascending: false });
-                
-                if(error) throw error;
-
-                const connexions = data.filter(l => l.action === 'connexion').length;
-                const pdfs = data.filter(l => l.action === 'telechargement_pdf').length;
-
-                document.getElementById("statConnexions").innerText = connexions;
-                document.getElementById("statPDF").innerText = pdfs;
-
-                if(data.length === 0) {
-                    logListDiv.innerHTML = "Aucun événement enregistré pour le moment.";
-                } else {
-                    logListDiv.innerHTML = data.slice(0, 30).map(l => {
-                        const dateObj = new Date(l.created_at || l.date);
-                        const dateStr = dateObj.toLocaleDateString('fr-FR', {day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit'});
-                        const icon = l.action === 'connexion' ? '🔑' : '📥';
-                        return `<div class="flex justify-between border-b border-slate-100 pb-1"><span>${icon} ${l.action}</span><span class="text-slate-400">${dateStr}</span></div>`;
-                    }).join('');
-                }
-            } catch(e) {
-                logListDiv.innerHTML = "❌ Impossible de charger les données : " + e.message;
-            }
-        }
-
-        function closeStatsModal() {
-            document.getElementById("statsModal").style.display = "none";
-        }
-
-        // Initialisation de l'application
-        function initApp() {
-            if (localStorage.getItem("cv_section_order_v2")) {
-                sectionOrder = JSON.parse(localStorage.getItem("cv_section_order_v2"));
-            }
-            renderSections();
-            loadSavedData();
-            updateLivePreview();
-        }
-
-        document.addEventListener("DOMContentLoaded", checkExistingAuth);
-
-        // ==========================================================================
-        // LOGIQUE MÉTIER ET MOTEUR DU CV
-        // ==========================================================================
-        let sectionOrder = ['formations', 'experiences', 'competences', 'langues', 'interets'];
-        const sectionTitles = {
-            formations: { title: "Formations & Diplômes", icon: "🎓" },
-            experiences: { title: "Expériences Professionnelles", icon: "💼" },
-            competences: { title: "Compétences Techniques", icon: "🛠️" },
-            langues: { title: "Compétences Linguistiques", icon: "🗣️" },
-            interets: { title: "Centres d’Intérêts", icon: "⭐" }
+        let dataStore = {
+            formations: [{diplome: '', ecole: '', periode: ''}],
+            experiences: [{poste: '', entreprise: '', periode: '', missions: ''}],
+            competences: [{nom: '', niveau: 'Débutant'}],
+            langues: [{nom: '', niveau: 'Niveau scolaire'}],
+            interets: [{nom: '', description: ''}]
         };
 
-        function formatNom(input) { input.value = input.value.trim().toUpperCase(); updateAll(); }
-        function formatPrenom(input) { let val = input.value.trim(); if (val.length > 0) { input.value = val.charAt(0).toUpperCase() + val.slice(1).toLowerCase(); } updateAll(); }
+        // ÉCRAN DE CONNEXION CONTROLE
+        function togglePasswordVisibility() {
+            const input = document.getElementById('access-code-input');
+            input.type = input.type === 'password' ? 'text' : 'password';
+        }
 
-        function moveSection(index, direction) {
-            const newIndex = index + direction;
-            if (newIndex >= 0 && newIndex < sectionOrder.length) {
-                const temp = sectionOrder[index]; sectionOrder[index] = sectionOrder[newIndex]; sectionOrder[newIndex] = temp;
-                localStorage.setItem("cv_section_order_v2", JSON.stringify(sectionOrder));
-                const currentData = captureFormData(); renderSections(); restoreFormData(currentData); updateAll();
+        function verifierCode() {
+            const saisie = document.getElementById('access-code-input').value;
+            if (saisie === CODE_VALIDATION) {
+                document.getElementById('login-screen').classList.add('hidden');
+                document.getElementById('app-content').classList.remove('hidden');
+                document.getElementById('app-content').classList.add('flex');
+                
+                // Envoi de la stat de connexion
+                envoyerStatSupabase('connexion');
+                chargerDonneesLocales();
+                initApp();
+            } else {
+                document.getElementById('login-error').classList.remove('hidden');
             }
         }
 
-        function renderSections() {
-            const container = document.getElementById("dynamicSectionsContainer"); if (!container) return; container.innerHTML = "";
-            sectionOrder.forEach((sectionId, index) => {
-                const secConfig = sectionTitles[sectionId];
-                const sectionBlock = document.createElement("section");
-                sectionBlock.className = "bg-white p-6 rounded-xl shadow-xs border border-slate-100 relative";
-                sectionBlock.innerHTML = `
-                    <div class="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-100 pb-3 mb-4 gap-2">
-                        <div class="flex items-center gap-3"><span class="text-xl">${secConfig.icon}</span><h2 class="text-lg font-bold text-slate-900">${secConfig.title}</h2></div>
-                        <div class="flex items-center gap-1 self-end sm:self-auto">
-                            <button type="button" onclick="moveSection(${index}, -1)" ${index === 0 ? 'disabled' : ''} class="p-1.5 px-2.5 text-xs font-semibold rounded bg-slate-100 hover:bg-slate-200 disabled:opacity-30 cursor-pointer">▲</button>
-                            <button type="button" onclick="moveSection(${index}, 1)" ${index === sectionOrder.length - 1 ? 'disabled' : ''} class="p-1.5 px-2.5 text-xs font-semibold rounded bg-slate-100 hover:bg-slate-200 disabled:opacity-30 cursor-pointer">▼</button>
-                        </div>
-                    </div>
-                    <div id="items_container_${sectionId}" class="space-y-4"></div>
-                    <button type="button" onclick="addItem('${sectionId}')" class="mt-4 px-3 py-2 text-xs font-medium text-teal-700 bg-teal-50 hover:bg-teal-100 rounded-lg cursor-pointer">➕ Ajouter une ligne</button>
-                `;
-                container.appendChild(sectionBlock); addItem(sectionId, true);
-            });
+        function initApp() {
+            renderFormulaireRubriques();
+            updateCV();
+            recupererStatsSupabase();
         }
 
-        function addItem(sectionId, isInit = false) {
-            const container = document.getElementById(`items_container_${sectionId}`);
-            if (!container || (isInit && container.children.length > 0)) return;
-            const itemDiv = document.createElement("div");
-            itemDiv.className = "p-4 bg-slate-50 rounded-lg border border-slate-200/60 relative pt-8 sm:pt-4";
-            let inputsHTML = "";
-            if (sectionId === "formations") {
-                inputsHTML = `<div class="grid grid-cols-1 md:grid-cols-3 gap-3"><input type="text" placeholder="Diplôme" class="p-2 border border-slate-200 rounded text-sm field-diplome"><input type="text" placeholder="Établissement" class="p-2 border border-slate-200 rounded text-sm field-lieu"><input type="text" placeholder="Période" class="p-2 border border-slate-200 rounded text-sm field-periode"></div>`;
-            } else if (sectionId === "experiences") {
-                inputsHTML = `<div class="space-y-3"><div class="grid grid-cols-1 md:grid-cols-3 gap-3"><input type="text" placeholder="Poste" class="p-2 border border-slate-200 rounded text-sm field-poste"><input type="text" placeholder="Entreprise" class="p-2 border border-slate-200 rounded text-sm field-entreprise"><input type="text" placeholder="Période" class="p-2 border border-slate-200 rounded text-sm field-periode"></div><textarea placeholder="Missions (Une par ligne)" rows="2" class="w-full p-2 border border-slate-200 rounded text-sm field-missions"></textarea></div>`;
-            } else if (sectionId === "competences") {
-                inputsHTML = `<div class="grid grid-cols-1 sm:grid-cols-2 gap-3"><input type="text" placeholder="Compétence" class="p-2 border border-slate-200 rounded text-sm field-competence"><select class="p-2 border border-slate-200 rounded text-sm field-niveau">
-                    <option value="Initiation">Initiation</option>
-                    <option value="Débutant">Débutant</option>
-                    <option value="Compétences professionnelles limitées">Compétences professionnelles limitées</option>
-                    <option value="Compétences professionnelles complètes">Compétences professionnelles complètes</option>
-                    <option value="Expert">Expert</option>
-                </select></div>`;
-            } else if (sectionId === "langues") {
-                inputsHTML = `<div class="grid grid-cols-1 sm:grid-cols-2 gap-3"><input type="text" placeholder="Langue" class="p-2 border border-slate-200 rounded text-sm field-langue"><select class="p-2 border border-slate-200 rounded text-sm field-niveau">
-                    <option value="Initiation">Initiation</option>
-                    <option value="Débutant">Débutant</option>
-                    <option value="Niveau scolaire">Niveau scolaire</option>
-                    <option value="Compétences professionnelles limitées">Compétences professionnelles limitées</option>
-                    <option value="Compétences professionnelles complètes">Compétences professionnelles complètes</option>
-                    <option value="Bilingue">Bilingue</option>
-                    <option value="Langue maternelle">Langue maternelle</option>
-                </select></div>`;
-            } else if (sectionId === "interets") {
-                inputsHTML = `<div class="space-y-2"><input type="text" placeholder="Intérêt" class="w-full p-2 border border-slate-200 rounded text-sm field-interet"><textarea placeholder="Description" rows="2" class="w-full p-2 border border-slate-200 rounded text-sm field-description"></textarea></div>`;
-            }
-            itemDiv.innerHTML = inputsHTML;
-            const delBtn = document.createElement("button"); delBtn.innerHTML = "🗑️"; delBtn.className = "absolute top-2 right-2 text-xs opacity-50 cursor-pointer";
-            delBtn.onclick = () => { itemDiv.remove(); updateAll(); };
-            itemDiv.appendChild(delBtn); container.appendChild(itemDiv);
-            if (!isInit) updateAll();
+        // --- FORMATAGES REQUIS ---
+        function formatNom(el) { el.value = el.value.toUpperCase(); }
+        function formatPrenom(el) { 
+            if(el.value.length > 0) el.value = el.value.charAt(0).toUpperCase() + el.value.slice(1).toLowerCase();
+        }
+        function formatPosteVise(el) {
+            if(el.value.length > 0) el.value = el.value.charAt(0).toUpperCase() + el.value.slice(1).toLowerCase();
+        }
+        function formatAccroche(el) {
+            if(el.value.length > 0) el.value = el.value.charAt(0).toUpperCase() + el.value.slice(1);
         }
 
-        function captureFormData() {
-            const data = { personal: { poste: document.getElementById("info_poste")?.value || "", nom: document.getElementById("info_nom")?.value || "", prenom: document.getElementById("info_prenom")?.value || "", telephone: document.getElementById("info_telephone")?.value || "", email: document.getElementById("info_email")?.value || "", accroche: document.getElementById("info_accroche")?.value || "" }, sections: {} };
-            sectionOrder.forEach(secId => {
-                data.sections[secId] = []; const c = document.getElementById(`items_container_${secId}`); if (!c) return;
-                Array.from(c.children).forEach(block => {
-                    let idata = {};
-                    if (secId === "formations") idata = { diplome: block.querySelector(".field-diplome")?.value || "", lieu: block.querySelector(".field-lieu")?.value || "", periode: block.querySelector(".field-periode")?.value || "" };
-                    else if (secId === "experiences") idata = { poste: block.querySelector(".field-poste")?.value || "", entreprise: block.querySelector(".field-entreprise")?.value || "", periode: block.querySelector(".field-periode")?.value || "", missions: block.querySelector(".field-missions")?.value || "" };
-                    else if (secId === "competences") idata = { competence: block.querySelector(".field-competence")?.value || "", niveau: block.querySelector(".field-niveau")?.value || "" };
-                    else if (secId === "langues") idata = { langue: block.querySelector(".field-langue")?.value || "", niveau: block.querySelector(".field-niveau")?.value || "" };
-                    else if (secId === "interets") idata = { interet: block.querySelector(".field-interet")?.value || "", description: block.querySelector(".field-description")?.value || "" };
-                    data.sections[secId].push(idata);
+        // --- SYNCHRONISATION SUPABASE ---
+        async function envoyerStatSupabase(typeAction) {
+            // Sauvegarde locale de secours
+            let localKey = typeAction === 'connexion' ? 'faly_local_conn' : 'faly_local_dl';
+            localStorage.setItem(localKey, parseInt(localStorage.getItem(localKey) || '0') + 1);
+
+            try {
+                await fetch(SUPABASE_URL, {
+                    method: 'POST',
+                    headers: {
+                        'apikey': SUPABASE_KEY,
+                        'Authorization': `Bearer ${SUPABASE_KEY}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ action: typeAction })
                 });
-            });
-            return data;
+            } catch (e) { console.log("Mode local actif (Supabase non connecté)"); }
+            recupererStatsSupabase();
         }
 
-        function restoreFormData(data) {
-            if (!data) return;
-            if (data.personal) {
-                if(document.getElementById("info_poste")) document.getElementById("info_poste").value = data.personal.poste || "";
-                if(document.getElementById("info_nom")) document.getElementById("info_nom").value = data.personal.nom || "";
-                if(document.getElementById("info_prenom")) document.getElementById("info_prenom").value = data.personal.prenom || "";
-                if(document.getElementById("info_telephone")) document.getElementById("info_telephone").value = data.personal.telephone || "";
-                if(document.getElementById("info_email")) document.getElementById("info_email").value = data.personal.email || "";
-                if(document.getElementById("info_accroche")) document.getElementById("info_accroche").value = data.personal.accroche || "";
+        async function recupererStatsSupabase() {
+            try {
+                const res = await fetch(`${SUPABASE_URL}?select=action`, {
+                    headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` }
+                });
+                const data = await res.json();
+                
+                let countConn = data.filter(i => i.action === 'connexion').length;
+                let countDl = data.filter(i => i.action === 'telechargement').length;
+
+                document.getElementById('stat-connexions').innerText = countConn || localStorage.getItem('faly_local_conn') || 1;
+                document.getElementById('stat-telechargements').innerText = countDl || localStorage.getItem('faly_local_dl') || 0;
+            } catch (e) {
+                document.getElementById('stat-connexions').innerText = localStorage.getItem('faly_local_conn') || 1;
+                document.getElementById('stat-telechargements').innerText = localStorage.getItem('faly_local_dl') || 0;
             }
-            if (data.sections) {
-                Object.keys(data.sections).forEach(secId => {
-                    const c = document.getElementById(`items_container_${secId}`); if (!c) return; c.innerHTML = "";
-                    data.sections[secId].forEach(idata => {
-                        addItem(secId, false); const last = c.lastChild;
-                        if (secId === "formations") { last.querySelector(".field-diplome").value = idata.diplome; last.querySelector(".field-lieu").value = idata.lieu; last.querySelector(".field-periode").value = idata.periode; }
-                        else if (secId === "experiences") { last.querySelector(".field-poste").value = idata.poste; last.querySelector(".field-entreprise").value = idata.entreprise; last.querySelector(".field-periode").value = idata.periode; last.querySelector(".field-missions").value = idata.missions; }
-                        else if (secId === "competences") { last.querySelector(".field-competence").value = idata.competence; last.querySelector(".field-niveau").value = idata.niveau; }
-                        else if (secId === "langues") { last.querySelector(".field-langue").value = idata.langue; last.querySelector(".field-niveau").value = idata.niveau; }
-                        else if (secId === "interets") { last.querySelector(".field-interet").value = idata.interet; last.querySelector(".field-description").value = idata.description; }
+        }
+
+        async function reinitialiserStatsServeur() {
+            if (confirm("Voulez-vous vraiment vider toutes les statistiques enregistrées sur Supabase ?")) {
+                try {
+                    await fetch(`${SUPABASE_URL}?action=in.(connexion,telechargement)`, {
+                        method: 'DELETE',
+                        headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` }
                     });
-                });
+                } catch(e) {}
+                localStorage.setItem('faly_local_conn', '0');
+                localStorage.setItem('faly_local_dl', '0');
+                recupererStatsSupabase();
             }
         }
 
-        function updateAll() { const data = captureFormData(); localStorage.setItem("cv_app_data_v2", JSON.stringify(data)); updateLivePreview(data); }
-        function loadSavedData() { const saved = localStorage.getItem("cv_app_data_v2"); if (saved) restoreFormData(JSON.parse(saved)); }
-        function resetForm() { if (confirm("⚠️ Tout effacer ?")) { localStorage.removeItem("cv_app_data_v2"); document.getElementById("cvForm").reset(); renderSections(); updateAll(); } }
+        function toggleStats() {
+            document.getElementById('stats-modal').classList.toggle('hidden');
+        }
 
-function updateLivePreview(data) {
-            if (!data) data = captureFormData();
-            document.getElementById("live_fullname").innerText = `${data.personal.prenom} ${data.personal.nom}`.trim() || "PRÉNOM NOM";
-            document.getElementById("live_jobtitle").innerText = data.personal.poste || "Intitulé du poste";
-            document.getElementById("live_phone").innerText = `📞 ${data.personal.telephone || '06...'}`;
-            document.getElementById("live_email").innerText = `✉️ ${data.personal.email || 'mail...'}`;
-            const acc = document.getElementById("live_accroche_area"); if(data.personal.accroche) { acc.innerText = data.personal.accroche; acc.classList.remove("hidden"); } else acc.classList.add("hidden");
+        // --- ENREGISTREMENTS LOCAL STORAGE JEUNES ---
+        function sauvegarderDonnees() {
+            localStorage.setItem('cv_v2_structure', JSON.stringify(structureRubriques));
+            localStorage.setItem('cv_v2_data_items', JSON.stringify(dataStore));
+            localStorage.setItem('cv_v2_postevise', document.getElementById('input-poste-visé').value);
+            localStorage.setItem('cv_v2_nom', document.getElementById('input-nom').value);
+            localStorage.setItem('cv_v2_prenom', document.getElementById('input-prenom').value);
+            localStorage.setItem('cv_v2_phone', document.getElementById('input-telephone').value);
+            localStorage.setItem('cv_v2_email', document.getElementById('input-email').value);
+            localStorage.setItem('cv_v2_accroche', document.getElementById('input-accroche').value);
+        }
+
+        function chargerDonneesLocales() {
+            if(localStorage.getItem('cv_v2_structure')) structureRubriques = JSON.parse(localStorage.getItem('cv_v2_structure'));
+            if(localStorage.getItem('cv_v2_data_items')) dataStore = JSON.parse(localStorage.getItem('cv_v2_data_items'));
             
-            const area = document.getElementById("live_sections_area"); area.innerHTML = "";
-            sectionOrder.forEach(secId => {
-                const items = data.sections[secId] || []; let count = 0;
-                let html = `<h3 class="text-[11px] font-bold text-teal-700 border-b border-teal-200 uppercase tracking-wide pb-0.5 mb-1.5">${sectionTitles[secId].title}</h3><div class="space-y-2">`;
-                items.forEach(item => {
-                    if (secId === "formations" && item.diplome) { count++; html += `<div class="flex justify-between text-[10.5px]"><div><strong>${item.diplome}</strong><p class="text-[10px]">${item.lieu}</p></div><div class="text-[10px]">${item.periode}</div></div>`; }
-                    else if (secId === "experiences" && item.poste) { 
-                        count++; 
-                        // Génération automatique des puces pour les missions
-                        const missionsList = (item.missions || '').split('\n').filter(m => m.trim() !== '').map(m => `<li class="ml-4">${m.trim()}</li>`).join('');
-                        html += `<div class="text-[10.5px] mb-3">
-                            <div class="flex justify-between font-bold"><span>${item.poste} — ${item.entreprise}</span><span>${item.periode}</span></div>
-                            <ul class="list-disc mt-1">${missionsList}</ul>
-                        </div>`; 
-                    }
-                    else if (secId === "competences" && item.competence) { count++; html += `<div class="flex justify-between text-[10.5px]"><span>${item.competence}</span><span class="bg-slate-100 text-[9px] px-2 py-0.5">${item.niveau}</span></div>`; }
-                    else if (secId === "langues" && item.langue) { count++; html += `<div class="flex justify-between text-[10.5px]"><span>${item.langue}</span><span class="bg-teal-50 text-[9px] px-2 py-0.5">${item.niveau}</span></div>`; }
-                    else if (secId === "interets" && item.interet) { count++; html += `<div class="text-[10.5px]"><strong>${item.interet}</strong></div>`; }
-                });
-                html += `</div>`; if (count > 0) { const d = document.createElement("div"); d.className="mb-3"; d.innerHTML = html; area.appendChild(d); }
+            if(document.getElementById('input-poste-visé')) {
+                document.getElementById('input-poste-visé').value = localStorage.getItem('cv_v2_postevise') || '';
+                document.getElementById('input-nom').value = localStorage.getItem('cv_v2_nom') || '';
+                document.getElementById('input-prenom').value = localStorage.getItem('cv_v2_prenom') || '';
+                document.getElementById('input-telephone').value = localStorage.getItem('cv_v2_phone') || '';
+                document.getElementById('input-email').value = localStorage.getItem('cv_v2_email') || '';
+                document.getElementById('input-accroche').value = localStorage.getItem('cv_v2_accroche') || '';
+            }
+        }
+
+        function reinitialiserFormulaire() {
+            if(confirm("⚠️ Attention : Êtes-vous sûr de vouloir effacer tout le formulaire ? Vos modifications locales seront perdues.")) {
+                let conn = localStorage.getItem('faly_local_conn');
+                let dl = localStorage.getItem('faly_local_dl');
+                localStorage.clear();
+                localStorage.setItem('faly_local_conn', conn);
+                localStorage.setItem('faly_local_dl', dl);
+                location.reload();
+            }
+        }
+
+        // --- GESTION DYNAMIQUE DES LIGNES ET BLOCS ---
+        function permuterRubrique(index, direction) {
+            let cible = index + direction;
+            if(cible >= 0 && cible < structureRubriques.length) {
+                let temp = structureRubriques[index];
+                structureRubriques[index] = structureRubriques[cible];
+                structureRubriques[cible] = temp;
+                sauvegarderDonnees();
+                initApp();
+            }
+        }
+
+        function ajouterLigne(rubrique) {
+            let templates = {
+                formations: {diplome: '', ecole: '', periode: ''},
+                experiences: {poste: '', entreprise: '', periode: '', missions: ''},
+                competences: {nom: '', niveau: 'Débutant'},
+                langues: {nom: '', niveau: 'Niveau scolaire'},
+                interets: {nom: '', description: ''}
+            };
+            dataStore[rubrique].push({...templates[rubrique]});
+            sauvegarderDonnees();
+            initApp();
+        }
+
+        function supprimerLigne(rubrique, index) {
+            if(dataStore[rubrique].length > 1) {
+                dataStore[rubrique].splice(index, 1);
+            } else {
+                // Si c'est la seule ligne, on la vide simplement
+                Object.keys(dataStore[rubrique][0]).forEach(k => dataStore[rubrique][0][k] = k==='niveau'?'Débutant':'');
+            }
+            sauvegarderDonnees();
+            initApp();
+        }
+
+        function permuterLigne(rubrique, index, direction) {
+            let cible = index + direction;
+            if(cible >= 0 && cible < dataStore[rubrique].length) {
+                let temp = dataStore[rubrique][index];
+                dataStore[rubrique][index] = dataStore[rubrique][cible];
+                dataStore[rubrique][cible] = temp;
+                sauvegarderDonnees();
+                initApp();
+            }
+        }
+
+        function modifierChamp(rubrique, index, champ, valeur) {
+            dataStore[rubrique][index][champ] = valeur;
+            sauvegarderDonnees();
+            updateCV();
+        }
+
+        // RENDU HTML DES CHAMPS FORMULAIRES
+        function renderFormulaireRubriques() {
+            const container = document.getElementById('rubriques-container');
+            container.innerHTML = '';
+
+            structureRubriques.forEach((rubriqueKey, idx) => {
+                let sectionHtml = '';
+                let headerBlock = `
+                    <div class="flex justify-between items-center bg-slate-100 p-2 rounded-lg mb-2">
+                        <span class="font-bold text-[11px] text-slate-700 uppercase tracking-wider">📦 Position Rubrique : ${rubriqueKey}</span>
+                        <div class="flex gap-1">
+                            <button onclick="permuterRubrique(${idx}, -1)" class="px-2 py-0.5 text-xs bg-white rounded shadow text-slate-600 hover:bg-slate-50">▲</button>
+                            <button onclick="permuterRubrique(${idx}, 1)" class="px-2 py-0.5 text-xs bg-white rounded shadow text-slate-600 hover:bg-slate-50">▼</button>
+                        </div>
+                    </div>`;
+
+                if(rubriqueKey === 'formations') {
+                    sectionHtml += `<div class="border border-slate-200 rounded-xl p-4 space-y-3 bg-white shadow-xs">
+                        ${headerBlock} <h3 class="text-sm font-bold text-slate-800">Formations & Diplômes</h3>
+                        <div class="space-y-3">`;
+                    dataStore.formations.forEach((item, index) => {
+                        sectionHtml += `
+                            <div class="p-3 bg-slate-50/60 rounded-lg border border-slate-200/60 space-y-2 relative">
+                                <div class="flex justify-between items-center text-xs text-slate-500 font-bold mb-1">
+                                    <span>Ligne #${index+1}</span>
+                                    <div class="flex gap-1">
+                                        <button onclick="permuterLigne('formations', ${index}, -1)" class="px-1.5 py-0.5 bg-white border rounded">▲</button>
+                                        <button onclick="permuterLigne('formations', ${index}, 1)" class="px-1.5 py-0.5 bg-white border rounded">▼</button>
+                                        <button onclick="supprimerLigne('formations', ${index})" class="px-1.5 py-0.5 bg-rose-50 text-rose-600 border rounded hover:bg-rose-100">🗑️</button>
+                                    </div>
+                                </div>
+                                <input type="text" placeholder="Diplôme" value="${item.diplome}" oninput="modifierChamp('formations', ${index}, 'diplome', this.value)" class="w-full p-2 border border-slate-200 bg-white rounded-lg text-xs">
+                                <input type="text" placeholder="Nom de l'établissement, ville (département, pays)" value="${item.ecole}" oninput="modifierChamp('formations', ${index}, 'ecole', this.value)" class="w-full p-2 border border-slate-200 bg-white rounded-lg text-xs">
+                                <input type="text" placeholder="Période (ex: 2020-2021)" value="${item.periode}" oninput="modifierChamp('formations', ${index}, 'periode', this.value)" class="w-full p-2 border border-slate-200 bg-white rounded-lg text-xs">
+                            </div>`;
+                    });
+                    sectionHtml += `</div><button onclick="ajouterLigne('formations')" class="w-full py-1.5 bg-violet-50 text-violet-600 rounded-lg text-xs font-bold hover:bg-violet-100">+ Ajouter une ligne formation</button></div>`;
+                }
+
+                else if(rubriqueKey === 'experiences') {
+                    sectionHtml += `<div class="border border-slate-200 rounded-xl p-4 space-y-3 bg-white shadow-xs">
+                        ${headerBlock} <h3 class="text-sm font-bold text-slate-800">Expériences professionnelles</h3>
+                        <div class="space-y-3">`;
+                    dataStore.experiences.forEach((item, index) => {
+                        sectionHtml += `
+                            <div class="p-3 bg-slate-50/60 rounded-lg border border-slate-200/60 space-y-2">
+                                <div class="flex justify-between items-center text-xs text-slate-500 font-bold mb-1">
+                                    <span>Ligne #${index+1}</span>
+                                    <div class="flex gap-1">
+                                        <button onclick="permuterLigne('experiences', ${index}, -1)" class="px-1.5 py-0.5 bg-white border rounded">▲</button>
+                                        <button onclick="permuterLigne('experiences', ${index}, 1)" class="px-1.5 py-0.5 bg-white border rounded">▼</button>
+                                        <button onclick="supprimerLigne('experiences', ${index})" class="px-1.5 py-0.5 bg-rose-50 text-rose-600 border rounded hover:bg-rose-100">🗑️</button>
+                                    </div>
+                                </div>
+                                <input type="text" placeholder="Intitulé du poste" value="${item.poste}" oninput="modifierChamp('experiences', ${index}, 'poste', this.value)" class="w-full p-2 border border-slate-200 bg-white rounded-lg text-xs">
+                                <input type="text" placeholder="Nom de l'entreprise, ville (département, pays)" value="${item.entreprise}" oninput="modifierChamp('experiences', ${index}, 'entreprise', this.value)" class="w-full p-2 border border-slate-200 bg-white rounded-lg text-xs">
+                                <input type="text" placeholder="Période (ex: 2020-2021)" value="${item.periode}" oninput="modifierChamp('experiences', ${index}, 'periode', this.value)" class="w-full p-2 border border-slate-200 bg-white rounded-lg text-xs">
+                                <textarea placeholder="Missions (un retour à la ligne crée une puce automatiquement)" oninput="modifierChamp('experiences', ${index}, 'missions', this.value)" rows="2" class="w-full p-2 border border-slate-200 bg-white rounded-lg text-xs">${item.missions}</textarea>
+                            </div>`;
+                    });
+                    sectionHtml += `</div><button onclick="ajouterLigne('experiences')" class="w-full py-1.5 bg-violet-50 text-violet-600 rounded-lg text-xs font-bold hover:bg-violet-100">+ Ajouter une ligne expérience</button></div>`;
+                }
+
+                else if(rubriqueKey === 'competences') {
+                    sectionHtml += `<div class="border border-slate-200 rounded-xl p-4 space-y-3 bg-white shadow-xs">
+                        ${headerBlock} <h3 class="text-sm font-bold text-slate-800">Compétences techniques</h3>
+                        <div class="space-y-3">`;
+                    dataStore.competences.forEach((item, index) => {
+                        sectionHtml += `
+                            <div class="p-3 bg-slate-50/50 rounded-lg border border-slate-200/60 space-y-2">
+                                <div class="flex justify-between items-center text-xs text-slate-500 font-bold mb-1">
+                                    <span>Ligne #${index+1}</span>
+                                    <div class="flex gap-1">
+                                        <button onclick="permuterLigne('competences', ${index}, -1)" class="px-1.5 py-0.5 bg-white border rounded">▲</button>
+                                        <button onclick="permuterLigne('competences', ${index}, 1)" class="px-1.5 py-0.5 bg-white border rounded">▼</button>
+                                        <button onclick="supprimerLigne('competences', ${index})" class="px-1.5 py-0.5 bg-rose-50 text-rose-600 border rounded hover:bg-rose-100">🗑️</button>
+                                    </div>
+                                </div>
+                                <input type="text" placeholder="Nom de la compétence" value="${item.nom}" oninput="modifierChamp('competences', ${index}, 'nom', this.value)" class="w-full p-2 border border-slate-200 bg-white rounded-lg text-xs">
+                                <select onchange="modifierChamp('competences', ${index}, 'niveau', this.value)" class="w-full p-2 border border-slate-200 bg-white rounded-lg text-xs">
+                                    <option ${item.niveau === 'Initiation' ? 'selected':''}>Initiation</option>
+                                    <option ${item.niveau === 'Débutant' ? 'selected':''}>Débutant</option>
+                                    <option ${item.niveau === 'Compétences professionnelles limitées' ? 'selected':''}>Compétences professionnelles limitées</option>
+                                    <option ${item.niveau === 'Compétences professionnelles complètes' ? 'selected':''}>Compétences professionnelles complètes</option>
+                                    <option ${item.niveau === 'Expert' ? 'selected':''}>Expert</option>
+                                </select>
+                            </div>`;
+                    });
+                    sectionHtml += `</div><button onclick="ajouterLigne('competences')" class="w-full py-1.5 bg-violet-50 text-violet-600 rounded-lg text-xs font-bold hover:bg-violet-100">+ Ajouter une compétence</button></div>`;
+                }
+
+                else if(rubriqueKey === 'langues') {
+                    sectionHtml += `<div class="border border-slate-200 rounded-xl p-4 space-y-3 bg-white shadow-xs">
+                        ${headerBlock} <h3 class="text-sm font-bold text-slate-800">Compétences linguistiques</h3>
+                        <div class="space-y-3">`;
+                    dataStore.langues.forEach((item, index) => {
+                        sectionHtml += `
+                            <div class="p-3 bg-slate-50/50 rounded-lg border border-slate-200/60 space-y-2">
+                                <div class="flex justify-between items-center text-xs text-slate-500 font-bold mb-1">
+                                    <span>Ligne #${index+1}</span>
+                                    <div class="flex gap-1">
+                                        <button onclick="permuterLigne('langues', ${index}, -1)" class="px-1.5 py-0.5 bg-white border rounded">▲</button>
+                                        <button onclick="permuterLigne('langues', ${index}, 1)" class="px-1.5 py-0.5 bg-white border rounded">▼</button>
+                                        <button onclick="supprimerLigne('langues', ${index})" class="px-1.5 py-0.5 bg-rose-50 text-rose-600 border rounded hover:bg-rose-100">🗑️</button>
+                                    </div>
+                                </div>
+                                <input type="text" placeholder="Langue" value="${item.nom}" oninput="modifierChamp('langues', ${index}, 'nom', this.value)" class="w-full p-2 border border-slate-200 bg-white rounded-lg text-xs">
+                                <select onchange="modifierChamp('langues', ${index}, 'niveau', this.value)" class="w-full p-2 border border-slate-200 bg-white rounded-lg text-xs">
+                                    <option ${item.niveau === 'Initiation' ? 'selected':''}>Initiation</option>
+                                    <option ${item.niveau === 'Débutant' ? 'selected':''}>Débutant</option>
+                                    <option ${item.niveau === 'Niveau scolaire' ? 'selected':''}>Niveau scolaire</option>
+                                    <option ${item.niveau === 'Compétences professionnelles limitées' ? 'selected':''}>Compétences professionnelles limitées</option>
+                                    <option ${item.niveau === 'Compétences professionnelles complètes' ? 'selected':''}>Compétences professionnelles complètes</option>
+                                    <option ${item.niveau === 'Bilingue' ? 'selected':''}>Bilingue</option>
+                                    <option ${item.niveau === 'Langue maternelle' ? 'selected':''}>Langue maternelle</option>
+                                </select>
+                            </div>`;
+                    });
+                    sectionHtml += `</div><button onclick="ajouterLigne('langues')" class="w-full py-1.5 bg-violet-50 text-violet-600 rounded-lg text-xs font-bold hover:bg-violet-100">+ Ajouter une langue</button></div>`;
+                }
+
+                else if(rubriqueKey === 'interets') {
+                    sectionHtml += `<div class="border border-slate-200 rounded-xl p-4 space-y-3 bg-white shadow-xs">
+                        ${headerBlock} <h3 class="text-sm font-bold text-slate-800">Centres d'intérêts</h3>
+                        <div class="space-y-3">`;
+                    dataStore.interets.forEach((item, index) => {
+                        sectionHtml += `
+                            <div class="p-3 bg-slate-50/50 rounded-lg border border-slate-200/60 space-y-2">
+                                <div class="flex justify-between items-center text-xs text-slate-500 font-bold mb-1">
+                                    <span>Ligne #${index+1}</span>
+                                    <div class="flex gap-1">
+                                        <button onclick="permuterLigne('interets', ${index}, -1)" class="px-1.5 py-0.5 bg-white border rounded">▲</button>
+                                        <button onclick="permuterLigne('interets', ${index}, 1)" class="px-1.5 py-0.5 bg-white border rounded">▼</button>
+                                        <button onclick="supprimerLigne('interets', ${index})" class="px-1.5 py-0.5 bg-rose-50 text-rose-600 border rounded hover:bg-rose-100">🗑️</button>
+                                    </div>
+                                </div>
+                                <input type="text" placeholder="Activité / Loisir" value="${item.nom}" oninput="modifierChamp('interets', ${index}, 'nom', this.value)" class="w-full p-2 border border-slate-200 bg-white rounded-lg text-xs">
+                                <textarea placeholder="Description (un retour d'une ligne génère automatiquement une puce)" oninput="modifierChamp('interets', ${index}, 'description', this.value)" rows="2" class="w-full p-2 border border-slate-200 bg-white rounded-lg text-xs">${item.description}</textarea>
+                            </div>`;
+                    });
+                    sectionHtml += `</div><button onclick="ajouterLigne('interets')" class="w-full py-1.5 bg-violet-50 text-violet-600 rounded-lg text-xs font-bold hover:bg-violet-100">+ Ajouter un centre d'intérêt</button></div>`;
+                }
+
+                container.innerHTML += sectionHtml;
             });
         }
 
-        function generatePDF() {
-            // Envoi statistique de téléchargement PDF avant impression
-            logActionToSupabase("telechargement_pdf");
+        function genererListePuces(text) {
+            if (!text || text.trim() === "") return "";
+            let puces = text.split('\n').filter(line => line.trim() !== "");
+            return `<ul class="list-disc pl-4 mt-0.5 text-slate-600 text-[10px] space-y-0.5">` + 
+                   puces.map(p => `<li>${p}</li>`).join('') + `</ul>`;
+        }
 
-            const originalContent = document.getElementById("cvLivePreview").innerHTML;
-            const data = captureFormData();
-            const fileName = `CV_${data.personal.prenom || 'Jeune'}_${data.personal.nom || 'Express'}`;
-            const iframe = document.createElement('iframe');
-            iframe.style.position = 'fixed'; iframe.style.width = '0'; iframe.style.height = '0'; iframe.style.border = '0';
-            document.body.appendChild(iframe);
-            const pri = iframe.contentWindow;
-            pri.document.open();
-            pri.document.write(`<html><head><title>${fileName}</title><style>body{font-family:'Inter',sans-serif;margin:0;padding:0;}.cv-strict-a4{width:210mm;height:297mm;padding:20mm;box-sizing:border-box;display:flex;flex-direction:column;justify-content:between;}.border-b-4{border-bottom:4px solid #0d9488;}.border-b{border-bottom:1px solid #e2e8f0;}.pb-4{padding-bottom:1rem;}.mb-5{margin-bottom:1.25rem;}.mb-3{margin-bottom:0.75rem;}.flex{display:flex;}.justify-between{justify-content:space-between;}.items-end{align-items:flex-end;}.text-right{text-align:right;}.text-2xl{font-size:1.5rem;font-weight:700;}.text-teal-600{color:#0d9488;}.text-teal-700{color:#0f766e;}.text-slate-900{color:#0f172a;}.text-slate-600{color:#475569;}.text-[11px]{font-size:11px;}.text-[10.5px]{font-size:10.5px;}.text-[10px]{font-size:10px;}.text-[9px]{font-size:9px;}.uppercase{text-transform:uppercase;}.font-bold{font-weight:700;}.italic{font-style:italic;}.bg-slate-50{background-color:#f8fafc;}.bg-teal-50{background-color:#f0fdfa;}.p-3{padding:0.75rem;}.rounded{border-radius:0.25rem;}.border-l-2{border-left:2px solid #14b8a6;}.space-y-5 > * + *{margin-top:1.25rem;}.space-y-2 > * + *{margin-top:0.5rem;}@page{size:A4 portrait;margin:0;}</style></head><body><div class="cv-strict-a4">${originalContent}</div></body></html>`);
-            pri.document.close();
-            setTimeout(() => { pri.focus(); pri.print(); setTimeout(() => { iframe.remove(); }, 1000); }, 300);
+        // SYNCHRONISATION EN TEMPS RÉEL VERS L'APERÇU A4
+        function updateCV() {
+            if(!document.getElementById('input-nom')) return;
+
+            document.getElementById('cv-nom').innerText = document.getElementById('input-nom').value || 'NOM';
+            document.getElementById('cv-prenom').innerText = document.getElementById('input-prenom').value || 'Prénom';
+            document.getElementById('cv-poste-preview').innerText = document.getElementById('input-poste-visé').value || 'POSTE RECHERCHÉ';
+            document.getElementById('cv-phone-preview').innerText = document.getElementById('input-telephone').value ? '📞 ' + document.getElementById('input-telephone').value : '';
+            document.getElementById('cv-email-preview').innerText = document.getElementById('input-email').value ? '✉️ ' + document.getElementById('input-email').value : '';
+            document.getElementById('cv-accroche-preview').innerText = document.getElementById('input-accroche').value || '';
+
+            const renderZone = document.getElementById('cv-blocks-render');
+            renderZone.innerHTML = '';
+
+            structureRubriques.forEach(rubriqueKey => {
+                let blockHtml = '';
+
+                if (rubriqueKey === 'formations' && dataStore.formations.some(i => i.diplome || i.ecole)) {
+                    blockHtml += `<div class="space-y-1">
+                        <h3 class="text-[11px] font-bold text-violet-600 uppercase tracking-wider border-b pb-0.5">Formations & Diplômes</h3>
+                        <div class="space-y-1.5">`;
+                    dataStore.formations.forEach(item => {
+                        if(item.diplome || item.ecole) {
+                            blockHtml += `<div class="flex justify-between items-start text-[10px]">
+                                <div>
+                                    <span class="font-bold text-slate-800">${item.diplome}</span>
+                                    <span class="text-slate-500 block">${item.ecole}</span>
+                                </div>
+                                <span class="text-slate-400 font-semibold text-[9px] whitespace-nowrap">${item.periode}</span>
+                            </div>`;
+                        }
+                    });
+                    blockHtml += `</div></div>`;
+                }
+
+                else if (rubriqueKey === 'experiences' && dataStore.experiences.some(i => i.poste || i.entreprise)) {
+                    blockHtml += `<div class="space-y-1">
+                        <h3 class="text-[11px] font-bold text-violet-600 uppercase tracking-wider border-b pb-0.5">Expériences Professionnelles</h3>
+                        <div class="space-y-2">`;
+                    dataStore.experiences.forEach(item => {
+                        if(item.poste || item.entreprise) {
+                            let sep = (item.poste && item.entreprise) ? " - " : "";
+                            blockHtml += `<div class="space-y-0.5">
+                                <div class="flex justify-between items-start text-[10px]">
+                                    <span class="font-bold text-slate-800">${item.poste}${sep}${item.entreprise}</span>
+                                    <span class="text-slate-400 font-semibold text-[9px] whitespace-nowrap">${item.periode}</span>
+                                </div>
+                                ${genererListePuces(item.missions)}
+                            </div>`;
+                        }
+                    });
+                    blockHtml += `</div></div>`;
+                }
+
+                else if (rubriqueKey === 'competences' && dataStore.competences.some(i => i.nom)) {
+                    blockHtml += `<div class="space-y-1">
+                        <h3 class="text-[11px] font-bold text-violet-600 uppercase tracking-wider border-b pb-0.5">Compétences Techniques</h3>
+                        <div class="grid grid-cols-2 gap-x-4 gap-y-0.5 text-[10px]">`;
+                    dataStore.competences.forEach(item => {
+                        if(item.nom) {
+                            blockHtml += `<div class="flex justify-between border-b border-slate-100 py-0.5">
+                                <span class="font-medium text-slate-700">${item.nom}</span>
+                                <span class="text-violet-500 font-bold italic text-[9px]">${item.niveau}</span>
+                            </div>`;
+                        }
+                    });
+                    blockHtml += `</div></div>`;
+                }
+
+                else if (rubriqueKey === 'langues' && dataStore.langues.some(i => i.nom)) {
+                    blockHtml += `<div class="space-y-1">
+                        <h3 class="text-[11px] font-bold text-violet-600 uppercase tracking-wider border-b pb-0.5">Compétences Linguistiques</h3>
+                        <div class="grid grid-cols-2 gap-x-4 gap-y-0.5 text-[10px]">`;
+                    dataStore.langues.forEach(item => {
+                        if(item.nom) {
+                            blockHtml += `<div class="flex justify-between border-b border-slate-100 py-0.5">
+                                <span class="font-medium text-slate-700">${item.nom}</span>
+                                <span class="text-slate-500 italic text-[9px]">${item.niveau}</span>
+                            </div>`;
+                        }
+                    });
+                    blockHtml += `</div></div>`;
+                }
+
+                else if (rubriqueKey === 'interets' && dataStore.interets.some(i => i.nom)) {
+                    blockHtml += `<div class="space-y-1">
+                        <h3 class="text-[11px] font-bold text-violet-600 uppercase tracking-wider border-b pb-0.5">Centres d'intérêts</h3>
+                        <div class="space-y-1.5">`;
+                    dataStore.interets.forEach(item => {
+                        if(item.nom) {
+                            blockHtml += `<div class="text-[10px]">
+                                <span class="font-bold text-slate-700 block">${item.nom}</span>
+                                ${genererListePuces(item.description)}
+                            </div>`;
+                        }
+                    });
+                    blockHtml += `</div></div>`;
+                }
+
+                renderZone.innerHTML += blockHtml;
+            });
+            
+            sauvegarderDonnees();
+        }
+
+        // EXPORTATION STRICTE PDF SUR 1 PAGE UNIQUE A4
+        function genererPDF() {
+            const element = document.getElementById('cv-document');
+            const nom = document.getElementById('input-nom').value || 'CV';
+            const prenom = document.getElementById('input-prenom').value || 'Express';
+            
+            const options = {
+                margin: 0,
+                filename: `CV_${prenom}_${nom}.pdf`,
+                image: { type: 'jpeg', quality: 1.0 },
+                html2canvas: { scale: 3, useCORS: true, letterRendering: true },
+                jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+                pagebreak: { mode: 'avoid' } // Empêche le découpage automatique sur deux pages
+            };
+
+            html2pdf().set(options).from(element).save().then(() => {
+                envoyerStatSupabase('telechargement');
+            });
         }
     </script>
 </body>
