@@ -4,175 +4,311 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Mon CV Express</title>
-    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-    
-    <meta name="theme-color" content="#4F46E5">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     
     <style>
-        body { font-family: 'Plus Jakarta Sans', sans-serif; }
-        /* Style pour masquer la scrollbar de la preview sur desktop */
-        .no-scrollbar::-webkit-scrollbar { display: none; }
-        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-        /* Format A4 strict pour l'impression */
-        .page-a4 { width: 210mm; height: 297mm; background: white; position: relative; }
-        @media (max-width: 1024px) {
-            .page-a4 { transform: scale(0.45); transform-origin: top center; margin: 0 auto; }
-            .preview-container { height: 600px; overflow: hidden; }
+        body { font-family: 'Inter', sans-serif; }
+        
+        /* FORCE STRICTEMENT UNE SEULE PAGE A4 SANS AUCUN DÉBORDEMENT CORRIGÉ */
+        .cv-page { 
+            width: 210mm; 
+            height: 296mm; /* Réduit d'un millimètre pour bloquer mathématiquement la 2e page blanche */
+            max-height: 296mm;
+            background: white; 
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+            position: relative;
+            box-sizing: border-box;
+            overflow: hidden; 
+            margin: 0 !important;
+            padding: 3rem !important; /* Force le padding interne constant */
         }
+        @media (max-width: 1024px) { .cv-preview-container { transform: scale(0.65); transform-origin: top center; } }
+        @media (max-width: 640px) { .cv-preview-container { transform: scale(0.45); } }
     </style>
 </head>
-<body class="bg-slate-50 text-slate-800 antialiased min-h-screen">
+<body class="bg-slate-50 min-h-screen text-slate-800">
 
-    <div id="login-screen" class="fixed inset-0 bg-gradient-to-tr from-indigo-600 via-purple-600 to-pink-500 z-50 flex flex-col justify-between p-6 text-white text-center">
-        <div class="my-auto max-w-sm mx-auto w-full bg-white/10 backdrop-blur-md rounded-3xl p-6 border border-white/20 shadow-2xl">
-            <h1 class="text-2xl font-bold tracking-tight mb-1">Espace protégé</h1>
-            <p class="text-sm text-indigo-100 mb-6">Veuillez saisir le code d’accès fourni par votre contact pour accéder à votre outil de création de CV express</p>
-            
-            <div class="relative mb-4">
-                <input type="password" id="access-code" placeholder="Entrez le code" class="w-full px-4 py-3 bg-white/20 border border-white/30 rounded-xl text-white placeholder-white/60 focus:outline-none focus:ring-2 focus:ring-white/50 text-center font-mono tracking-widest text-lg">
-                <button type="button" onclick="togglePassword()" class="absolute right-3 top-3.5 text-white/70 hover:text-white">
-                    <i id="eye-icon" data-lucide="eye" class="w-5 h-5"></i>
-                </button>
+    <div id="login-screen" class="fixed inset-0 z-50 bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-500 flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl shadow-2xl p-8 max-w-md w-full text-center space-y-6 border border-white/20">
+            <div class="space-y-2">
+                <h1 class="text-xs uppercase tracking-widest text-indigo-600 font-bold">Espace protégé</h1>
+                <p class="text-sm text-slate-500">Veuillez saisir le code d’accès fourni par votre contact pour accéder à votre outil de création de CV express</p>
             </div>
             
-            <button onclick="checkCode()" class="w-full bg-white text-indigo-600 font-bold py-3 px-4 rounded-xl shadow-lg hover:bg-indigo-50 transition active:scale-95 cursor-pointer">Connexion</button>
-            
-            <div class="mt-6 text-xs text-indigo-100">
-                <p class="font-medium">Un problème pour vous connecter ?</p>
-                <a href="mailto:faly.contact@gmail.com" class="underline hover:text-white">Contactez-nous à faly.contact@gmail.com</a>
+            <div class="space-y-4">
+                <div class="relative">
+                    <input type="password" id="access-code" class="w-full px-5 py-3.5 bg-slate-100 rounded-xl border border-transparent focus:border-indigo-500 focus:bg-white focus:ring-2 focus:ring-indigo-200 transition-all text-center tracking-widest font-semibold" placeholder="••••••••">
+                    <button type="button" onclick="togglePasswordVisibility()" class="absolute right-4 top-3.5 text-slate-400 hover:text-indigo-600">
+                        <i data-lucide="eye" id="eye-icon" class="w-5 h-5"></i>
+                    </button>
+                </div>
+                <button onclick="checkAccessCode()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3.5 rounded-xl shadow-lg shadow-indigo-200 transition-all transform active:scale-[0.98]">Connexion</button>
             </div>
-        </div>
-        <div class="text-xs text-white/60 pb-2">
-            Mon CV express - Sur une idée originale de Faly R.®
+
+            <div class="pt-4 border-t border-slate-100 space-y-1">
+                <p class="text-xs font-semibold text-slate-700">Un problème pour vous connecter ?</p>
+                <p class="text-xs text-slate-500">Contactez-nous à <a href="mailto:faly.contact@gmail.com" class="text-indigo-600 underline font-medium">faly.contact@gmail.com</a></p>
+            </div>
+            <p class="text-[10px] text-slate-400 pt-2">Mon CV express - Sur une idée originale de Faly R.®</p>
         </div>
     </div>
 
     <div id="app-screen" class="hidden min-h-screen flex flex-col lg:flex-row">
         
-        <div class="w-full lg:w-1/2 p-4 lg:p-8 overflow-y-auto max-h-screen">
-            <header class="mb-6 bg-white p-5 rounded-2xl shadow-sm border border-slate-100">
-                <div class="flex justify-between items-start">
-                    <div>
-                        <h1 class="text-2xl font-extrabold text-slate-900 tracking-tight">Mon CV express</h1>
-                        <p class="text-xs text-slate-500">Modèle créé sur une idée de <span class="font-semibold cursor-pointer text-indigo-600 hover:underline" onclick="showStats()">Faly R.®</span></p>
-                    </div>
-                    <button onclick="showStats()" class="p-2 bg-slate-100 rounded-lg hover:bg-slate-200 text-slate-600"><i data-lucide="bar-chart-2" class="w-5 h-5"></i></button>
-                </div>
-                <div class="mt-4 p-3 bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs rounded-xl flex items-center gap-2">
+        <div class="w-full lg:w-1/2 p-4 sm:p-6 lg:p-8 overflow-y-auto max-h-screen border-r border-slate-200 bg-white">
+            <div class="mb-8 p-4 bg-gradient-to-r from-slate-50 to-indigo-50/30 rounded-2xl border border-slate-100 relative">
+                <h2 class="text-2xl font-bold text-slate-900">Mon CV express</h2>
+                <p class="text-xs text-slate-500">Modèle créé sur une idée de <span class="font-medium cursor-pointer text-indigo-600" onclick="openStatsModal()">Faly R.®</span></p>
+                <div class="mt-3 flex items-center gap-2 text-xs text-emerald-700 bg-emerald-50 border border-emerald-100 px-3 py-2 rounded-xl">
                     <i data-lucide="shield-check" class="w-4 h-4 shrink-0"></i>
-                    <p>Vos données sont exclusivement stockées dans l’appareil utilisé (PC ou smartphone). Conforme au RGPD.</p>
+                    <span>Vos données sont exclusivement stockées dans l’appareil utilisé (PC ou smartphone). Conforme au RGPD.</span>
                 </div>
-                
-                <div class="mt-4 pt-4 border-t border-slate-100 grid grid-cols-3 gap-2">
+            </div>
+
+            <div class="mb-6 p-4 bg-slate-50 rounded-2xl border border-slate-100 space-y-3">
+                <h3 class="text-xs font-bold uppercase tracking-wider text-slate-500">Personnalisation des couleurs</h3>
+                <div class="grid grid-cols-3 gap-3 text-xs">
                     <div>
-                        <label class="block text-[10px] uppercase font-bold text-slate-500 mb-1">Couleur 1 (Titres)</label>
-                        <input type="color" id="col-primary" value="#4f46e5" onchange="updateColors()" class="w-full h-8 rounded cursor-pointer border-0">
+                        <label class="block mb-1 text-slate-600">Titres/Lignes</label>
+                        <input type="color" id="color-primary" value="#4f46e5" oninput="saveAndRefresh()" class="w-full h-8 rounded-lg cursor-pointer">
                     </div>
                     <div>
-                        <label class="block text-[10px] uppercase font-bold text-slate-500 mb-1">Couleur 2 (Postes)</label>
-                        <input type="color" id="col-secondary" value="#1e293b" onchange="updateColors()" class="w-full h-8 rounded cursor-pointer border-0">
+                        <label class="block mb-1 text-slate-600">Postes/Diplômes</label>
+                        <input type="color" id="color-secondary" value="#1e293b" oninput="saveAndRefresh()" class="w-full h-8 rounded-lg cursor-pointer">
                     </div>
                     <div>
-                        <label class="block text-[10px] uppercase font-bold text-slate-500 mb-1">Couleur 3 (Détails)</label>
-                        <input type="color" id="col-accent" value="#64748b" onchange="updateColors()" class="w-full h-8 rounded cursor-pointer border-0">
+                        <label class="block mb-1 text-slate-600">Années/Écoles</label>
+                        <input type="color" id="color-tertiary" value="#64748b" oninput="saveAndRefresh()" class="w-full h-8 rounded-lg cursor-pointer">
                     </div>
                 </div>
-            </header>
+            </div>
 
             <div id="form-blocks-container" class="space-y-4">
                 
-                <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100">
-                    <h3 class="font-bold text-slate-900 mb-4 flex items-center gap-2 text-sm uppercase tracking-wider"><i data-lucide="user" class="w-4 h-4 text-indigo-500"></i> Informations personnelles</h3>
-                    <div class="space-y-3">
-                        <input type="text" id="input-poste" placeholder="Intitulé du poste recherché" oninput="renderCV()" class="w-full px-3 py-2 border rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
-                        <div class="grid grid-cols-2 gap-2">
-                            <input type="text" id="input-nom" placeholder="NOM" oninput="formatNom(this); renderCV()" class="w-full px-3 py-2 border rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
-                            <input type="text" id="input-prenom" placeholder="Prénom" oninput="formatPrenom(this); renderCV()" class="w-full px-3 py-2 border rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
+                <div class="form-block bg-slate-50 p-5 rounded-2xl border border-slate-200/60 shadow-sm relative group" data-block-id="infos">
+                    <div class="flex justify-between items-center mb-4">
+                        <div class="flex items-center gap-2">
+                            <div class="p-2 bg-indigo-100 text-indigo-600 rounded-lg"><i data-lucide="user" class="w-4 h-4"></i></div>
+                            <h3 class="font-bold text-slate-800 text-sm">Informations Personnelles</h3>
                         </div>
-                        <input type="tel" id="input-phone" placeholder="Téléphone" oninput="renderCV()" class="w-full px-3 py-2 border rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
-                        <input type="email" id="input-email" placeholder="Adresse e-mail" oninput="renderCV()" class="w-full px-3 py-2 border rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
+                        <div class="flex items-center gap-1 opacity-60 group-hover:opacity-100 transition-opacity">
+                            <button onclick="moveBlock(this, 'up')" class="p-1 hover:bg-slate-200 rounded text-slate-600"><i data-lucide="chevron-up" class="w-4 h-4"></i></button>
+                            <button onclick="moveBlock(this, 'down')" class="p-1 hover:bg-slate-200 rounded text-slate-600"><i data-lucide="chevron-down" class="w-4 h-4"></i></button>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+                        <div class="sm:col-span-2">
+                            <label class="block text-xs font-medium text-slate-500 mb-1">Intitulé du poste recherché</label>
+                            <input type="text" id="input-title" oninput="saveAndRefresh()" class="w-full px-3 py-2 rounded-lg border border-slate-200 focus:outline-indigo-500">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-slate-500 mb-1">NOM</label>
+                            <input type="text" id="input-lastname" oninput="this.value = this.value.toUpperCase(); saveAndRefresh();" class="w-full px-3 py-2 rounded-lg border border-slate-200 focus:outline-indigo-500 uppercase">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-slate-500 mb-1">Prénom</label>
+                            <input type="text" id="input-firstname" oninput="formatFirstName(this); saveAndRefresh();" class="w-full px-3 py-2 rounded-lg border border-slate-200 focus:outline-indigo-500">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-slate-500 mb-1">Téléphone</label>
+                            <input type="tel" id="input-phone" oninput="saveAndRefresh()" class="w-full px-3 py-2 rounded-lg border border-slate-200 focus:outline-indigo-500">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-slate-500 mb-1">Adresse e-mail</label>
+                            <input type="email" id="input-email" oninput="saveAndRefresh()" class="w-full px-3 py-2 rounded-lg border border-slate-200 focus:outline-indigo-500">
+                        </div>
                     </div>
                 </div>
 
-                <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100">
-                    <h3 class="font-bold text-slate-900 mb-4 flex items-center gap-2 text-sm uppercase tracking-wider"><i data-lucide="file-text" class="w-4 h-4 text-indigo-500"></i> Phrase d’accroche</h3>
-                    <textarea id="input-pitch" placeholder="Votre projet professionnel ou pitch..." rows="3" oninput="renderCV()" class="w-full px-3 py-2 border rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none resize-none"></textarea>
-                </div>
-
-                <div id="dynamic-blocks-wrapper" class="space-y-4"></div>
-
-            </div>
-
-            <div class="mt-6 flex flex-col sm:flex-row gap-3">
-                <button onclick="generatePDF()" class="flex-1 bg-indigo-600 text-white font-bold py-3 px-4 rounded-xl shadow-lg hover:bg-indigo-700 transition flex items-center justify-center gap-2 cursor-pointer">
-                    <i data-lucide="download" class="w-5 h-5"></i> Générer mon CV en PDF
-                </button>
-                <button onclick="resetForm()" class="bg-slate-200 text-slate-700 font-medium py-3 px-4 rounded-xl hover:bg-slate-300 transition flex items-center justify-center gap-2 cursor-pointer">
-                    <i data-lucide="refresh-cw" class="w-5 h-5"></i> Réinitialiser
-                </button>
-            </div>
-        </div>
-
-        <div class="w-full lg:w-1/2 bg-slate-200 p-4 lg:p-8 flex justify-center items-start overflow-y-auto preview-container max-h-screen no-scrollbar">
-            <div id="cv-preview-holder" class="bg-white shadow-2xl rounded-sm page-a4 p-[15mm] flex flex-col justify-between overflow-hidden">
-                <div id="cv-content-target">
+                <div class="form-block bg-slate-50 p-5 rounded-2xl border border-slate-200/60 shadow-sm relative group" data-block-id="pitch">
+                    <div class="flex justify-between items-center mb-4">
+                        <div class="flex items-center gap-2">
+                            <div class="p-2 bg-indigo-100 text-indigo-600 rounded-lg"><i data-lucide="sparkles" class="w-4 h-4"></i></div>
+                            <h3 class="font-bold text-slate-800 text-sm">Phrase d’accroche impactante</h3>
+                        </div>
+                        <div class="flex items-center gap-1 opacity-60 group-hover:opacity-100 transition-opacity">
+                            <button onclick="moveBlock(this, 'up')" class="p-1 hover:bg-slate-200 rounded text-slate-600"><i data-lucide="chevron-up" class="w-4 h-4"></i></button>
+                            <button onclick="moveBlock(this, 'down')" class="p-1 hover:bg-slate-200 rounded text-slate-600"><i data-lucide="chevron-down" class="w-4 h-4"></i></button>
+                        </div>
                     </div>
-                <div class="text-center text-[10px] text-slate-400 border-t pt-2" style="font-family: sans-serif;">
-                    Modèle créé sur une idée de Faly R.®
+                    <div>
+                        <label class="block text-xs font-medium text-slate-500 mb-1">Votre projet professionnel ou pitch</label>
+                        <textarea id="input-pitch" oninput="saveAndRefresh()" rows="3" class="w-full px-3 py-2 rounded-lg border border-slate-200 focus:outline-indigo-500 text-sm"></textarea>
+                    </div>
+                </div>
+
+                <div class="form-block bg-slate-50 p-5 rounded-2xl border border-slate-200/60 shadow-sm relative group" data-block-id="formations">
+                    <div class="flex justify-between items-center mb-4">
+                        <div class="flex items-center gap-2">
+                            <div class="p-2 bg-indigo-100 text-indigo-600 rounded-lg"><i data-lucide="graduation-cap" class="w-4 h-4"></i></div>
+                            <h3 class="font-bold text-slate-800 text-sm">Formations & Diplômes</h3>
+                        </div>
+                        <div class="flex items-center gap-1 opacity-60 group-hover:opacity-100 transition-opacity">
+                            <button onclick="moveBlock(this, 'up')" class="p-1 hover:bg-slate-200 rounded text-slate-600"><i data-lucide="chevron-up" class="w-4 h-4"></i></button>
+                            <button onclick="moveBlock(this, 'down')" class="p-1 hover:bg-slate-200 rounded text-slate-600"><i data-lucide="chevron-down" class="w-4 h-4"></i></button>
+                        </div>
+                    </div>
+                    <div id="subcontainer-formations" class="space-y-4"></div>
+                    <button onclick="addSubBlock('formations')" class="mt-3 w-full py-2 bg-white border border-dashed border-indigo-300 text-indigo-600 rounded-xl hover:bg-indigo-50/50 text-xs font-semibold flex items-center justify-center gap-1"><i data-lucide="plus" class="w-4 h-4"></i> Ajouter un diplôme</button>
+                </div>
+
+                <div class="form-block bg-slate-50 p-5 rounded-2xl border border-slate-200/60 shadow-sm relative group" data-block-id="experiences">
+                    <div class="flex justify-between items-center mb-4">
+                        <div class="flex items-center gap-2">
+                            <div class="p-2 bg-indigo-100 text-indigo-600 rounded-lg"><i data-lucide="briefcase" class="w-4 h-4"></i></div>
+                            <h3 class="font-bold text-slate-800 text-sm">Expériences professionnelles</h3>
+                        </div>
+                        <div class="flex items-center gap-1 opacity-60 group-hover:opacity-100 transition-opacity">
+                            <button onclick="moveBlock(this, 'up')" class="p-1 hover:bg-slate-200 rounded text-slate-600"><i data-lucide="chevron-up" class="w-4 h-4"></i></button>
+                            <button onclick="moveBlock(this, 'down')" class="p-1 hover:bg-slate-200 rounded text-slate-600"><i data-lucide="chevron-down" class="w-4 h-4"></i></button>
+                        </div>
+                    </div>
+                    <div id="subcontainer-experiences" class="space-y-4"></div>
+                    <button onclick="addSubBlock('experiences')" class="mt-3 w-full py-2 bg-white border border-dashed border-indigo-300 text-indigo-600 rounded-xl hover:bg-indigo-50/50 text-xs font-semibold flex items-center justify-center gap-1"><i data-lucide="plus" class="w-4 h-4"></i> Ajouter une expérience</button>
+                </div>
+
+                <div class="form-block bg-slate-50 p-5 rounded-2xl border border-slate-200/60 shadow-sm relative group" data-block-id="techniques">
+                    <div class="flex justify-between items-center mb-4">
+                        <div class="flex items-center gap-2">
+                            <div class="p-2 bg-indigo-100 text-indigo-600 rounded-lg"><i data-lucide="cpu" class="w-4 h-4"></i></div>
+                            <h3 class="font-bold text-slate-800 text-sm">Compétences techniques</h3>
+                        </div>
+                        <div class="flex items-center gap-1 opacity-60 group-hover:opacity-100 transition-opacity">
+                            <button onclick="moveBlock(this, 'up')" class="p-1 hover:bg-slate-200 rounded text-slate-600"><i data-lucide="chevron-up" class="w-4 h-4"></i></button>
+                            <button onclick="moveBlock(this, 'down')" class="p-1 hover:bg-slate-200 rounded text-slate-600"><i data-lucide="chevron-down" class="w-4 h-4"></i></button>
+                        </div>
+                    </div>
+                    <div id="subcontainer-techniques" class="space-y-3"></div>
+                    <button onclick="addSubBlock('techniques')" class="mt-3 w-full py-2 bg-white border border-dashed border-indigo-300 text-indigo-600 rounded-xl hover:bg-indigo-50/50 text-xs font-semibold flex items-center justify-center gap-1"><i data-lucide="plus" class="w-4 h-4"></i> Ajouter une compétence</button>
+                </div>
+
+                <div class="form-block bg-slate-50 p-5 rounded-2xl border border-slate-200/60 shadow-sm relative group" data-block-id="linguistiques">
+                    <div class="flex justify-between items-center mb-4">
+                        <div class="flex items-center gap-2">
+                            <div class="p-2 bg-indigo-100 text-indigo-600 rounded-lg"><i data-lucide="languages" class="w-4 h-4"></i></div>
+                            <h3 class="font-bold text-slate-800 text-sm">Compétences linguistiques</h3>
+                        </div>
+                        <div class="flex items-center gap-1 opacity-60 group-hover:opacity-100 transition-opacity">
+                            <button onclick="moveBlock(this, 'up')" class="p-1 hover:bg-slate-200 rounded text-slate-600"><i data-lucide="chevron-up" class="w-4 h-4"></i></button>
+                            <button onclick="moveBlock(this, 'down')" class="p-1 hover:bg-slate-200 rounded text-slate-600"><i data-lucide="chevron-down" class="w-4 h-4"></i></button>
+                        </div>
+                    </div>
+                    <div id="subcontainer-linguistiques" class="space-y-3"></div>
+                    <button onclick="addSubBlock('linguistiques')" class="mt-3 w-full py-2 bg-white border border-dashed border-indigo-300 text-indigo-600 rounded-xl hover:bg-indigo-50/50 text-xs font-semibold flex items-center justify-center gap-1"><i data-lucide="plus" class="w-4 h-4"></i> Ajouter une langue</button>
+                </div>
+
+                <div class="form-block bg-slate-50 p-5 rounded-2xl border border-slate-200/60 shadow-sm relative group" data-block-id="interets">
+                    <div class="flex justify-between items-center mb-4">
+                        <div class="flex items-center gap-2">
+                            <div class="p-2 bg-indigo-100 text-indigo-600 rounded-lg"><i data-lucide="heart" class="w-4 h-4"></i></div>
+                            <h3 class="font-bold text-slate-800 text-sm">Centres d’intérêts</h3>
+                        </div>
+                        <div class="flex items-center gap-1 opacity-60 group-hover:opacity-100 transition-opacity">
+                            <button onclick="moveBlock(this, 'up')" class="p-1 hover:bg-slate-200 rounded text-slate-600"><i data-lucide="chevron-up" class="w-4 h-4"></i></button>
+                            <button onclick="moveBlock(this, 'down')" class="p-1 hover:bg-slate-200 rounded text-slate-600"><i data-lucide="chevron-down" class="w-4 h-4"></i></button>
+                        </div>
+                    </div>
+                    <div id="subcontainer-interets" class="space-y-4"></div>
+                    <button onclick="addSubBlock('interets')" class="mt-3 w-full py-2 bg-white border border-dashed border-indigo-300 text-indigo-600 rounded-xl hover:bg-indigo-50/50 text-xs font-semibold flex items-center justify-center gap-1"><i data-lucide="plus" class="w-4 h-4"></i> Ajouter un centre d'intérêt</button>
+                </div>
+
+            </div>
+
+            <div class="mt-8 flex gap-3 pt-6 border-t border-slate-200">
+                <button onclick="generatePDF()" class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-4 rounded-xl shadow-lg shadow-indigo-200 flex items-center justify-center gap-2 transition-all"><i data-lucide="download" class="w-5 h-5"></i> Générer mon CV en PDF</button>
+                <button onclick="resetForm()" class="bg-slate-100 hover:bg-slate-200 text-slate-600 font-semibold py-3 px-4 rounded-xl transition-all">Réinitialiser</button>
+            </div>
+        </div>
+
+        <div class="w-full lg:w-1/2 p-4 bg-slate-600 flex justify-center items-start overflow-y-auto max-h-screen pt-8">
+            <div class="cv-preview-container">
+                <div id="cv-to-print" class="cv-page text-slate-800">
+                    
+                    <div class="h-full flex flex-col justify-between">
+                        <div>
+                            <div class="flex justify-between items-start gap-4 mb-4">
+                                <div class="space-y-1 max-w-[65%]">
+                                    <h1 id="cv-job-title" class="text-xl font-extrabold tracking-tight leading-tight uppercase" style="color: var(--primary-color, #4f46e5);"></h1>
+                                    <div class="text-base text-slate-800 font-medium">
+                                        <span id="cv-firstname"></span> <span id="cv-lastname" class="font-bold"></span>
+                                    </div>
+                                </div>
+                                <div class="text-right text-xs space-y-1 text-slate-600">
+                                    <div id="cv-phone-container" class="hidden flex items-center justify-end gap-1.5">
+                                        <span id="cv-phone"></span><i data-lucide="phone" class="w-3.5 h-3.5 text-slate-400"></i>
+                                    </div>
+                                    <div id="cv-email-container" class="hidden flex items-center justify-end gap-1.5">
+                                        <span id="cv-email" class="break-all"></span><i data-lucide="mail" class="w-3.5 h-3.5 text-slate-400"></i>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div id="cv-pitch-container" class="hidden mb-4">
+                                <p id="cv-pitch" class="text-xs italic text-slate-600 leading-relaxed bg-slate-50 p-2.5 rounded-lg border-l-2" style="border-left-color: var(--primary-color, #4f46e5);"></p>
+                            </div>
+
+                            <div id="cv-divider" class="hidden border-b-2 mb-4" style="border-color: var(--primary-color, #4f46e5);"></div>
+
+                            <div id="cv-dynamic-sections" class="space-y-4"></div>
+                        </div>
+
+                        <div class="text-center text-[9px] text-slate-400 border-t border-slate-100 pt-3 mt-auto">
+                            Modèle créé sur une idée de Faly R.®
+                        </div>
+                    </div>
+
                 </div>
             </div>
         </div>
+
     </div>
 
-    <div id="stats-modal" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-        <div class="bg-white rounded-3xl p-6 max-w-sm w-full shadow-2xl">
-            <h3 class="text-lg font-bold text-slate-900 mb-4 flex items-center gap-2"><i data-lucide="bar-chart-3" class="text-indigo-600"></i> Statistiques d'utilisation</h3>
-            <div class="grid grid-cols-2 gap-4 mb-6">
-                <div class="bg-indigo-50 p-4 rounded-2xl text-center">
-                    <span class="block text-2xl font-black text-indigo-600" id="stat-connexions">0</span>
-                    <span class="text-xs text-indigo-700 font-medium">Connexions</span>
+    <div id="stats-modal" class="hidden fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-xl p-6 max-w-sm w-full space-y-4">
+            <h3 class="text-base font-bold text-slate-900 flex items-center gap-2"><i data-lucide="bar-chart-3" class="text-indigo-600"></i> Statistiques d'utilisation</h3>
+            <div class="grid grid-cols-2 gap-3">
+                <div class="bg-slate-50 p-4 rounded-xl text-center border border-slate-100">
+                    <span class="block text-2xl font-bold text-indigo-600" id="stat-connexions">0</span>
+                    <span class="text-[11px] text-slate-500 font-medium">Connexions</span>
                 </div>
-                <div class="bg-pink-50 p-4 rounded-2xl text-center">
-                    <span class="block text-2xl font-black text-pink-600" id="stat-downloads">0</span>
-                    <span class="text-xs text-pink-700 font-medium">Téléchargements</span>
+                <div class="bg-slate-50 p-4 rounded-xl text-center border border-slate-100">
+                    <span class="block text-2xl font-bold text-emerald-600" id="stat-downloads">0</span>
+                    <span class="text-[11px] text-slate-500 font-medium">Téléchargements</span>
                 </div>
             </div>
-            <div class="flex gap-2">
-                <button onclick="resetStats()" class="flex-1 bg-rose-50 text-rose-600 text-xs font-semibold py-2.5 rounded-xl hover:bg-rose-100 transition">Réinitialiser</button>
-                <button onclick="closeStats()" class="flex-1 bg-slate-100 text-slate-700 text-xs font-semibold py-2.5 rounded-xl hover:bg-slate-200 transition">Fermer</button>
+            <div class="flex gap-2 pt-2">
+                <button onclick="resetStats()" class="flex-1 py-2 bg-rose-50 text-rose-600 hover:bg-rose-100 font-semibold text-xs rounded-xl transition-all">Réinitialiser les compteurs</button>
+                <button onclick="closeStatsModal()" class="px-4 py-2 bg-slate-100 text-slate-600 hover:bg-slate-200 font-semibold text-xs rounded-xl transition-all">Fermer</button>
             </div>
         </div>
     </div>
 
     <script>
-        // Initialisation de l'ordre par défaut des blocs amovibles
-        let blockOrder = ['formations', 'experiences', 'competences', 'langues', 'interets'];
-        
-        // Données d'état dynamiques
-        let cvData = {
-            formations: [{ diplome: '', ecole: '', annee: '' }],
-            experiences: [{ poste: '', entreprise: '', annee: '', desc: '' }],
-            competences: [{ nom: '', niveau: 'Initiation' }],
-            langues: [{ langue: '', niveau: 'Initiation' }],
-            interets: [{ nom: '', desc: '' }]
+        const SUPABASE_URL = ""; 
+        const SUPABASE_KEY = "";
+
+        let state = {
+            connexions: parseInt(localStorage.getItem('stat_connexions') || '0'),
+            downloads: parseInt(localStorage.getItem('stat_downloads') || '0')
         };
 
-        // Dictionnaire des noms lisibles
-        const blockNames = {
-            formations: 'Formations & Diplômes',
-            experiences: 'Expériences professionnelles',
-            competences: 'Compétences techniques',
-            langues: 'Compétences linguistiques',
-            interets: 'Centres d’intérêts'
-        };
+        function checkAccessCode() {
+            const input = document.getElementById('access-code').value;
+            if (input === 'FR072026') {
+                document.getElementById('login-screen').classList.add('hidden');
+                document.getElementById('app-screen').classList.remove('hidden');
+                trackMetric('connexions');
+                loadSavedData();
+                lucide.createIcons();
+            } else {
+                alert("Code d'accès incorrect.");
+            }
+        }
 
-        // Fonctions d'accès Sécurisé & Masquage mot de passe
-        function togglePassword() {
+        function togglePasswordVisibility() {
             const input = document.getElementById('access-code');
             const icon = document.getElementById('eye-icon');
             if (input.type === 'password') {
@@ -185,415 +321,461 @@
             lucide.createIcons();
         }
 
-        function checkCode() {
-            const code = document.getElementById('access-code').value;
-            if (code === "FR072026") {
-                document.getElementById('login-screen').classList.add('hidden');
-                document.getElementById('app-screen').classList.remove('hidden');
-                incrementStat('connexions');
-                initApp();
-            } else {
-                alert('Code d’accès incorrect.');
-            }
-        }
-
-        // Formateurs de casse de texte obligatoires
-        function formatNom(input) {
-            input.value = input.value.toUpperCase();
-        }
-        function formatPrenom(input) {
+        function formatFirstName(input) {
             if (!input.value) return;
             input.value = input.value.charAt(0).toUpperCase() + input.value.slice(1).toLowerCase();
         }
 
-       // Configuration Supabase - Collez vos identifiants ici
-        const SUPABASE_URL = "https://utuyvyjbzkjkpzdjxbrh.supabase.co/rest/v1/"; 
-        const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV0dXl2eWpiemtqa3B6ZGp4YnJoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQwOTg5OTgsImV4cCI6MjA5OTY3NDk5OH0.GDqk2Y-sWL6tyrJRPIKff8cIfelXO9dcDHfMmc2YV_A";
-
-        // Fonctions de statistiques locales et distantes
-        async function incrementStat(key) {
-            // 1. Sauvegarde locale dans le navigateur de l'utilisateur
-            let val = parseInt(localStorage.getItem('cv_express_' + key) || '0');
-            val++;
-            localStorage.setItem('cv_express_' + key, val);
-            
-            // 2. Envoi anonyme et transparent vers Supabase
-            if (SUPABASE_URL && SUPABASE_KEY && SUPABASE_URL !== "https://utuyvyjbzkjkpzdjxbrh.supabase.co/rest/v1/") {
-                try {
-                    await fetch(`${SUPABASE_URL}/rest/v1/cv_metrics`, {
-                        method: 'POST',
-                        headers: {
-                            'apikey': SUPABASE_KEY,
-                            'Authorization': `Bearer ${SUPABASE_KEY}`,
-                            'Content-Type': 'application/json',
-                            'Prefer': 'return=minimal'
-                        },
-                        body: JSON.stringify({ type: key }) // Envoie 'connexions' ou 'downloads'
-                    });
-                } catch (e) {
-                    console.error("Erreur lors de l'envoi de la statistique :", e);
-                }
+        function createSubBlockHTML(type, id, val1='', val2='', val3='', val4='') {
+            if (type === 'formations') {
+                return `
+                <div class="sub-block bg-white p-4 rounded-xl border border-slate-200 space-y-2 relative group/sub" data-sub-id="${id}">
+                    <div class="grid grid-cols-3 gap-2 text-xs">
+                        <div class="col-span-2"><input type="text" placeholder="Intitulé du diplôme" value="${val1}" oninput="saveAndRefresh()" class="field-1 w-full px-2 py-1.5 border rounded-md"></div>
+                        <div><input type="text" placeholder="Année" value="${val3}" oninput="saveAndRefresh()" class="field-3 w-full px-2 py-1.5 border rounded-md text-right"></div>
+                        <div class="col-span-3"><input type="text" placeholder="Nom de l’établissement - Ville, Région" value="${val2}" oninput="saveAndRefresh()" class="field-2 w-full px-2 py-1.5 border rounded-md"></div>
+                    </div>
+                    <div class="absolute right-2 top-2 flex gap-1 opacity-0 group-hover/sub:opacity-100 transition-opacity bg-white pl-1">
+                        <button onclick="moveSubBlock(this, 'up')" class="p-0.5 hover:bg-slate-100 text-slate-500 rounded"><i data-lucide="arrow-up" class="w-3.5 h-3.5"></i></button>
+                        <button onclick="moveSubBlock(this, 'down')" class="p-0.5 hover:bg-slate-100 text-slate-500 rounded"><i data-lucide="arrow-down" class="w-3.5 h-3.5"></i></button>
+                        <button onclick="deleteSubBlock(this)" class="p-0.5 hover:bg-rose-50 text-rose-500 rounded"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>
+                    </div>
+                </div>`;
+            } else if (type === 'experiences') {
+                return `
+                <div class="sub-block bg-white p-4 rounded-xl border border-slate-200 space-y-2 relative group/sub" data-sub-id="${id}">
+                    <div class="grid grid-cols-3 gap-2 text-xs">
+                        <div class="col-span-2"><input type="text" placeholder="Intitulé de poste" value="${val1}" oninput="saveAndRefresh()" class="field-1 w-full px-2 py-1.5 border rounded-md"></div>
+                        <div><input type="text" placeholder="Année" value="${val3}" oninput="saveAndRefresh()" class="field-3 w-full px-2 py-1.5 border rounded-md text-right"></div>
+                        <div class="col-span-3"><input type="text" placeholder="Nom de l’entreprise - Ville, Région" value="${val2}" oninput="saveAndRefresh()" class="field-2 w-full px-2 py-1.5 border rounded-md"></div>
+                        <div class="col-span-3"><textarea placeholder="Description des missions (Appuyez sur Entrée pour des puces)" oninput="saveAndRefresh()" onkeydown="handleBulletPoints(event)" rows="2" class="field-4 w-full px-2 py-1.5 border rounded-md">${val4}</textarea></div>
+                    </div>
+                    <div class="absolute right-2 top-2 flex gap-1 opacity-0 group-hover/sub:opacity-100 transition-opacity bg-white pl-1">
+                        <button onclick="moveSubBlock(this, 'up')" class="p-0.5 hover:bg-slate-100 text-slate-500 rounded"><i data-lucide="arrow-up" class="w-3.5 h-3.5"></i></button>
+                        <button onclick="moveSubBlock(this, 'down')" class="p-0.5 hover:bg-slate-100 text-slate-500 rounded"><i data-lucide="arrow-down" class="w-3.5 h-3.5"></i></button>
+                        <button onclick="deleteSubBlock(this)" class="p-0.5 hover:bg-rose-50 text-rose-500 rounded"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>
+                    </div>
+                </div>`;
+            } else if (type === 'techniques') {
+                return `
+                <div class="sub-block bg-white p-3 rounded-xl border border-slate-200 space-y-2 relative group/sub" data-sub-id="${id}">
+                    <div class="grid grid-cols-1 gap-2 text-xs pr-14">
+                        <input type="text" placeholder="Intitulé de la compétence" value="${val1}" oninput="saveAndRefresh()" class="field-1 w-full px-2 py-1.5 border rounded-md">
+                        <select onchange="saveAndRefresh()" class="field-2 w-full px-2 py-1.5 border rounded-md bg-white">
+                            <option value="Initiation" ${val2 === 'Initiation' ? 'selected' : ''}>Initiation</option>
+                            <option value="Débutant" ${val2 === 'Débutant' ? 'selected' : ''}>Débutant</option>
+                            <option value="Compétences professionnelles limitées" ${val2 === 'Compétences professionnelles limitées' ? 'selected' : ''}>Compétences professionnelles limitées</option>
+                            <option value="Compétences professionnelles complètes" ${val2 === 'Compétences professionnelles complètes' ? 'selected' : ''}>Compétences professionnelles complètes</option>
+                            <option value="Expert" ${val2 === 'Expert' ? 'selected' : ''}>Expert</option>
+                        </select>
+                    </div>
+                    <div class="absolute right-2 top-3 flex gap-1 opacity-0 group-hover/sub:opacity-100 transition-opacity bg-white pl-1">
+                        <button onclick="moveSubBlock(this, 'up')" class="p-0.5 hover:bg-slate-100 text-slate-500 rounded"><i data-lucide="arrow-up" class="w-3.5 h-3.5"></i></button>
+                        <button onclick="moveSubBlock(this, 'down')" class="p-0.5 hover:bg-slate-100 text-slate-500 rounded"><i data-lucide="arrow-down" class="w-3.5 h-3.5"></i></button>
+                        <button onclick="deleteSubBlock(this)" class="p-0.5 hover:bg-rose-50 text-rose-500 rounded"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>
+                    </div>
+                </div>`;
+            } else if (type === 'linguistiques') {
+                return `
+                <div class="sub-block bg-white p-3 rounded-xl border border-slate-200 space-y-2 relative group/sub" data-sub-id="${id}">
+                    <div class="grid grid-cols-2 gap-2 text-xs pr-14">
+                        <input type="text" placeholder="Langue parlée" value="${val1}" oninput="saveAndRefresh()" class="field-1 w-full px-2 py-1.5 border rounded-md">
+                        <select onchange="saveAndRefresh()" class="field-2 w-full px-2 py-1.5 border rounded-md bg-white">
+                            <option value="Initiation" ${val2 === 'Initiation' ? 'selected' : ''}>Initiation</option>
+                            <option value="Débutant" ${val2 === 'Débutant' ? 'selected' : ''}>Débutant</option>
+                            <option value="Niveau scolaire" ${val2 === 'Niveau scolaire' ? 'selected' : ''}>Niveau scolaire</option>
+                            <option value="Compétences professionnelles limitées" ${val2 === 'Compétences professionnelles limitées' ? 'selected' : ''}>Compétences professionnelles limitées</option>
+                            <option value="Compétences professionnelles complètes" ${val2 === 'Compétences professionnelles complètes' ? 'selected' : ''}>Compétences professionnelles complètes</option>
+                            <option value="Bilingue" ${val2 === 'Bilingue' ? 'selected' : ''}>Bilingue</option>
+                            <option value="Langue maternelle" ${val2 === 'Langue maternelle' ? 'selected' : ''}>Langue maternelle</option>
+                        </select>
+                    </div>
+                    <div class="absolute right-2 top-2 flex gap-1 opacity-0 group-hover/sub:opacity-100 transition-opacity bg-white pl-1">
+                        <button onclick="moveSubBlock(this, 'up')" class="p-0.5 hover:bg-slate-100 text-slate-500 rounded"><i data-lucide="arrow-up" class="w-3.5 h-3.5"></i></button>
+                        <button onclick="moveSubBlock(this, 'down')" class="p-0.5 hover:bg-slate-100 text-slate-500 rounded"><i data-lucide="arrow-down" class="w-3.5 h-3.5"></i></button>
+                        <button onclick="deleteSubBlock(this)" class="p-0.5 hover:bg-rose-50 text-rose-500 rounded"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>
+                    </div>
+                </div>`;
+            } else if (type === 'interets') {
+                return `
+                <div class="sub-block bg-white p-4 rounded-xl border border-slate-200 space-y-2 relative group/sub" data-sub-id="${id}">
+                    <div class="grid grid-cols-1 gap-2 text-xs">
+                        <input type="text" placeholder="Intitulé du centre d'intérêt" value="${val1}" oninput="saveAndRefresh()" class="field-1 w-full px-2 py-1.5 border rounded-md">
+                        <textarea placeholder="Description (Appuyez sur Entrée pour des puces)" oninput="saveAndRefresh()" onkeydown="handleBulletPoints(event)" rows="2" class="field-2 w-full px-2 py-1.5 border rounded-md">${val2}</textarea>
+                    </div>
+                    <div class="absolute right-2 top-2 flex gap-1 opacity-0 group-hover/sub:opacity-100 transition-opacity bg-white pl-1">
+                        <button onclick="moveSubBlock(this, 'up')" class="p-0.5 hover:bg-slate-100 text-slate-500 rounded"><i data-lucide="arrow-up" class="w-3.5 h-3.5"></i></button>
+                        <button onclick="moveSubBlock(this, 'down')" class="p-0.5 hover:bg-slate-100 text-slate-500 rounded"><i data-lucide="arrow-down" class="w-3.5 h-3.5"></i></button>
+                        <button onclick="deleteSubBlock(this)" class="p-0.5 hover:bg-rose-50 text-rose-500 rounded"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>
+                    </div>
+                </div>`;
             }
+            return '';
         }
 
-        function showStats() {
-            document.getElementById('stat-connexions').innerText = localStorage.getItem('cv_express_connexions') || '0';
-            document.getElementById('stat-downloads').innerText = localStorage.getItem('cv_express_downloads') || '0';
-            document.getElementById('stats-modal').classList.remove('hidden');
-        }
-
-        function closeStats() { 
-            document.getElementById('stats-modal').classList.add('hidden'); 
-        }
-
-        function resetStats() {
-            if (confirm("Réinitialiser vos compteurs locaux à 0 ? (Cela n'effacera pas la base de données globale)")) {
-                localStorage.setItem('cv_express_connexions', '0');
-                localStorage.setItem('cv_express_downloads', '0');
-                showStats();
-            }
-        }
-
-        // Initialisation de l'application et rendu initial
-        function initApp() {
-            renderFormBlocks();
-            renderCV();
+        function addSubBlock(type) {
+            const id = Date.now() + Math.random().toString(36).substr(2, 5);
+            const html = createSubBlockHTML(type, id);
+            document.getElementById(`subcontainer-${type}`).insertAdjacentHTML('beforeend', html);
             lucide.createIcons();
+            saveAndRefresh();
         }
 
-        // Ordonnancement & Rendu Dynamique des inputs du Formulaire
-        function renderFormBlocks() {
-            const container = document.getElementById('dynamic-blocks-wrapper');
-            container.innerHTML = '';
-
-            blockOrder.forEach((blockKey, index) => {
-                const blockDiv = document.createElement('div');
-                blockDiv.className = "bg-white p-5 rounded-2xl shadow-sm border border-slate-100 space-y-4 relative group";
-                
-                // Barre d'outils du Bloc (Monter / Descendre)
-                let reorderButtons = `
-                    <div class="flex items-center gap-1">
-                        <button onclick="moveBlock('${blockKey}', 'up')" class="p-1 hover:bg-slate-100 rounded text-slate-500 ${index === 0 ? 'opacity-30 pointer-events-none' : ''}"><i data-lucide="arrow-up" class="w-4 h-4"></i></button>
-                        <button onclick="moveBlock('${blockKey}', 'down')" class="p-1 hover:bg-slate-100 rounded text-slate-500 ${index === blockOrder.length - 1 ? 'opacity-30 pointer-events-none' : ''}"><i data-lucide="arrow-down" class="w-4 h-4"></i></button>
-                    </div>
-                `;
-
-                blockDiv.innerHTML = `
-                    <div class="flex justify-between items-center border-b border-slate-100 pb-2">
-                        <h3 class="font-bold text-slate-900 text-sm uppercase tracking-wider">${blockNames[blockKey]}</h3>
-                        ${reorderButtons}
-                    </div>
-                    <div id="items-container-${blockKey}" class="space-y-4"></div>
-                    <button onclick="addItem('${blockKey}')" class="w-full py-2 bg-slate-50 text-indigo-600 hover:bg-indigo-50 border border-dashed border-indigo-200 rounded-xl text-xs font-semibold flex items-center justify-center gap-1 cursor-pointer">
-                        <i data-lucide="plus" class="w-3.5 h-3.5"></i> Ajouter une ligne
-                    </button>
-                `;
-
-                container.appendChild(blockDiv);
-                renderBlockItems(blockKey);
-            });
-            lucide.createIcons();
-        }
-
-        // Gestion de l'intervertissement des blocs parents
-        function moveBlock(blockKey, direction) {
-            let idx = blockOrder.indexOf(blockKey);
-            if(direction === 'up' && idx > 0) {
-                [blockOrder[idx], blockOrder[idx-1]] = [blockOrder[idx-1], blockOrder[idx]];
-            } else if(direction === 'down' && idx < blockOrder.length - 1) {
-                [blockOrder[idx], blockOrder[idx+1]] = [blockOrder[idx+1], blockOrder[idx]];
-            }
-            renderFormBlocks();
-            renderCV();
-        }
-
-        // Rendu des sous-blocs d'un type précis (ex: chaque diplôme)
-        function renderBlockItems(blockKey) {
-            const target = document.getElementById(`items-container-${blockKey}`);
-            target.innerHTML = '';
-
-            cvData[blockKey].forEach((item, idx) => {
-                const subBlock = document.createElement('div');
-                subBlock.className = "p-3 bg-slate-50/50 rounded-xl border border-slate-100 relative space-y-2";
-                
-                let inputsHTML = '';
-
-                // Génération conditionnelle selon le type de bloc demandé
-                if (blockKey === 'formations') {
-                    inputsHTML = `
-                        <div class="grid grid-cols-3 gap-2">
-                            <input type="text" placeholder="Intitulé du diplôme" value="${item.diplome || ''}" oninput="updateItemValue('${blockKey}', ${idx}, 'diplome', this.value)" class="col-span-2 px-3 py-1.5 border bg-white rounded-lg text-xs">
-                            <input type="text" placeholder="Année" value="${item.annee || ''}" oninput="updateItemValue('${blockKey}', ${idx}, 'annee', this.value)" class="px-3 py-1.5 border bg-white rounded-lg text-xs">
-                        </div>
-                        <input type="text" placeholder="Nom de l’établissement - Ville, Région" value="${item.ecole || ''}" oninput="updateItemValue('${blockKey}', ${idx}, 'ecole', this.value)" class="w-full px-3 py-1.5 border bg-white rounded-lg text-xs">
-                    `;
-                } else if (blockKey === 'experiences') {
-                    inputsHTML = `
-                        <div class="grid grid-cols-3 gap-2">
-                            <input type="text" placeholder="Intitulé de poste" value="${item.poste || ''}" oninput="updateItemValue('${blockKey}', ${idx}, 'poste', this.value)" class="col-span-2 px-3 py-1.5 border bg-white rounded-lg text-xs">
-                            <input type="text" placeholder="Année" value="${item.annee || ''}" oninput="updateItemValue('${blockKey}', ${idx}, 'annee', this.value)" class="px-3 py-1.5 border bg-white rounded-lg text-xs">
-                        </div>
-                        <input type="text" placeholder="Nom de l’entreprise - Ville, Région" value="${item.entreprise || ''}" oninput="updateItemValue('${blockKey}', ${idx}, 'entreprise', this.value)" class="w-full px-3 py-1.5 border bg-white rounded-lg text-xs">
-                        <textarea placeholder="Description des missions (Entrée pour puces)" rows="2" oninput="updateItemValue('${blockKey}', ${idx}, 'desc', this.value)" onkeydown="handleTextAreaBullet(event, this)" class="w-full px-3 py-1.5 border bg-white rounded-lg text-xs resize-none">${item.desc || ''}</textarea>
-                    `;
-                } else if (blockKey === 'competences') {
-                    inputsHTML = `
-                        <div class="grid grid-cols-2 gap-2">
-                            <input type="text" placeholder="Intitulé de la compétence" value="${item.nom || ''}" oninput="updateItemValue('${blockKey}', ${idx}, 'nom', this.value)" class="px-3 py-1.5 border bg-white rounded-lg text-xs">
-                            <select onchange="updateItemValue('${blockKey}', ${idx}, 'niveau', this.value)" class="px-3 py-1.5 border bg-white rounded-lg text-xs">
-                                <option ${item.niveau=='Initiation'?'selected':''}>Initiation</option>
-                                <option ${item.niveau=='Débutant'?'selected':''}>Débutant</option>
-                                <option ${item.niveau=='Compétences professionnelles limitées'?'selected':''}>Compétences professionnelles limitées</option>
-                                <option ${item.niveau=='Compétences professionnelles complètes'?'selected':''}>Compétences professionnelles complètes</option>
-                                <option ${item.niveau=='Expert'?'selected':''}>Expert</option>
-                            </select>
-                        </div>
-                    `;
-                } else if (blockKey === 'langues') {
-                    inputsHTML = `
-                        <div class="grid grid-cols-2 gap-2">
-                            <input type="text" placeholder="Langue parlée" value="${item.langue || ''}" oninput="updateItemValue('${blockKey}', ${idx}, 'langue', this.value)" class="px-3 py-1.5 border bg-white rounded-lg text-xs">
-                            <select onchange="updateItemValue('${blockKey}', ${idx}, 'niveau', this.value)" class="px-3 py-1.5 border bg-white rounded-lg text-xs">
-                                <option ${item.niveau=='Initiation'?'selected':''}>Initiation</option>
-                                <option ${item.niveau=='Débutant'?'selected':''}>Débutant</option>
-                                <option ${item.niveau=='Niveau scolaire'?'selected':''}>Niveau scolaire</option>
-                                <option ${item.niveau=='Compétences professionnelles limitées'?'selected':''}>Compétences professionnelles limitées</option>
-                                <option ${item.niveau=='Compétences professionnelles complètes'?'selected':''}>Compétences professionnelles complètes</option>
-                                <option ${item.niveau=='Bilingue'?'selected':''}>Bilingue</option>
-                                <option ${item.niveau=='Langue maternelle'?'selected':''}>Langue maternelle</option>
-                            </select>
-                        </div>
-                    `;
-                } else if (blockKey === 'interets') {
-                    inputsHTML = `
-                        <input type="text" placeholder="Intitulé du centre d’intérêt" value="${item.nom || ''}" oninput="updateItemValue('${blockKey}', ${idx}, 'nom', this.value)" class="w-full px-3 py-1.5 border bg-white rounded-lg text-xs">
-                        <textarea placeholder="Description (Entrée pour puces)" rows="2" oninput="updateItemValue('${blockKey}', ${idx}, 'desc', this.value)" onkeydown="handleTextAreaBullet(event, this)" class="w-full px-3 py-1.5 border bg-white rounded-lg text-xs resize-none">${item.desc || ''}</textarea>
-                    `;
-                }
-
-                subBlock.innerHTML = `
-                    <div class="absolute right-2 top-2 flex items-center gap-1 z-10">
-                        <button onclick="moveItem('${blockKey}', ${idx}, -1)" class="p-0.5 bg-white shadow-sm border rounded text-slate-500 hover:bg-slate-100 ${idx===0?'opacity-30 pointer-events-none':''}"><i data-lucide="chevron-up" class="w-3.5 h-3.5"></i></button>
-                        <button onclick="moveItem('${blockKey}', ${idx}, 1)" class="p-0.5 bg-white shadow-sm border rounded text-slate-500 hover:bg-slate-100 ${idx===cvData[blockKey].length-1?'opacity-30 pointer-events-none':''}"><i data-lucide="chevron-down" class="w-3.5 h-3.5"></i></button>
-                        <button onclick="removeItem('${blockKey}', ${idx})" class="p-0.5 bg-rose-50 border border-rose-100 rounded text-rose-600 hover:bg-rose-100"><i data-lucide="trash" class="w-3.5 h-3.5"></i></button>
-                    </div>
-                    <div class="pr-20 space-y-2">
-                        ${inputsHTML}
-                    </div>
-                `;
-                target.appendChild(subBlock);
-            });
-            lucide.createIcons();
-        }
-
-        // Mécanique interne de gestion des tableaux
-        function updateItemValue(blockKey, idx, field, val) {
-            cvData[blockKey][idx][field] = val;
-            renderCV();
-        }
-        function addItem(blockKey) {
-            let emptyItem = {};
-            if(blockKey==='formations') emptyItem = {diplome:'', ecole:'', annee:''};
-            if(blockKey==='experiences') emptyItem = {poste:'', entreprise:'', annee:'', desc:''};
-            if(blockKey==='competences' || blockKey==='langues') emptyItem = {nom:'', langue:'', niveau:'Initiation'};
-            if(blockKey==='interets') emptyItem = {nom:'', desc:''};
-            cvData[blockKey].push(emptyItem);
-            renderBlockItems(blockKey);
-            renderCV();
-        }
-        function removeItem(blockKey, idx) {
-            cvData[blockKey].splice(idx, 1);
-            renderBlockItems(blockKey);
-            renderCV();
-        }
-        function moveItem(blockKey, idx, dir) {
-            let targetIdx = idx + dir;
-            if(targetIdx >= 0 && targetIdx < cvData[blockKey].length) {
-                [cvData[blockKey][idx], cvData[blockKey][targetIdx]] = [cvData[blockKey][targetIdx], cvData[blockKey][idx]];
-                renderBlockItems(blockKey);
-                renderCV();
-            }
-        }
-
-        // Règle automatique de génération de puces lors de la touche "Entrée"
-        function handleTextAreaBullet(e, textarea) {
+        function handleBulletPoints(e) {
             if (e.key === 'Enter') {
                 e.preventDefault();
-                let start = textarea.selectionStart;
-                let end = textarea.selectionEnd;
-                let text = textarea.value;
-                textarea.value = text.substring(0, start) + '\n• ' + text.substring(end);
-                textarea.selectionStart = textarea.selectionEnd = start + 3;
-                textarea.dispatchEvent(new Event('input'));
+                const start = e.target.selectionStart;
+                const end = e.target.selectionEnd;
+                const value = e.target.value;
+                e.target.value = value.substring(0, start) + "\n• " + value.substring(end);
+                e.target.selectionStart = e.target.selectionEnd = start + 3;
+                saveAndRefresh();
             }
         }
 
-        // Lecture des palettes utilisateurs colorimétriques
-        function updateColors() { renderCV(); }
+        function moveBlock(button, direction) {
+            const block = button.closest('.form-block');
+            const container = document.getElementById('form-blocks-container');
+            if (direction === 'up' && block.previousElementSibling) {
+                container.insertBefore(block, block.previousElementSibling);
+            } else if (direction === 'down' && block.nextElementSibling) {
+                container.insertBefore(block.nextElementSibling, block);
+            }
+            saveAndRefresh();
+        }
 
-        // Moteur de rendu de l'Aperçu Instantané (Page 2)
-        function renderCV() {
-            const p = document.getElementById('col-primary').value;
-            const s = document.getElementById('col-secondary').value;
-            const a = document.getElementById('col-accent').value;
+        function moveSubBlock(button, direction) {
+            const subBlock = button.closest('.sub-block');
+            const container = subBlock.parentElement;
+            if (direction === 'up' && subBlock.previousElementSibling) {
+                container.insertBefore(subBlock, subBlock.previousElementSibling);
+            } else if (direction === 'down' && subBlock.nextElementSibling) {
+                container.insertBefore(subBlock.nextElementSibling, subBlock);
+            }
+            saveAndRefresh();
+        }
 
-            // Données Brutes des Inputs statiques
-            const poste = document.getElementById('input-poste').value;
-            const nom = document.getElementById('input-nom').value;
-            const prenom = document.getElementById('input-prenom').value;
+        function deleteSubBlock(button) {
+            button.closest('.sub-block').remove();
+            saveAndRefresh();
+        }
+
+        function saveAllFormData() {
+            const data = {
+                colors: {
+                    primary: document.getElementById('color-primary').value,
+                    secondary: document.getElementById('color-secondary').value,
+                    tertiary: document.getElementById('color-tertiary').value
+                },
+                basics: {
+                    title: document.getElementById('input-title').value,
+                    firstname: document.getElementById('input-firstname').value,
+                    lastname: document.getElementById('input-lastname').value,
+                    phone: document.getElementById('input-phone').value,
+                    email: document.getElementById('input-email').value,
+                    pitch: document.getElementById('input-pitch').value
+                },
+                blocksOrder: Array.from(document.querySelectorAll('#form-blocks-container .form-block')).map(b => b.getAttribute('data-block-id')),
+                subBlocks: {
+                    formations: Array.from(document.querySelectorAll('#subcontainer-formations .sub-block')).map(s => [s.querySelector('.field-1').value, s.querySelector('.field-2').value, s.querySelector('.field-3').value]),
+                    experiences: Array.from(document.querySelectorAll('#subcontainer-experiences .sub-block')).map(s => [s.querySelector('.field-1').value, s.querySelector('.field-2').value, s.querySelector('.field-3').value, s.querySelector('.field-4').value]),
+                    techniques: Array.from(document.querySelectorAll('#subcontainer-techniques .sub-block')).map(s => [s.querySelector('.field-1').value, s.querySelector('.field-2').value]),
+                    linguistiques: Array.from(document.querySelectorAll('#subcontainer-linguistiques .sub-block')).map(s => [s.querySelector('.field-1').value, s.querySelector('.field-2').value]),
+                    interets: Array.from(document.querySelectorAll('#subcontainer-interets .sub-block')).map(s => [s.querySelector('.field-1').value, s.querySelector('.field-2').value])
+                }
+            };
+            localStorage.setItem('cv_express_user_data', JSON.stringify(data));
+        }
+
+        function loadSavedData() {
+            const raw = localStorage.getItem('cv_express_user_data');
+            if (!raw) return;
+            try {
+                const data = JSON.parse(raw);
+                if (data.colors) {
+                    document.getElementById('color-primary').value = data.colors.primary;
+                    document.getElementById('color-secondary').value = data.colors.secondary;
+                    document.getElementById('color-tertiary').value = data.colors.tertiary;
+                }
+                if (data.basics) {
+                    document.getElementById('input-title').value = data.basics.title;
+                    document.getElementById('input-firstname').value = data.basics.firstname;
+                    document.getElementById('input-lastname').value = data.basics.lastname;
+                    document.getElementById('input-phone').value = data.basics.phone;
+                    document.getElementById('input-email').value = data.basics.email;
+                    document.getElementById('input-pitch').value = data.basics.pitch;
+                }
+                if (data.subBlocks) {
+                    Object.keys(data.subBlocks).forEach(type => {
+                        const container = document.getElementById(`subcontainer-${type}`);
+                        container.innerHTML = '';
+                        data.subBlocks[type].forEach(vals => {
+                            const id = Date.now() + Math.random().toString(36).substr(2, 5);
+                            const html = createSubBlockHTML(type, id, vals[0], vals[1], vals[2], vals[3]);
+                            container.insertAdjacentHTML('beforeend', html);
+                        });
+                    });
+                }
+                if (data.blocksOrder) {
+                    const container = document.getElementById('form-blocks-container');
+                    data.blocksOrder.forEach(blockId => {
+                        const block = container.querySelector(`[data-block-id="${blockId}"]`);
+                        if (block) container.appendChild(block);
+                    });
+                }
+            } catch(e) { console.error("Échec du chargement des données locales", e); }
+            updateCV();
+        }
+
+        function saveAndRefresh() {
+            saveAllFormData();
+            updateCV();
+        }
+
+        function updateCV() {
+            const cp = document.getElementById('color-primary').value;
+            const cs = document.getElementById('color-secondary').value;
+            const ct = document.getElementById('color-tertiary').value;
+            
+            document.documentElement.style.setProperty('--primary-color', cp);
+
+            const job = document.getElementById('input-title').value;
+            const fname = document.getElementById('input-firstname').value;
+            const lname = document.getElementById('input-lastname').value;
             const phone = document.getElementById('input-phone').value;
             const email = document.getElementById('input-email').value;
             const pitch = document.getElementById('input-pitch').value;
 
-            let html = `<div class="space-y-4 text-xs">`;
+            document.getElementById('cv-job-title').innerText = job;
+            document.getElementById('cv-firstname').innerText = fname;
+            document.getElementById('cv-lastname').innerText = lname;
+            
+            toggleCVField('cv-phone', phone, 'cv-phone-container');
+            toggleCVField('cv-email', email, 'cv-email-container');
+            toggleCVField('cv-pitch', pitch, 'cv-pitch-container');
 
-            // Bloc Header Preview
-            html += `
-                <div class="flex justify-between items-start border-b pb-4" style="border-color: ${p}">
-                    <div>
-                        ${poste ? `<h2 class="text-lg font-black tracking-tight uppercase mb-1" style="color: ${p}">${poste}</h2>` : ''}
-                        <h1 class="text-md font-medium text-slate-700">${prenom || ''} <span class="font-bold">${nom || ''}</span></h1>
-                    </div>
-                    <div class="text-right space-y-0.5 text-slate-600">
-                        ${phone ? `<div class="flex items-center justify-end gap-1"><span class="text-[10px]">${phone}</span> <i data-lucide="phone" class="w-3 h-3 text-slate-500 inline"></i></div>` : ''}
-                        ${email ? `<div class="flex items-center justify-end gap-1"><span class="text-[10px]">${email}</span> <i data-lucide="mail" class="w-3 h-3 text-slate-500 inline"></i></div>` : ''}
-                    </div>
-                </div>
-            `;
-
-            // Pitch Preview
-            if (pitch) {
-                html += `<p class="italic text-slate-600 my-2 text-[11px] leading-relaxed">${pitch}</p>`;
+            if(job || fname || lname || phone || email || pitch) {
+                document.getElementById('cv-divider').classList.remove('hidden');
+            } else {
+                document.getElementById('cv-divider').classList.add('hidden');
             }
 
-            // Génération des blocs selon l'ordonnancement choisi
-            blockOrder.forEach(key => {
-                let blockHasData = false;
-                let subHtml = `<div class="my-3">
-                    <h3 class="font-extrabold text-[11px] tracking-wider uppercase mb-1.5" style="color: ${p}">${blockNames[key]}</h3>
-                `;
+            const cvSectionsContainer = document.getElementById('cv-dynamic-sections');
+            cvSectionsContainer.innerHTML = '';
 
-                if (key === 'formations') {
-                    cvData.formations.forEach(item => {
-                        if (item.diplome || item.ecole || item.annee) {
-                            blockHasData = true;
-                            subHtml += `
-                                <div class="mb-2">
-                                    <div class="flex justify-between items-baseline">
-                                        <span class="font-bold text-slate-800" style="color: ${s}">${item.diplome || ''}</span>
-                                        <span class="font-medium text-[10px]" style="color: ${a}">${item.annee || ''}</span>
-                                    </div>
-                                    <div class="text-[10px]" style="color: ${a}">${item.ecole || ''}</div>
-                                </div>
-                            `;
+            const blocksOrder = Array.from(document.querySelectorAll('#form-blocks-container .form-block'));
+            
+            blocksOrder.forEach(block => {
+                const blockId = block.getAttribute('data-block-id');
+                if (blockId === 'infos' || blockId === 'pitch') return;
+
+                let blockHtml = '';
+                
+                if (blockId === 'formations') {
+                    const subs = Array.from(block.querySelectorAll('.sub-block'));
+                    let subContent = '';
+                    subs.forEach(s => {
+                        const deg = s.querySelector('.field-1').value;
+                        const inst = s.querySelector('.field-2').value;
+                        const year = s.querySelector('.field-3').value;
+                        if (deg || inst || year) {
+                            subContent += `
+                            <div class="text-xs mb-2 break-inside-avoid" style="page-break-inside: avoid;">
+                                <div class="flex justify-between font-bold" style="color: ${cs};"><span>${deg}</span><span style="color: ${ct}; font-weight: normal;">${year}</span></div>
+                                <div style="color: ${ct};">${inst}</div>
+                            </div>`;
                         }
                     });
+                    if (subContent) {
+                        blockHtml = `<div class="break-inside-avoid" style="page-break-inside: avoid;"><h4 class="text-xs font-bold uppercase tracking-wider mb-2" style="color: ${cp}; border-bottom: 1px solid #f1f5f9; padding-bottom: 2px;">FORMATIONS & DIPLÔMES</h4>${subContent}</div>`;
+                    }
                 }
-                else if (key === 'experiences') {
-                    cvData.experiences.forEach(item => {
-                        if (item.poste || item.entreprise || item.annee || item.desc) {
-                            blockHasData = true;
-                            let formattedDesc = item.desc ? item.desc.split('\n').map(l => l.trim().startsWith('•') ? l : '• ' + l).join('<br>') : '';
-                            subHtml += `
-                                <div class="mb-2">
-                                    <div class="flex justify-between items-baseline">
-                                        <span class="font-bold text-slate-800" style="color: ${s}">${item.poste || ''}</span>
-                                        <span class="font-medium text-[10px]" style="color: ${a}">${item.annee || ''}</span>
-                                    </div>
-                                    <div class="text-[10px] font-medium mb-0.5" style="color: ${a}">${item.entreprise || ''}</div>
-                                    ${item.desc ? `<div class="text-[10px] text-slate-600 pl-1 leading-normal">${formattedDesc}</div>` : ''}
-                                </div>
-                            `;
+                
+                else if (blockId === 'experiences') {
+                    const subs = Array.from(block.querySelectorAll('.sub-block'));
+                    let subContent = '';
+                    subs.forEach(s => {
+                        const pos = s.querySelector('.field-1').value;
+                        const comp = s.querySelector('.field-2').value;
+                        const year = s.querySelector('.field-3').value;
+                        const desc = s.querySelector('.field-4').value;
+                        if (pos || comp || year || desc) {
+                            const formattedDesc = desc ? desc.split('\n').map(l => l.trim() ? `<li>${l.startsWith('•') ? l : '• ' + l}</li>` : '').join('') : '';
+                            subContent += `
+                            <div class="text-xs mb-2 break-inside-avoid" style="page-break-inside: avoid;">
+                                <div class="flex justify-between font-bold" style="color: ${cs};"><span>${pos}</span><span style="color: ${ct}; font-weight: normal;">${year}</span></div>
+                                <div class="font-medium mb-0.5" style="color: ${ct};">${comp}</div>
+                                <ul class="text-slate-600 list-none space-y-0.5 text-[11px]">${formattedDesc}</ul>
+                            </div>`;
                         }
                     });
-                }
-                else if (key === 'competences') {
-                    let itemsHtml = '';
-                    cvData.competences.forEach(item => {
-                        if (item.nom) {
-                            blockHasData = true;
-                            itemsHtml += `
-                                <div class="p-1.5 bg-slate-50 rounded-md border border-slate-100 flex flex-col justify-center">
-                                    <span class="font-bold" style="color: ${s}">${item.nom}</span>
-                                    <span class="text-[9px] font-medium" style="color: ${a}">${item.niveau}</span>
-                                </div>
-                            `;
-                        }
-                    });
-                    subHtml += `<div class="grid grid-cols-2 gap-1.5">${itemsHtml}</div>`;
-                }
-                else if (key === 'langues') {
-                    cvData.langues.forEach(item => {
-                        if (item.langue) {
-                            blockHasData = true;
-                            subHtml += `
-                                <div class="flex justify-between items-center py-0.5 border-b border-dashed border-slate-100">
-                                    <span class="font-bold" style="color: ${s}">${item.langue}</span>
-                                    <span class="text-[10px]" style="color: ${a}">${item.niveau}</span>
-                                </div>
-                            `;
-                        }
-                    });
-                }
-                else if (key === 'interets') {
-                    let itemsHtml = '';
-                    cvData.interets.forEach(item => {
-                        if (item.nom || item.desc) {
-                            blockHasData = true;
-                            let formattedDesc = item.desc ? item.desc.split('\n').map(l => l.trim().startsWith('•') ? l : '• ' + l).join('<br>') : '';
-                            itemsHtml += `
-                                <div class="p-1.5 bg-slate-50 rounded-md border border-slate-100">
-                                    <div class="font-bold" style="color: ${s}">${item.nom || ''}</div>
-                                    ${item.desc ? `<div class="text-[9px] text-slate-500 mt-0.5">${formattedDesc}</div>` : ''}
-                                </div>
-                            `;
-                        }
-                    });
-                    subHtml += `<div class="grid grid-cols-2 gap-1.5">${itemsHtml}</div>`;
+                    if (subContent) {
+                        blockHtml = `<div class="break-inside-avoid" style="page-break-inside: avoid;"><h4 class="text-xs font-bold uppercase tracking-wider mb-2" style="color: ${cp}; border-bottom: 1px solid #f1f5f9; padding-bottom: 2px;">EXPÉRIENCES PROFESSIONNELLES</h4>${subContent}</div>`;
+                    }
                 }
 
-                subHtml += `</div>`;
-                if (blockHasData) html += subHtml;
+                else if (blockId === 'techniques') {
+                    const subs = Array.from(block.querySelectorAll('.sub-block'));
+                    let subContent = '';
+                    subs.forEach(s => {
+                        const skill = s.querySelector('.field-1').value;
+                        const lvl = s.querySelector('.field-2').value;
+                        if (skill) {
+                            subContent += `
+                            <div class="bg-slate-50 border border-slate-100 p-1.5 rounded-lg text-center break-inside-avoid" style="page-break-inside: avoid;">
+                                <div class="font-bold text-[10px]" style="color: ${cs};">${skill}</div>
+                                <div class="text-[9px]" style="color: ${ct};">${lvl}</div>
+                            </div>`;
+                        }
+                    });
+                    if (subContent) {
+                        blockHtml = `<div class="break-inside-avoid" style="page-break-inside: avoid;"><h4 class="text-xs font-bold uppercase tracking-wider mb-2" style="color: ${cp}; border-bottom: 1px solid #f1f5f9; padding-bottom: 2px;">COMPÉTENCES TECHNIQUES</h4><div class="grid grid-cols-2 gap-2">${subContent}</div></div>`;
+                    }
+                }
+
+                else if (blockId === 'linguistiques') {
+                    const subs = Array.from(block.querySelectorAll('.sub-block'));
+                    let subContent = '';
+                    subs.forEach(s => {
+                        const lang = s.querySelector('.field-1').value;
+                        const lvl = s.querySelector('.field-2').value;
+                        if (lang) {
+                            subContent += `
+                            <div class="flex justify-between text-xs py-0.5 border-b border-dashed border-slate-100 break-inside-avoid" style="page-break-inside: avoid;">
+                                <span class="font-bold" style="color: ${cs};">${lang}</span>
+                                <span style="color: ${ct};">${lvl}</span>
+                            </div>`;
+                        }
+                    });
+                    if (subContent) {
+                        blockHtml = `<div class="break-inside-avoid" style="page-break-inside: avoid;"><h4 class="text-xs font-bold uppercase tracking-wider mb-2" style="color: ${cp}; border-bottom: 1px solid #f1f5f9; padding-bottom: 2px;">COMPÉTENCES LINGUISTIQUES</h4><div class="space-y-1">${subContent}</div></div>`;
+                    }
+                }
+
+                else if (blockId === 'interets') {
+                    const subs = Array.from(block.querySelectorAll('.sub-block'));
+                    let subContent = '';
+                    subs.forEach(s => {
+                        const title = s.querySelector('.field-1').value;
+                        const desc = s.querySelector('.field-2').value;
+                        if (title || desc) {
+                            const formattedDesc = desc ? desc.split('\n').map(l => l.trim() ? `<li>${l.startsWith('•') ? l : '• ' + l}</li>` : '').join('') : '';
+                            subContent += `
+                            <div class="bg-slate-50 border border-slate-100 p-1.5 rounded-lg break-inside-avoid" style="page-break-inside: avoid;">
+                                <div class="font-bold text-[10px]" style="color: ${cs};">${title}</div>
+                                <ul class="text-[9px] text-slate-500 list-none space-y-0.5 mt-0.5">${formattedDesc}</ul>
+                            </div>`;
+                        }
+                    });
+                    if (subContent) {
+                        blockHtml = `<div class="break-inside-avoid" style="page-break-inside: avoid;"><h4 class="text-xs font-bold uppercase tracking-wider mb-2" style="color: ${cp}; border-bottom: 1px solid #f1f5f9; padding-bottom: 2px;">CENTRES D’INTÉRÊTS</h4><div class="grid grid-cols-2 gap-2">${subContent}</div></div>`;
+                    }
+                }
+
+                if (blockHtml) {
+                    cvSectionsContainer.insertAdjacentHTML('beforeend', blockHtml);
+                }
             });
-
-            html += `</div>`;
-            document.getElementById('cv-content-target').innerHTML = html;
             lucide.createIcons();
         }
 
-        // Actions Globales : Export PDF & Réinitialisation sécurisée
+        function toggleCVField(fieldId, value, containerId) {
+            const el = document.getElementById(fieldId);
+            const container = document.getElementById(containerId);
+            if(value) {
+                el.innerText = value;
+                container.classList.remove('hidden');
+            } else {
+                container.classList.add('hidden');
+            }
+        }
+
+        // SOLUTION ULTIME ANTI-PAGE BLANCHE : Configuration stricte html2pdf sans débordement
         function generatePDF() {
-            incrementStat('downloads');
-            const element = document.getElementById('cv-preview-holder');
+            const element = document.getElementById('cv-to-print');
+            const fname = document.getElementById('input-firstname').value || 'Mon';
+            const lname = document.getElementById('input-lastname').value || 'CV';
             
-            // Paramétrage html2pdf optimal pour préserver l'échelle A4
             const opt = {
                 margin: 0,
-                filename: 'Mon_CV_Express.pdf',
+                filename: `CV_${fname}_${lname}.pdf`,
                 image: { type: 'jpeg', quality: 0.98 },
-                html2canvas: { scale: 2, useCORS: true, logging: false },
-                jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+                html2canvas: { 
+                    scale: 2, 
+                    useCORS: true, 
+                    letterRendering: true,
+                    scrollY: 0,  
+                    scrollX: 0
+                },
+                jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+                pagebreak: { mode: 'specify', avoid: '.cv-page *' } // Force le moteur à interdire l'ajout d'une page supplémentaire
             };
-            html2pdf().from(element).save();
+
+            // Exécution propre
+            html2pdf().set(opt).from(element).save().then(() => {
+                trackMetric('downloads');
+            });
         }
 
         function resetForm() {
-            if (confirm("Voulez-vous vraiment réinitialiser tout le formulaire ? Vos modifications locales seront perdues.")) {
-                document.getElementById('input-poste').value = '';
-                document.getElementById('input-nom').value = '';
-                document.getElementById('input-prenom').value = '';
+            if (confirm("Voulez-vous vraiment réinitialiser entièrement le formulaire ? Toutes vos modifications locales seront effacées.")) {
+                document.getElementById('input-title').value = '';
+                document.getElementById('input-firstname').value = '';
+                document.getElementById('input-lastname').value = '';
                 document.getElementById('input-phone').value = '';
                 document.getElementById('input-email').value = '';
                 document.getElementById('input-pitch').value = '';
                 
-                cvData = {
-                    formations: [{ diplome: '', ecole: '', annee: '' }],
-                    experiences: [{ poste: '', entreprise: '', annee: '', desc: '' }],
-                    competences: [{ nom: '', niveau: 'Initiation' }],
-                    langues: [{ langue: '', niveau: 'Initiation' }],
-                    interets: [{ nom: '', desc: '' }]
-                };
-                initApp();
+                document.getElementById('subcontainer-formations').innerHTML = '';
+                document.getElementById('subcontainer-experiences').innerHTML = '';
+                document.getElementById('subcontainer-techniques').innerHTML = '';
+                document.getElementById('subcontainer-linguistiques').innerHTML = '';
+                document.getElementById('subcontainer-interets').innerHTML = '';
+                
+                localStorage.removeItem('cv_express_user_data');
+                updateCV();
+            }
+        }
+
+        function openStatsModal() {
+            document.getElementById('stat-connexions').innerText = state.connexions;
+            document.getElementById('stat-downloads').innerText = state.downloads;
+            document.getElementById('stats-modal').classList.remove('hidden');
+        }
+
+        function closeStatsModal() {
+            document.getElementById('stats-modal').classList.add('hidden');
+        }
+
+        function resetStats() {
+            if(confirm("Réinitialiser les compteurs à 0 ?")) {
+                localStorage.setItem('stat_connexions', '0');
+                localStorage.setItem('stat_downloads', '0');
+                state.connexions = 0;
+                state.downloads = 0;
+                openStatsModal();
+            }
+        }
+
+        async function trackMetric(metricName) {
+            state[metricName]++;
+            localStorage.setItem(`stat_${metricName}`, state[metricName].toString());
+
+            if (!SUPABASE_URL || !SUPABASE_KEY) return;
+            
+            try {
+                await fetch(`${SUPABASE_URL}/rest/v1/cv_metrics`, {
+                    method: 'POST',
+                    headers: {
+                        'apikey': SUPABASE_KEY,
+                        'Authorization': `Bearer ${SUPABASE_KEY}`,
+                        'Content-Type': 'application/json',
+                        'Prefer': 'return=minimal'
+                    },
+                    body: JSON.stringify({ type: metricName })
+                });
+            } catch (e) {
+                console.error("Erreur stats:", e);
             }
         }
     </script>
