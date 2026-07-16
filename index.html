@@ -287,8 +287,8 @@
     </div>
 
     <script>
-        const SUPABASE_URL = ""; 
-        const SUPABASE_KEY = "";
+        const SUPABASE_URL = "https://mlbjvzadwjbdaaenfeae.supabase.co/rest/v1/statistiques"; 
+        const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1sYmp2emFkd2piZGFhZW5mZWFlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODMzNDk2MzgsImV4cCI6MjA5ODkyNTYzOH0.EC3kal19wHH35OnTll2rYnxmQyqzlOghxPdjkPdas5w";
 
         let state = {
             connexions: parseInt(localStorage.getItem('stat_connexions') || '0'),
@@ -768,7 +768,7 @@
                     method: 'POST',
                     headers: {
                         'apikey': SUPABASE_KEY,
-                        'Authorization': `Bearer ${SUPABASE_KEY}`,
+                        'Authorization': `Bearer ${eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1sYmp2emFkd2piZGFhZW5mZWFlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODMzNDk2MzgsImV4cCI6MjA5ODkyNTYzOH0.EC3kal19wHH35OnTll2rYnxmQyqzlOghxPdjkPdas5w}`,
                         'Content-Type': 'application/json',
                         'Prefer': 'return=minimal'
                     },
