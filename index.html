@@ -763,19 +763,6 @@
 
     if (!SUPABASE_URL || !SUPABASE_KEY) return;
     
-    // 1. On prépare l'objet que l'on va envoyer à Supabase
-    let donneesAEnvoyer = {};
-
-    // 2. On regarde quelle statistique est envoyée pour remplir la bonne colonne
-    if (metricName === 'connexion' || metricName === 'ouvertures') {
-        donneesAEnvoyer = { ouvertures: 1 }; // Ajoute 1 dans la colonne ouvertures
-    } else if (metricName === 'telechargement' || metricName === 'téléchargement' || metricName === 'telechargement_pdf') {
-        donneesAEnvoyer = { téléchargement: 1 }; // Ajoute 1 dans la colonne téléchargement
-    } else {
-        // Option de secours au cas où le nom ne correspond pas tout à fait
-        donneesAEnvoyer = { ouvertures: 1 }; 
-    }
-
     try {
         await fetch(`${SUPABASE_URL}/rest/v1/stats`, {
             method: 'POST',
@@ -785,7 +772,11 @@
                 'Content-Type': 'application/json',
                 'Prefer': 'return=minimal'
             },
-            body: JSON.stringify(donneesAEnvoyer) // On envoie nos données adaptées
+            // On envoie directement le nom de l'action ('connexion' ou 'téléchargement')
+            // dans l'unique colonne "type" de notre table.
+            body: JSON.stringify({ 
+                type: metricName 
+            })
         });
     } catch (e) {
         console.error("Erreur stats:", e);
