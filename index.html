@@ -287,7 +287,7 @@
     </div>
 
     <script>
-        const SUPABASE_URL = "https://mlbjvzadwjbdaaenfeae.supabase.co/rest/v1/stats"; 
+        const SUPABASE_URL = "https://mlbjvzadwjbdaaenfeae.supabase.co"; 
         const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1sYmp2emFkd2piZGFhZW5mZWFlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODMzNDk2MzgsImV4cCI6MjA5ODkyNTYzOH0.EC3kal19wHH35OnTll2rYnxmQyqzlOghxPdjkPdas5w";
 
         let state = {
@@ -757,14 +757,15 @@
             }
         }
 
-       async function trackMetric(metricName) {
+      async function trackMetric(metricName) {
     state[metricName]++;
     localStorage.setItem(`stat_${metricName}`, state[metricName].toString());
 
     if (!SUPABASE_URL || !SUPABASE_KEY) return;
     
     try {
-
+        // En combinant SUPABASE_URL et '/rest/v1/stats', l'adresse finale sera parfaite :
+        // https://mlbjvzadwjbdaaenfeae.supabase.co/rest/v1/stats
         await fetch(`${SUPABASE_URL}/rest/v1/stats`, {
             method: 'POST',
             headers: {
